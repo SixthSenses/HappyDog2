@@ -1,10 +1,16 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("com.google.dagger.hilt.android")
     id("com.google.devtools.ksp")
     id("kotlin-parcelize")
+
 }
+// local.properties 파일을 읽기 위한 설정
+val properties = Properties()
+properties.load(project.rootProject.file("local.properties").inputStream())
 
 android {
     namespace =  "com.example.pet_project_frontend"
@@ -21,6 +27,7 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+        buildConfigField("String", "KAKAO_NATIVE_APP_KEY", properties.getProperty("KAKAO_NATIVE_APP_KEY"))
     }
 
     buildTypes {
@@ -130,4 +137,10 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
+
+    implementation ("com.kakao.maps.open:android:2.11.9")
+    // 카카오 API 사용 시 필요한 로그인/유틸 라이브러리
+    implementation("com.kakao.sdk:v2-user:2.19.0")
+    //현재 위치 허용을 위한 코드
+    implementation ("com.google.android.gms:play-services-location:21.0.1")
 }
