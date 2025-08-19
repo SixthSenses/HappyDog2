@@ -36,16 +36,10 @@ fun MyPageScreen(
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
 
-    Scaffold(
-        bottomBar = {
-            BottomNavigation(currentRoute = "mypage")
-        }
-    ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(MyPageColors.Background)
-                .padding(paddingValues)
                 .verticalScroll(scrollState)
         ) {
             // 프로필 헤더
@@ -98,5 +92,5 @@ fun MyPageScreen(
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
-}
+
 
