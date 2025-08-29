@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Call
@@ -30,11 +29,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
@@ -55,11 +55,9 @@ import com.kakao.vectormap.camera.CameraUpdateFactory
 import com.kakao.vectormap.label.LabelOptions
 import com.kakao.vectormap.label.LabelStyle
 import com.kakao.vectormap.label.LabelStyles
-import kotlin.math.roundToInt
-import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.res.painterResource
-import androidx.core.location.LocationManagerCompat.getCurrentLocation
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
+import androidx.compose.ui.res.painterResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -91,36 +89,50 @@ fun MapScreen(
 	)
 
 	val scaffoldState = rememberBottomSheetScaffoldState()
-	val sheetPeekHeight = 100.dp
+	val sheetPeekHeight = 80.dp
 	val scope = rememberCoroutineScope()
+
+	val configuration = LocalConfiguration.current
+	val screenHeight = configuration.screenHeightDp.dp
+
+	val tabBarTopPadding = 16.dp
+	val tabBarHeight = 38.dp
+	val desiredSheetTopMargin = 140.dp
+
+	val topBarAreaHeight = tabBarTopPadding + tabBarHeight + desiredSheetTopMargin
+	val maxSheetHeight = screenHeight - topBarAreaHeight
 
 	BottomSheetScaffold(
 		scaffoldState = scaffoldState,
 		sheetPeekHeight = sheetPeekHeight,
 		sheetContainerColor = MyPageColors.CardBackground,
 		sheetContent = {
-			if (selectedPlace == null) {
-				// 목록 화면 UI
-				PlaceList(
-					uiState = uiState,
-					onPlaceClick = { place ->
-						selectedPlace = place // 장소를 클릭하면 상태 변경
-					}
-				)
-			} else {
-				// 상세 화면 UI
-				PlaceDetail(
-					place = selectedPlace!!,
-					onBackClick = {
-						selectedPlace = null // 뒤로가기 클릭 시 상태를 null로 변경
-					}
-				)
+			// [수정됨 1] Wrapper Box 패턴 적용
+			Box(
+				modifier = Modifier
+					.fillMaxWidth()
+					.heightIn(min = sheetPeekHeight, max = maxSheetHeight)
+			) {
+				if (selectedPlace == null) {
+					PlaceList(
+						uiState = uiState,
+						onPlaceClick = { place ->
+							selectedPlace = place
+						}
+					)
+				} else {
+					PlaceDetail(
+						place = selectedPlace!!,
+						onBackClick = {
+							selectedPlace = null
+						}
+					)
+				}
 			}
 		}
 	) { innerPadding ->
 		Box(
-			modifier = Modifier
-				.fillMaxSize()
+			modifier = Modifier.fillMaxSize()
 		) {
 			AndroidView(
 				modifier = Modifier
@@ -130,23 +142,14 @@ fun MapScreen(
 					mapView.apply {
 						start(object : MapLifeCycleCallback() {
 							override fun onMapDestroy() {}
-							override fun onMapError(error: Exception) {
-								Log.e("KakaoMapError", "Map Error: ${error.message}")
-							}
+							override fun onMapError(error: Exception) { Log.e("KakaoMapError", "Map Error: ${error.message}") }
 						}, object : KakaoMapReadyCallback() {
 							override fun onMapReady(kakaoMap: KakaoMap) {
 								kakaoMapInstance = kakaoMap
-
-								kakaoMap.setOnLabelClickListener { map, layer, label ->
-									// 클릭된 라벨의 태그를 MapPlace 타입으로 변환합니다.
+								kakaoMap.setOnLabelClickListener { _, _, label ->
 									(label.tag as? MapPlace)?.let { place ->
-										// 1. 선택된 장소 상태를 업데이트합니다.
 										selectedPlace = place
-
-										// 2. 바텀시트를 위로 확장시킵니다.
-										scope.launch {
-											scaffoldState.bottomSheetState.expand()
-										}
+										scope.launch { scaffoldState.bottomSheetState.expand() }
 									}
 									true
 								}
@@ -167,27 +170,59 @@ fun MapScreen(
 			Box(
 				modifier = Modifier
 					.fillMaxWidth()
-					.padding(top = 16.dp, start = 16.dp, end = 16.dp)
+					.padding(top = 16.dp),
+				contentAlignment = Alignment.TopCenter
 			) {
+				// [수정됨 2] TabRow 너비 문제 해결
 				TabRow(
 					selectedTabIndex = uiState.selectedCategory.ordinal,
-					containerColor = MyPageColors.CardBackground,
-					modifier = Modifier.clip(RoundedCornerShape(30.dp)),
+					containerColor = Color.Transparent,
+					modifier = Modifier
+						.shadow(elevation = 4.dp, spotColor = Color(0x26000000), ambientColor = Color(0x26000000))
+						.width(250.dp) // .wrapContentWidth() 삭제
+						.height(38.dp)
+						.background(color = MyPageColors.Background, shape = RoundedCornerShape(size = 12.dp))
+						.padding(start = 4.dp, top = 3.dp, end = 4.dp, bottom = 3.dp),
 					indicator = {},
 					divider = {}
 				) {
 					PlaceCategory.values().forEach { category ->
 						val isSelected = uiState.selectedCategory == category
-						Tab(
-							selected = uiState.selectedCategory == category,
-							onClick = { viewModel.selectCategory(category) },
-							modifier = Modifier.background(
-								if (isSelected)  Color.Transparent else MyPageColors.Background
-							),
-							text = { Text(category.displayName, fontWeight = FontWeight.Bold) },
-							selectedContentColor = MyPageColors.Primary,
-							unselectedContentColor = MyPageColors.Tertiary
+						val tabModifier = if (isSelected) {
+							Modifier
+								.shadow(elevation = 4.dp, spotColor = Color(0x26000000), ambientColor = Color(0x26000000))
+								.height(32.dp)
+								.background(color = MyPageColors.TapChosen, shape = RoundedCornerShape(size = 10.dp))
+								.padding(start = 10.dp, top = 6.dp, end = 10.dp, bottom = 6.dp)
+						} else {
+							Modifier
+								.height(32.dp)
+								.padding(start = 10.dp, top = 6.dp, end = 10.dp, bottom = 6.dp)
+								.clip(RoundedCornerShape(size = 10.dp))
+						}
 
+						Tab(
+							selected = isSelected,
+							onClick = { viewModel.selectCategory(category) },
+							modifier = tabModifier,
+							text = {
+								Box(
+									modifier = Modifier.height(25.dp),
+									contentAlignment = Alignment.Center
+								) {
+									Text(
+										text = category.displayName,
+										style = TextStyle(
+											fontSize = 15.sp,
+											lineHeight = 18.sp,
+											fontWeight = FontWeight(600),
+											color = if (isSelected) Color.Black else MyPageColors.Tertiary
+										)
+									)
+								}
+							},
+							selectedContentColor = Color.Transparent,
+							unselectedContentColor = Color.Transparent
 						)
 					}
 				}
@@ -197,11 +232,19 @@ fun MapScreen(
 				onClick = { refreshLocation() },
 				modifier = Modifier
 					.align(Alignment.BottomEnd)
-					.padding(end = 16.dp, bottom = sheetPeekHeight + 8.dp),
+					.padding(
+						end = 16.dp,
+						// [수정됨 3] FAB 위치 문제 해결
+						bottom = innerPadding.calculateBottomPadding() + 10.dp
+					),
 				shape = RoundedCornerShape(30.dp),
 				containerColor = MyPageColors.CardBackground
 			) {
-				Icon(imageVector = Icons.Default.MyLocation, contentDescription = "현재 위치 새로고침", tint = MyPageColors.Primary)
+				Icon(
+					imageVector = Icons.Default.MyLocation,
+					contentDescription = "현재 위치 새로고침",
+					tint = MyPageColors.Primary
+				)
 			}
 		}
 	}
@@ -210,7 +253,10 @@ fun MapScreen(
 		kakaoMapInstance?.let { map ->
 			map.labelManager?.clearAll()
 			uiState.currentLocation?.let {
-				val myLocationOptions = LabelOptions.from(LatLng.from(it.latitude, it.longitude)).setStyles(LabelStyles.from(LabelStyle.from(R.drawable.my_location_marker)))
+				val myLocationStyle = LabelStyle.from(R.drawable.map_marker)
+					.setAnchorPoint(0.5f, 0.5f) // <--- 이 부분을 추가하세요! (아이콘 모양에 맞게 u, v 값 조절)
+				val myLocationOptions = LabelOptions.from(LatLng.from(it.latitude, it.longitude))
+					.setStyles(LabelStyles.from(myLocationStyle)) // 수정된 스타일 적용
 				map.labelManager?.layer?.addLabel(myLocationOptions)
 				if (isFirstLocationUpdate) {
 					val position = LatLng.from(it.latitude, it.longitude)
@@ -228,88 +274,71 @@ fun MapScreen(
 		}
 	}
 }
+
 @Composable
-fun PlaceList(uiState: MapUiState, onPlaceClick: (MapPlace) -> Unit) {
+fun PlaceList(
+	uiState: MapUiState,
+	onPlaceClick: (MapPlace) -> Unit
+) {
 	Column(
-		modifier = Modifier
-			.fillMaxWidth()
-			.defaultMinSize(minHeight = 1.dp)
+		modifier = Modifier.fillMaxWidth()
 	) {
 		Spacer(modifier = Modifier.height(8.dp))
 		Text(
-			text = "주변 '${uiState.selectedCategory.displayName}' 시설",
+			text = "주변 ${uiState.selectedCategory.displayName} 시설",
 			fontSize = 18.sp,
 			fontWeight = FontWeight.Bold,
 			modifier = Modifier
 				.fillMaxWidth()
-				.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+				.padding(start = 16.dp, end = 16.dp, bottom = 20.dp),
 			textAlign = TextAlign.Start
 		)
 		if (uiState.isLoading) {
-			Box(
-				modifier = Modifier
-					.fillMaxWidth()
-					.padding(vertical = 32.dp),
-				contentAlignment = Alignment.Center
-			) {
+			Box(modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp), contentAlignment = Alignment.Center) {
 				Text(text = "주변에 장소를 불러오는 중입니다....", color = MyPageColors.Tertiary)
 			}
-		} else if(uiState.places.isEmpty()) {
-			Box(
-				modifier = Modifier
-					.fillMaxWidth()
-					.padding(vertical = 32.dp),
-				contentAlignment = Alignment.Center
-			) {
+		} else if (uiState.places.isEmpty()) {
+			Box(modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp), contentAlignment = Alignment.Center) {
 				Text(text = "주변에 등록된 장소가 없습니다.", color = MyPageColors.Tertiary)
 			}
 		} else {
-				LazyColumn(
-					modifier = Modifier
-						.padding(horizontal = 16.dp)
-						.fillMaxHeight()
-				) {
-					items(uiState.places) { place ->
-						PlaceItem(
-							place = place,
-							currentLocation = uiState.currentLocation,
-							onClick = { onPlaceClick(place) } // 클릭 이벤트 전달
-						)
-					}
-					item { Spacer(modifier = Modifier.height(16.dp)) }
+			LazyColumn(
+				modifier = Modifier.padding(horizontal = 16.dp)
+			) {
+				items(uiState.places) { place ->
+					PlaceItem(
+						place = place,
+						currentLocation = uiState.currentLocation,
+						onClick = { onPlaceClick(place) }
+					)
 				}
-
+				item { Spacer(modifier = Modifier.height(16.dp)) }
 			}
-
 		}
 	}
-
+}
 
 @Composable
-fun PlaceDetail(place: MapPlace, onBackClick: () -> Unit) {
+fun PlaceDetail(
+	place: MapPlace,
+	onBackClick: () -> Unit
+) {
 	Column(
 		modifier = Modifier
 			.fillMaxWidth()
 			.padding(horizontal = 16.dp)
 	) {
-		// 뒤로가기 버튼과 제목
 		Row(
 			verticalAlignment = Alignment.CenterVertically,
-			modifier = Modifier.padding(top = 8.dp)
+			modifier = Modifier.padding(top = 7.dp)
 		) {
 			IconButton(onClick = onBackClick) {
 				Icon(Icons.Default.ArrowBack, contentDescription = "목록보기")
 			}
 			Spacer(modifier = Modifier.width(8.dp))
-			Text(
-				text = "목록 보기",
-				fontSize = 18.sp,
-				//fontWeight = FontWeight.Bold,
-				color = MyPageColors.Secondary
-			)
+			Text(text = "목록 보기", fontSize = 18.sp, color = MyPageColors.Secondary)
 		}
 		Spacer(modifier = Modifier.height(16.dp))
-		// 장소명 (크고 진하게)
 		Text(
 			text = place.name,
 			fontSize = 22.sp,
@@ -317,13 +346,20 @@ fun PlaceDetail(place: MapPlace, onBackClick: () -> Unit) {
 			color = MyPageColors.Primary,
 			modifier = Modifier.padding(vertical = 8.dp)
 		)
-		// 상세 정보 내용
+		val rawOperateTime = place.operateTime // "월~금: ...,토요일: ...,일요일: ..."
+		val lines = rawOperateTime.split(",") // 먼저 쉼표로 각 줄을 나눔
+
+		val formattedOperateTime = lines.mapIndexed { index, line ->
+			if (index == 0) { // 첫 번째 줄에만
+				"" + line.trim()
+			} else {
+				line.trim()
+			}
+		}.joinToString("\n") // 다시 \n으로 합침
 		DetailInfoRow(icon = Icons.Default.LocationOn, content = place.address)
 		DetailInfoRow(icon = Icons.Default.Call, content = place.phoneNumber)
-		val formattedOperateTime = place.operateTime.replace(",", "\n")
 		DetailInfoRow(icon = Icons.Default.Schedule, content = formattedOperateTime)
 		DetailInfoRow(icon = Icons.Default.Link, content = place.homePage, isLink = true)
-
 		Spacer(modifier = Modifier.height(16.dp))
 	}
 }
@@ -344,7 +380,6 @@ fun DetailInfoRow(icon: ImageVector, content: String, isLink: Boolean = false) {
 			tint = MyPageColors.IconColor
 		)
 		Spacer(modifier = Modifier.width(16.dp))
-
 		if (isLink && content.startsWith("http")) {
 			Text(
 				text = content,
@@ -361,11 +396,7 @@ fun DetailInfoRow(icon: ImageVector, content: String, isLink: Boolean = false) {
 				}
 			)
 		} else {
-			Text(
-				text = content,
-				fontSize = 16.sp,
-				color = MyPageColors.Secondary
-			)
+			Text(text = content, fontSize = 16.sp, color = MyPageColors.Secondary)
 		}
 	}
 }
@@ -389,47 +420,25 @@ fun PlaceItem(place: MapPlace, currentLocation: Location?, onClick: () -> Unit) 
 	Row(
 		modifier = Modifier
 			.fillMaxWidth()
-			.clickable(onClick = onClick) // Row 전체에 클릭 효과 적용
-			.padding(horizontal = 16.dp, vertical = 12.dp),
-		verticalAlignment = Alignment.CenterVertically // 세로 중앙 정렬
+			.clickable(onClick = onClick)
+			.padding(horizontal = 16.dp, vertical = 8.dp),
+		verticalAlignment = Alignment.CenterVertically
 	) {
-		// 아이콘
 		Image(
 			painter = painterResource(id = place.category.icon),
 			contentDescription = place.category.csvName,
 			modifier = Modifier.size(40.dp)
 		)
-
 		Spacer(modifier = Modifier.width(16.dp))
-
-		// 텍스트 정보를 담는 Column
 		Column(modifier = Modifier.weight(1f)) {
-			Text(
-				text = place.name,
-				fontWeight = FontWeight.SemiBold,
-				fontSize = 16.sp,
-				color = MyPageColors.Primary
-			)
-			Spacer(modifier = Modifier.height(6.dp))
+			Text(text = place.name, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = MyPageColors.Primary)
+			Spacer(modifier = Modifier.height(3.dp))
 			Row(verticalAlignment = Alignment.CenterVertically) {
 				if (distanceText.isNotEmpty()) {
-					Text(
-						text = distanceText,
-						color = MyPageColors.Secondary,
-						fontSize = 14.sp
-					)
-					Text(
-						text = " | ",
-						color = MyPageColors.Tertiary,
-						fontSize = 14.sp,
-						modifier = Modifier.padding(horizontal = 4.dp)
-					)
+					Text(text = distanceText, color = MyPageColors.Secondary, fontSize = 14.sp)
+					Text(text = " | ", color = MyPageColors.Tertiary, fontSize = 14.sp, modifier = Modifier.padding(horizontal = 4.dp))
 				}
-				Text(
-					text = place.shortAddress,
-					color = MyPageColors.Secondary,
-					fontSize = 14.sp
-				)
+				Text(text = place.shortAddress, color = MyPageColors.Secondary, fontSize = 14.sp)
 			}
 		}
 	}
@@ -438,9 +447,20 @@ fun PlaceItem(place: MapPlace, currentLocation: Location?, onClick: () -> Unit) 
 private fun getCurrentLocation(activity: Activity, onResult: (Double, Double) -> Unit) {
 	val fusedLocationClient = LocationServices.getFusedLocationProviderClient(activity)
 	try {
-		fusedLocationClient.lastLocation.addOnSuccessListener { location -> location?.let { onResult(it.latitude, it.longitude) } }
-			.addOnFailureListener { Log.e("LocationError", "Failed to get location.", it) }
+		if (ContextCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+			ContextCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+			fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+				location?.let { onResult(it.latitude, it.longitude) }
+					?: Toast.makeText(activity, "현재 위치를 가져올 수 없습니다. GPS를 확인해주세요.", Toast.LENGTH_SHORT).show()
+			}.addOnFailureListener {
+				Log.e("LocationError", "Failed to get location.", it)
+				Toast.makeText(activity, "위치 정보를 가져오는데 실패했습니다.", Toast.LENGTH_SHORT).show()
+			}
+		} else {
+			Toast.makeText(activity, "위치 권한이 없습니다.", Toast.LENGTH_SHORT).show()
+		}
 	} catch (e: SecurityException) {
 		Log.e("LocationError", "Location permission not granted.", e)
+		Toast.makeText(activity, "보안 문제로 위치 정보를 가져올 수 없습니다.", Toast.LENGTH_SHORT).show()
 	}
 }

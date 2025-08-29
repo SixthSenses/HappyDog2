@@ -45,7 +45,7 @@ data class MapPlace(
 
 enum class PlaceCategory(val displayName: String) {
 	HOSPITAL("반려의료"),
-	PET_FACILITY("반려동물 동반가능")
+	PET_FACILITY("반려동반")
 }
 enum class DetailedPlaceCategory(
 	val csvName: String, // CSV 파일에 있는 카테고리 이름
