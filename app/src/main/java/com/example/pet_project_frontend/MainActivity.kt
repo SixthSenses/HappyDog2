@@ -13,6 +13,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.pet_project_frontend.core.navigation.BottomNavigation
 import com.example.pet_project_frontend.core.navigation.PetCareNavHost
 import com.example.pet_project_frontend.core.theme.PetCareTheme
+import com.example.pet_project_frontend.core.navigation.NavigationRoutes
 import com.kakao.sdk.common.util.Utility
 import com.kakao.vectormap.KakaoMapSdk
 import dagger.hilt.android.AndroidEntryPoint
@@ -39,18 +40,26 @@ class MainActivity : ComponentActivity() {
 
                 Scaffold(
                     bottomBar = {
-                        BottomNavigation(
-                            currentRoute = currentRoute ?: "",
-                            onNavigate = { route ->
-                                navController.navigate(route) {
-                                    popUpTo(navController.graph.startDestinationId) {
-                                        saveState = true
+                        val showBottomBar = when (currentRoute) {
+                            NavigationRoutes.PET_CARE,
+                            NavigationRoutes.MAP,
+                            NavigationRoutes.COMMUNITY,
+                            NavigationRoutes.TRANSLATOR,
+                            NavigationRoutes.MY_PAGE -> true
+                            else -> false
+                        }
+                        if (showBottomBar) {
+                            BottomNavigation(
+                                currentRoute = currentRoute ?: "",
+                                onNavigate = { route ->
+                                    navController.navigate(route) {
+                                        popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                        launchSingleTop = true
+                                        restoreState = true
                                     }
-                                    launchSingleTop = true
-                                    restoreState = true
                                 }
-                            }
-                        )
+                            )
+                        }
                     }
                 ) { innerPadding ->
                     PetCareNavHost(
