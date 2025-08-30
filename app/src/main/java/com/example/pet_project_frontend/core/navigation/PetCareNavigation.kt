@@ -7,6 +7,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.pet_project_frontend.presentation.map.MapScreen
 import com.example.pet_project_frontend.presentation.mypage.main.MyPageScreen
+import com.example.pet_project_frontend.presentation.petcare.PetCareMainScreen
+import com.example.pet_project_frontend.presentation.petregistration.PetRegistrationScreen
 
 @Composable
 // 1. modifier 파라미터를 추가합니다.
@@ -20,8 +22,15 @@ fun PetCareNavHost(
 		startDestination = NavigationRoutes.MY_PAGE,
 		modifier = modifier
 	) {
-		// 펫케어 화면 (아직 파일이 없으므로 임시로 마이페이지를 보여줍니다)
-		composable(NavigationRoutes.PET_CARE) { MyPageScreen() }
+		// 펫 등록 화면
+		composable(NavigationRoutes.PET_REGISTRATION) { 
+			PetRegistrationScreen(navController = navController) 
+		}
+		
+		// 펫케어 화면
+		composable(NavigationRoutes.PET_CARE) { 
+			PetCareMainScreen() 
+		}
 
 		// 지도 화면
 		composable(NavigationRoutes.MAP) { MapScreen() }
