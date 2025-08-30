@@ -28,6 +28,8 @@ android {
             useSupportLibrary = true
         }
         buildConfigField("String", "KAKAO_NATIVE_APP_KEY", properties.getProperty("KAKAO_NATIVE_APP_KEY"))
+        buildConfigField("String", "API_BASE_URL", properties.getProperty("API_BASE_URL", "\"https://api.petcare.com/\""))
+        buildConfigField("String", "GOOGLE_SERVER_AUTH_CODE", properties.getProperty("GOOGLE_SERVER_AUTH_CODE"))
     }
 
     buildTypes {
@@ -131,10 +133,16 @@ dependencies {
 
     // Testing
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
+    testImplementation("org.mockito:mockito-core:5.8.0")
+    testImplementation("kotlin.test:kotlin-test:1.9.22")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     androidTestImplementation(platform("androidx.compose:compose-bom:2024.02.01"))
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    androidTestImplementation("androidx.room:room-testing:2.6.1")
+    androidTestImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 
