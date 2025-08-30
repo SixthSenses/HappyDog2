@@ -14,15 +14,15 @@ import com.example.pet_project_frontend.core.theme.MyPageColors
 import com.example.pet_project_frontend.core.navigation.BottomNavigation
 import com.example.pet_project_frontend.presentation.mypage.main.components.ProfileHeader
 import com.example.pet_project_frontend.presentation.mypage.main.components.ProfileInfoSection
-import com.example.pet_project_frontend.presentation.mypage.main.components.SettingsSection
+// import com.example.pet_project_frontend.presentation.mypage.main.components.SettingsSection
 import com.example.pet_project_frontend.presentation.mypage.main.components.LegalSection
 import com.example.pet_project_frontend.presentation.mypage.main.components.WithdrawalSection
 import com.example.pet_project_frontend.presentation.mypage.main.components.AppVersionSection
 
 @Composable
 fun MyPageScreen(
-    onNameClick: () -> Unit = {},
-    onBirthdateClick: () -> Unit = {},
+    onNameClick: (String) -> Unit = { _ -> },
+    onBirthdateClick: (String) -> Unit = {},
     onGenderClick: () -> Unit = {},
     onBreedClick: () -> Unit = {},
     onNotificationClick: () -> Unit = {},
@@ -36,7 +36,12 @@ fun MyPageScreen(
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
 
-        Column(
+    // 사진 선택/크롭 상태
+    var showPhotoPicker by remember { mutableStateOf(false) }
+    var cropSourceUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    var showCrop by remember { mutableStateOf(false) }
+
+    Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(MyPageColors.Background)
@@ -47,7 +52,7 @@ fun MyPageScreen(
                 name = uiState.petName,
                 description = "${uiState.breed} · ${uiState.age}",
                 profileImageUrl = uiState.profileImageUrl,
-                onProfileImageClick = onProfileImageClick
+                onProfileImageClick = { showPhotoPicker = true }
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -58,18 +63,19 @@ fun MyPageScreen(
                 birthDate = uiState.birthDate,
                 gender = uiState.gender,
                 breed = uiState.breed,
-                onNameClick = onNameClick,
-                onBirthdateClick = onBirthdateClick,
+                // 🔹 onNameClick은 현재 이름을 들고 가도록 람다로 감쌈 (중복 라인 제거!)
+                onNameClick = { onNameClick(uiState.petName) },
+                onBirthdateClick = { onBirthdateClick(uiState.birthDate) },
                 onGenderClick = onGenderClick,
                 onBreedClick = onBreedClick
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            SettingsSection(
-                onNotificationClick = onNotificationClick,
-                onVerificationClick = onVerificationClick
-            )
+//            SettingsSection(
+//                onNotificationClick = onNotificationClick,
+ //               onVerificationClick = onVerificationClick
+ //           )
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -90,6 +96,31 @@ fun MyPageScreen(
             AppVersionSection()
 
             Spacer(modifier = Modifier.height(16.dp))
+        }
+        MediaPickerSheet(
+            visible = showPhotoPicker,
+            onDismissRequest = { showPhotoPicker = false },
+            onPicked = { uri ->
+                cropSourceUri = uri
+                showPhotoPicker = false
+                showCrop = true
+            }
+        )
+
+    // 1-2. 크롭 화면 (uCrop 실행 래퍼)
+        if (showCrop && cropSourceUri != null) {
+            PhotoCropScreen(
+                source = cropSourceUri!!,
+                onCropped = { out ->
+                    viewModel.updateProfileImage(out.toString())
+                    showCrop = false
+                    cropSourceUri = null
+                },
+                onCancel = {
+                    showCrop = false
+                    cropSourceUri = null
+                }
+            )
         }
     }
 
