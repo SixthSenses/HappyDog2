@@ -1,6 +1,8 @@
 package com.example.pet_project_frontend.data.local.database.entities
 
 import androidx.room.Entity
+import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import java.time.LocalDateTime
 

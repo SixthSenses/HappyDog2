@@ -28,7 +28,7 @@ android {
             useSupportLibrary = true
         }
         buildConfigField("String", "KAKAO_NATIVE_APP_KEY", properties.getProperty("KAKAO_NATIVE_APP_KEY"))
-        buildConfigField("String", "API_BASE_URL", properties.getProperty("API_BASE_URL", "\"https://api.petcare.com/\""))
+        buildConfigField("String", "API_BASE_URL", properties.getProperty("API_BASE_URL"))
         buildConfigField("String", "GOOGLE_SERVER_AUTH_CODE", properties.getProperty("GOOGLE_SERVER_AUTH_CODE"))
     }
 
@@ -131,7 +131,14 @@ dependencies {
     // Google 로그인 (선택사항)
     implementation("com.google.android.gms:play-services-auth:21.0.0")
 
+    // Testing
+    testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    androidTestImplementation(platform("androidx.compose:compose-bom:2024.02.01"))
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
 
     implementation ("com.kakao.maps.open:android:2.11.9")
     // 카카오 API 사용 시 필요한 로그인/유틸 라이브러리

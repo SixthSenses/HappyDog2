@@ -1,5 +1,9 @@
 package com.example.pet_project_frontend.data.repository
 
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import com.example.pet_project_frontend.data.local.database.dao.UserDao
 import com.example.pet_project_frontend.data.local.database.entities.UserEntity
 import com.example.pet_project_frontend.data.mapper.UserMapper
@@ -9,13 +13,22 @@ import com.example.pet_project_frontend.data.remote.dto.response.UserProfileResp
 import com.example.pet_project_frontend.data.remote.result.NetworkResult
 import com.example.pet_project_frontend.domain.model.User
 import com.example.pet_project_frontend.domain.repository.UserRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 class UserRepositoryImpl @Inject constructor(
     private val authApi: AuthApi,
-    private val userDao: UserDao
+    private val userDao: UserDao,
+    // [수정됨] Hilt를 통해 DataStore를 주입받습니다.
+    private val dataStore: DataStore<Preferences>
 ) : UserRepository {
-    
+
+    // [추가됨] DataStore에서 사용할 키(Key)를 정의합니다.
+    private companion object {
+        val ACCESS_TOKEN_KEY = stringPreferencesKey("access_token")
+    }
+
     override suspend fun getUserInfo(): NetworkResult<User> {
         return try {
             // 먼저 로컬 DB에서 확인
@@ -23,7 +36,7 @@ class UserRepositoryImpl @Inject constructor(
             if (localUser != null) {
                 return NetworkResult.Success(localUser.toDomainModel())
             }
-            
+
             // 로컬에 없으면 API 호출
             val response = authApi.getUserProfile("current_user") // 임시로 고정 ID 사용
             if (response.isSuccessful) {
@@ -40,7 +53,7 @@ class UserRepositoryImpl @Inject constructor(
             NetworkResult.Exception(e)
         }
     }
-    
+
     override suspend fun updateUserProfile(request: UserUpdateRequest): NetworkResult<User> {
         return try {
             // 임시로 빈 응답 반환 (실제 API 구현 필요)
@@ -59,7 +72,7 @@ class UserRepositoryImpl @Inject constructor(
             NetworkResult.Exception(e)
         }
     }
-    
+
     override suspend fun deleteUser(): NetworkResult<Unit> {
         return try {
             // 임시로 성공 응답 반환 (실제 API 구현 필요)
@@ -68,30 +81,41 @@ class UserRepositoryImpl @Inject constructor(
             NetworkResult.Exception(e)
         }
     }
+
+    // [추가됨] 액세스 토큰 저장 기능 구현
+    override suspend fun saveAccessToken(token: String) {
+        dataStore.edit { preferences ->
+            preferences[ACCESS_TOKEN_KEY] = token
+        }
+    }
+
+    // [추가됨] 액세스 토큰 조회 기능 구현
+    override fun getAccessToken(): Flow<String?> {
+        return dataStore.data.map { preferences ->
+            preferences[ACCESS_TOKEN_KEY]
+        }
+    }
 }
 
-// Extension functions for data conversion
 private fun UserProfileResponse.toUserEntity(): UserEntity {
     return UserEntity(
-        id = userId,
-        email = "", // API에서 제공되지 않는 경우 빈 문자열
-        name = nickname,
-        profileImageUrl = profileImageUrl,
-        createdAt = "", // API에서 제공되지 않는 경우 빈 문자열
-        updatedAt = ""  // API에서 제공되지 않는 경우 빈 문자열
+        userId = userId,
+        email = "", // email이 null일 수 있으므로 안전 호출 처리
+        nickname = nickname,
+        profileImageUrl = profileImageUrl
     )
 }
 
 private fun UserEntity.toDomainModel(): User {
     return User(
-        id = id,
+        id = userId,
         email = email,
-        name = name,
+        name = nickname,
         profileImageUrl = profileImageUrl,
-        phoneNumber = null, // Entity에는 전화번호 정보가 없으므로 null
-        createdAt = java.time.LocalDateTime.now(), // Entity에는 생성 시간이 없으므로 현재 시간
-        updatedAt = java.time.LocalDateTime.now(), // Entity에는 수정 시간이 없으므로 현재 시간
-        isEmailVerified = false, // Entity에는 이메일 인증 정보가 없으므로 기본값
+        phoneNumber = phoneNumber,
+        createdAt = createdAt,
+        updatedAt = updatedAt,
+        isEmailVerified = isEmailVerified,
         notificationSettings = com.example.pet_project_frontend.domain.model.NotificationSettings()
     )
 }
