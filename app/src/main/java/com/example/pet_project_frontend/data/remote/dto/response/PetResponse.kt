@@ -17,8 +17,8 @@ data class PetProfileResponse(
     val breed: String,
     @SerializedName("birthdate")
     val birthdate: String,
-    @SerializedName("initial_weight")
-    val initialWeight: Float,
+    @SerializedName("current_weight")
+    val currentWeight: Float,
     @SerializedName("fur_color")
     val furColor: String?,
     @SerializedName("health_concerns")

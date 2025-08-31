@@ -20,6 +20,8 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Named
 import javax.inject.Singleton
 
+
+
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {

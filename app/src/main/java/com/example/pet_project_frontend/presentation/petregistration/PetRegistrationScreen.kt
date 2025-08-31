@@ -14,9 +14,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.pet_project_frontend.core.navigation.NavigationRoutes
+import com.example.pet_project_frontend.core.navigation.Screen // [수정됨] Screen import
 import com.example.pet_project_frontend.domain.model.Gender
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -34,16 +36,17 @@ fun PetRegistrationScreen(
     val furColor by viewModel.furColor.collectAsState()
     val healthConcerns by viewModel.healthConcerns.collectAsState()
     val showBreedDialog by viewModel.showBreedDialog.collectAsState()
-    
+
     // 등록 성공 시 펫케어 화면으로 이동
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) {
-            navController.navigate(NavigationRoutes.PET_CARE) {
-                popUpTo(NavigationRoutes.PET_REGISTRATION) { inclusive = true }
+            // [수정됨] NavigationRoutes -> Screen.route 로 변경
+            navController.navigate(Screen.PetCare.route) {
+                popUpTo(Screen.PetRegistration.route) { inclusive = true }
             }
         }
     }
-    
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -77,7 +80,7 @@ fun PetRegistrationScreen(
                         isError = uiState.error?.contains("이름") == true
                     )
                 }
-                
+
                 // 성별 선택
                 item {
                     Column {
@@ -105,7 +108,7 @@ fun PetRegistrationScreen(
                         }
                     }
                 }
-                
+
                 // 품종 선택
                 item {
                     OutlinedTextField(
@@ -122,11 +125,11 @@ fun PetRegistrationScreen(
                         isError = uiState.error?.contains("품종") == true
                     )
                 }
-                
+
                 // 생년월일 선택
                 item {
                     var showDatePicker by remember { mutableStateOf(false) }
-                    
+
                     OutlinedTextField(
                         value = birthDate?.format(DateTimeFormatter.ofPattern("yyyy년 MM월 dd일")) ?: "",
                         onValueChange = { },
@@ -140,18 +143,17 @@ fun PetRegistrationScreen(
                         },
                         isError = uiState.error?.contains("생년월일") == true
                     )
-                    
+
                     if (showDatePicker) {
-                        DatePickerDialog(
+                        PetDatePickerDialog(
                             onDateSelected = { date ->
                                 viewModel.updateBirthDate(date)
-                                showDatePicker = false
                             },
                             onDismiss = { showDatePicker = false }
                         )
                     }
                 }
-                
+
                 // 체중 입력
                 item {
                     OutlinedTextField(
@@ -163,7 +165,7 @@ fun PetRegistrationScreen(
                         isError = uiState.error?.contains("체중") == true
                     )
                 }
-                
+
                 // 털 색상 (선택)
                 item {
                     OutlinedTextField(
@@ -174,7 +176,7 @@ fun PetRegistrationScreen(
                         singleLine = true
                     )
                 }
-                
+
                 // 건강 관심사 (선택)
                 item {
                     HealthConcernsSection(
@@ -183,9 +185,9 @@ fun PetRegistrationScreen(
                         onRemove = viewModel::removeHealthConcern
                     )
                 }
-                
+
                 // 에러 메시지
-                if (uiState.error != null) {
+                uiState.error?.let {
                     item {
                         Card(
                             modifier = Modifier.fillMaxWidth(),
@@ -194,14 +196,14 @@ fun PetRegistrationScreen(
                             )
                         ) {
                             Text(
-                                text = uiState.error,
+                                text = it,
                                 modifier = Modifier.padding(16.dp),
                                 color = MaterialTheme.colorScheme.onErrorContainer
                             )
                         }
                     }
                 }
-                
+
                 // 등록 버튼
                 item {
                     Button(
@@ -227,7 +229,7 @@ fun PetRegistrationScreen(
                     }
                 }
             }
-            
+
             // 품종 선택 다이얼로그
             if (showBreedDialog) {
                 BreedSelectionDialog(
@@ -239,6 +241,7 @@ fun PetRegistrationScreen(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun HealthConcernsSection(
     healthConcerns: List<String>,
@@ -246,16 +249,17 @@ fun HealthConcernsSection(
     onRemove: (String) -> Unit
 ) {
     var inputText by remember { mutableStateOf("") }
-    
+
     Column {
         Text(
             text = "건강 관심사 (선택)",
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(bottom = 8.dp)
         )
-        
+
         Row(
             modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             OutlinedTextField(
@@ -265,8 +269,8 @@ fun HealthConcernsSection(
                 placeholder = { Text("예: 알러지, 관절염") },
                 singleLine = true
             )
-            
-            Button(
+
+            IconButton(
                 onClick = {
                     if (inputText.isNotBlank()) {
                         onAdd(inputText)
@@ -277,21 +281,25 @@ fun HealthConcernsSection(
                 Icon(Icons.Default.Add, contentDescription = "추가")
             }
         }
-        
-        // 추가된 건강 관심사 표시
+
         if (healthConcerns.isNotEmpty()) {
             Spacer(modifier = Modifier.height(8.dp))
-            healthConcerns.forEach { concern ->
-                Chip(
-                    onClick = { onRemove(concern) },
-                    modifier = Modifier.padding(end = 8.dp, bottom = 8.dp)
-                ) {
-                    Text(concern)
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Icon(
-                        Icons.Default.Close,
-                        contentDescription = "삭제",
-                        modifier = Modifier.size(16.dp)
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                healthConcerns.forEach { concern ->
+                    InputChip(
+                        selected = false,
+                        onClick = { /* 선택 기능 없음 */ },
+                        label = { Text(concern) },
+                        trailingIcon = {
+                            IconButton(
+                                onClick = { onRemove(concern) },
+                                modifier = Modifier.size(18.dp)
+                            ) {
+                                Icon(Icons.Default.Close, contentDescription = "삭제")
+                            }
+                        }
                     )
                 }
             }
@@ -299,23 +307,26 @@ fun HealthConcernsSection(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DatePickerDialog(
+fun PetDatePickerDialog(
     onDateSelected: (LocalDate) -> Unit,
     onDismiss: () -> Unit
 ) {
-    // 추후 Material3 DatePicker 사용
-    AlertDialog(
+    val datePickerState = rememberDatePickerState()
+
+    DatePickerDialog(
         onDismissRequest = onDismiss,
-        title = { Text("생년월일 선택") },
-        text = {
-            // DatePicker 구현
-            Text("날짜 선택 UI")
-        },
         confirmButton = {
             TextButton(
                 onClick = {
-                    onDateSelected(LocalDate.now().minusYears(1))
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        val selectedDate = Instant.ofEpochMilli(millis)
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDate()
+                        onDateSelected(selectedDate)
+                    }
+                    onDismiss()
                 }
             ) {
                 Text("확인")
@@ -326,8 +337,11 @@ fun DatePickerDialog(
                 Text("취소")
             }
         }
-    )
+    ) {
+        DatePicker(state = datePickerState)
+    }
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -337,7 +351,7 @@ fun BreedSelectionDialog(
 ) {
     val searchQuery by viewModel.breedSearchQuery.collectAsState()
     val searchResults by viewModel.breedSearchResults.collectAsState()
-    
+
     AlertDialog(
         onDismissRequest = onDismiss,
         modifier = Modifier.fillMaxHeight(0.8f)
@@ -356,9 +370,9 @@ fun BreedSelectionDialog(
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
                 )
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = viewModel::updateBreedSearchQuery,
@@ -369,9 +383,9 @@ fun BreedSelectionDialog(
                     },
                     singleLine = true
                 )
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -403,9 +417,9 @@ fun BreedSelectionDialog(
                         }
                     }
                 }
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 TextButton(
                     onClick = onDismiss,
                     modifier = Modifier.align(Alignment.End)

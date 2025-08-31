@@ -1,6 +1,7 @@
 package com.example.pet_project_frontend.data.local.database.dao
 
 import androidx.room.*
+import com.example.pet_project_frontend.data.local.database.entities.CareRecordEntity
 import com.example.pet_project_frontend.data.local.database.entities.PetCareSettingsEntity
 import kotlinx.coroutines.flow.Flow
 

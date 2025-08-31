@@ -2,7 +2,9 @@ package com.example.pet_project_frontend.data.local.database.dao
 
 import androidx.room.*
 import com.example.pet_project_frontend.data.local.database.entities.PetCareSettingsEntity
+import com.example.pet_project_frontend.data.local.database.entities.*
 import kotlinx.coroutines.flow.Flow
+import java.time.LocalDateTime
 
 
 @Dao

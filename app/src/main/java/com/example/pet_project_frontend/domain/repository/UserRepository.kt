@@ -8,4 +8,6 @@ interface UserRepository {
     suspend fun getUserInfo(): NetworkResult<User>
     suspend fun updateUserProfile(request: UserUpdateRequest): NetworkResult<User>
     suspend fun deleteUser(): NetworkResult<Unit>
+    suspend fun saveAccessToken(token: String)
+    fun getAccessToken(): kotlinx.coroutines.flow.Flow<String?>
 }
