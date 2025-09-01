@@ -25,4 +25,3 @@ dependencyResolutionManagement {
 
 rootProject.name = "pet_project_frontend"
 include(":app")
- 

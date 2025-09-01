@@ -7,10 +7,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import com.example.pet_project_frontend.data.local.database.PetCareDatabase
-import com.example.pet_project_frontend.data.local.database.dao.HealthRecordDao
-import com.example.pet_project_frontend.data.local.database.dao.PetDao
-import com.example.pet_project_frontend.data.local.database.dao.PlaceDao
-import com.example.pet_project_frontend.data.local.database.dao.UserDao
+import com.example.pet_project_frontend.data.local.database.dao.*
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -89,24 +86,39 @@ object DatabaseModule {
             // 에러 처리
         }
     }
-    
-    @Provides
-    fun providePetDao(database: PetCareDatabase): PetDao {
-        return database.petDao()
-    }
-    
+
     @Provides
     fun provideUserDao(database: PetCareDatabase): UserDao {
         return database.userDao()
     }
-    
+
     @Provides
-    fun provideHealthRecordDao(database: PetCareDatabase): HealthRecordDao {
-        return database.healthRecordDao()
+    fun providePetDao(database: PetCareDatabase): PetDao {
+        return database.petDao()
     }
-    
+
+    @Provides
+    fun providePetCareSettingsDao(database: PetCareDatabase): PetCareSettingsDao {
+        return database.petCareSettingsDao()
+    }
+
+    @Provides
+    fun provideCareRecordDao(database: PetCareDatabase): CareRecordDao {
+        return database.careRecordDao()
+    }
+
     @Provides
     fun providePlaceDao(database: PetCareDatabase): PlaceDao {
         return database.placeDao()
+    }
+
+    @Provides
+    fun provideBreedDao(database: PetCareDatabase): BreedDao {
+        return database.breedDao()
+    }
+
+    @Provides
+    fun provideHealthRecordDao(database: PetCareDatabase): HealthRecordDao {
+        return database.healthRecordDao()
     }
 }
