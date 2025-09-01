@@ -26,6 +26,8 @@ import com.example.pet_project_frontend.core.navigation.PetCareNavHost
 import com.example.pet_project_frontend.core.navigation.Screen
 import com.example.pet_project_frontend.core.theme.PetCareTheme
 import com.kakao.vectormap.KakaoMapSdk
+import com.kakao.vectormap.*
+import com.kakao.sdk.common.util.Utility
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch

@@ -1,19 +1,26 @@
+// [수정됨] 'java.util.Properties'를 사용하기 위해 import 구문을 파일 최상단에 추가합니다.
 import java.util.Properties
+
+// local.properties 파일을 읽기 위한 코드
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.inputStream().use { input ->
+        localProperties.load(input)
+    }
+}
 
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    id("com.google.dagger.hilt.android")
-    id("com.google.devtools.ksp")
+    id("org.jetbrains.kotlin.kapt")
+    id("dagger.hilt.android.plugin")
+    id("com.google.gms.google-services")
     id("kotlin-parcelize")
-
 }
-// local.properties 파일을 읽기 위한 설정
-val properties = Properties()
-properties.load(project.rootProject.file("local.properties").inputStream())
 
 android {
-    namespace =  "com.example.pet_project_frontend"
+    namespace = "com.example.pet_project_frontend"
     compileSdk = 34
 
     defaultConfig {
@@ -27,24 +34,34 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
-        buildConfigField("String", "KAKAO_NATIVE_APP_KEY", properties.getProperty("KAKAO_NATIVE_APP_KEY"))
-        buildConfigField("String", "API_BASE_URL", properties.getProperty("API_BASE_URL"))
-        buildConfigField("String", "GOOGLE_SERVER_AUTH_CODE", properties.getProperty("GOOGLE_SERVER_AUTH_CODE"))
+
+        buildConfigField("String", "GOOGLE_SERVER_CLIENT_ID", "\"${project.findProperty("GOOGLE_SERVER_AUTH_CODE") ?: ""}\"")
+        buildConfigField("String", "KAKAO_NATIVE_APP_KEY", "\"${project.findProperty("KAKAO_NATIVE_APP_KEY") ?: ""}\"")
+
+        manifestPlaceholders["kakaoAppKey"] = localProperties.getProperty("KAKAO_NATIVE_APP_KEY")
     }
 
     buildTypes {
-        release {
+        debug {
+            isDebuggable = true
             isMinifyEnabled = false
+            val apiBaseUrl = project.findProperty("API_BASE_URL") as? String ?: "http://10.0.2.2:5000/"
+            buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
+        }
+        release {
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            buildConfigField("String", "API_BASE_URL", "\"https://api.happydog.com/\"")
         }
     }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -57,7 +74,7 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.10"
+        kotlinCompilerExtensionVersion = "1.5.8"
     }
 
     packaging {
@@ -68,81 +85,85 @@ android {
 }
 
 dependencies {
-    implementation("com.google.android.material:material:1.10.0")
     // Core Android
-    implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.appcompat:appcompat:1.7.0")
+    implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
-    implementation("androidx.activity:activity-compose:1.8.2")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.3")
+    implementation("com.google.android.material:material:1.12.0")
 
-    // Compose BOM - 버전 관리
-    implementation(platform("androidx.compose:compose-bom:2024.02.01"))
+    // Compose
+    val composeBom = platform("androidx.compose:compose-bom:2024.06.00")
+    implementation(composeBom)
+    androidTestImplementation(composeBom)
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
+    implementation("androidx.activity:activity-compose:1.9.0")
     implementation("androidx.compose.material:material-icons-extended")
 
     // Navigation
     implementation("androidx.navigation:navigation-compose:2.7.7")
     implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
 
-    // ViewModel
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
-
-    // Hilt - Dependency Injection
+    // Dependency Injection - Hilt
     implementation("com.google.dagger:hilt-android:2.50")
-    implementation(libs.appcompat)
-    ksp("com.google.dagger:hilt-compiler:2.50")
-
-    // Coroutines
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
-
+    kapt("com.google.dagger:hilt-compiler:2.50")
+    implementation("com.google.dagger:dagger:2.50")
     // Network - Retrofit
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
-    // Image Loading - Coil
-    implementation("io.coil-kt:coil-compose:2.5.0")
+    // JSON Parsing
+    implementation("com.google.code.gson:gson:2.10.1")
 
-    // Local Database - Room
-    implementation("androidx.room:room-runtime:2.6.1")
-    implementation("androidx.room:room-ktx:2.6.1")
-    ksp("androidx.room:room-compiler:2.6.1")
+    // Coroutines
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
 
     // DataStore
     implementation("androidx.datastore:datastore-preferences:1.0.0")
 
+    // Room Database
+    implementation("androidx.room:room-runtime:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")
+    kapt("androidx.room:room-compiler:2.6.1")
+
+    // Google Services
+    implementation("com.google.android.gms:play-services-location:21.3.0")
+    implementation("com.google.android.gms:play-services-auth:20.7.0")
+    implementation(platform("com.google.firebase:firebase-bom:32.8.1"))
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.firebase:firebase-storage-ktx")
+    implementation("com.google.firebase:firebase-messaging-ktx")
+
+    // Kakao Map SDK
+    implementation ("com.kakao.maps.open:android:2.11.9")
+    implementation("com.kakao.sdk:v2-user:2.19.0")
+    // Image Loading
+    implementation("io.coil-kt:coil-compose:2.5.0")
+
+    // Date/Time Support for older Android versions
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+
     // Splash Screen
     implementation("androidx.core:core-splashscreen:1.0.1")
-
-    // Permission
-    implementation("com.google.accompanist:accompanist-permissions:0.32.0")
-
-    // Date Picker
-    implementation("io.github.vanpra.compose-material-dialogs:datetime:0.9.0")
-
-    // Lottie Animation (선택사항)
-    implementation("com.airbnb.android:lottie-compose:6.3.0")
-
-    // Google 로그인 (선택사항)
-    implementation("com.google.android.gms:play-services-auth:21.0.0")
 
     // Testing
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
-    androidTestImplementation(platform("androidx.compose:compose-bom:2024.02.01"))
+    androidTestImplementation(platform("androidx.compose:compose-bom:2024.02.00"))
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
-
-    implementation ("com.kakao.maps.open:android:2.11.9")
-    // 카카오 API 사용 시 필요한 로그인/유틸 라이브러리
-    implementation("com.kakao.sdk:v2-user:2.19.0")
-    //현재 위치 허용을 위한 코드
-    implementation ("com.google.android.gms:play-services-location:21.0.1")
 }
+
+kapt {
+    correctErrorTypes = true
+}
+
