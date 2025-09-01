@@ -1,3 +1,5 @@
+// app/src/main/java/com/example/pet_project_frontend/core/di/RepositoryModule.kt
+
 package com.example.pet_project_frontend.core.di
 
 import com.example.pet_project_frontend.data.repository.AuthRepositoryImpl

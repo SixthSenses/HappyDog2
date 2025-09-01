@@ -1,13 +1,11 @@
+// app/src/main/java/com/example/pet_project_frontend/core/di/NetworkModule.kt
+
 package com.example.pet_project_frontend.core.di
 
-import com.example.pet_project_frontend.BuildConfig
-import com.example.pet_project_frontend.data.local.preferences.TokenManager
 import com.example.pet_project_frontend.data.remote.api.*
 import com.example.pet_project_frontend.data.remote.authenticator.TokenAuthenticator
 import com.example.pet_project_frontend.data.remote.interceptors.AuthInterceptor
 import com.example.pet_project_frontend.data.remote.interceptors.ErrorInterceptor
-import com.google.gson.Gson
-import com.google.gson.GsonBuilder
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -20,147 +18,111 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Named
 import javax.inject.Singleton
 
-
-
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
-    
+
     @Provides
     @Singleton
-    fun provideGson(): Gson = GsonBuilder()
-        .setDateFormat("yyyy-MM-dd'T'HH:mm:ss")
-        .create()
-    
+    @Named("BASE_URL")
+    fun provideBaseUrl(): String = "https://your-backend-api-url.com/" // TODO: 실제 API URL로 변경
+
     @Provides
     @Singleton
     fun provideHttpLoggingInterceptor(): HttpLoggingInterceptor {
         return HttpLoggingInterceptor().apply {
-            level = if (BuildConfig.DEBUG) {
-                HttpLoggingInterceptor.Level.BODY
-            } else {
-                HttpLoggingInterceptor.Level.NONE
-            }
+            level = HttpLoggingInterceptor.Level.BODY
         }
     }
-    
-    @Provides
-    @Singleton
-    fun provideAuthInterceptor(tokenManager: TokenManager): AuthInterceptor {
-        return AuthInterceptor(tokenManager)
-    }
-    
-    @Provides
-    @Singleton
-    fun provideErrorInterceptor(): ErrorInterceptor {
-        return ErrorInterceptor()
-    }
-    
-    @Provides
-    @Singleton
-    fun provideTokenAuthenticator(
-        tokenManager: TokenManager,
-        @Named("AuthRetrofit") authRetrofit: Retrofit
-    ): TokenAuthenticator {
-        return TokenAuthenticator(tokenManager, authRetrofit)
-    }
-    
-    @Provides
-    @Singleton
-    @Named("AuthOkHttpClient")
-    fun provideAuthOkHttpClient(
-        loggingInterceptor: HttpLoggingInterceptor,
-        errorInterceptor: ErrorInterceptor
-    ): OkHttpClient {
-        return OkHttpClient.Builder()
-            .addInterceptor(loggingInterceptor)
-            .addInterceptor(errorInterceptor)
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS)
-            .build()
-    }
-    
+
     @Provides
     @Singleton
     @Named("AuthRetrofit")
     fun provideAuthRetrofit(
-        @Named("AuthOkHttpClient") okHttpClient: OkHttpClient,
-        gson: Gson
+        @Named("BASE_URL") baseUrl: String,
+        httpLoggingInterceptor: HttpLoggingInterceptor
     ): Retrofit {
+        val okHttpClient = OkHttpClient.Builder()
+            .addInterceptor(httpLoggingInterceptor)
+            .addInterceptor(ErrorInterceptor())
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .build()
+
         return Retrofit.Builder()
-            .baseUrl(BuildConfig.API_BASE_URL)
+            .baseUrl(baseUrl)
             .client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create(gson))
+            .addConverterFactory(GsonConverterFactory.create())
             .build()
     }
-    
+
     @Provides
     @Singleton
     fun provideOkHttpClient(
-        loggingInterceptor: HttpLoggingInterceptor,
+        httpLoggingInterceptor: HttpLoggingInterceptor,
         authInterceptor: AuthInterceptor,
-        errorInterceptor: ErrorInterceptor,
         tokenAuthenticator: TokenAuthenticator
     ): OkHttpClient {
         return OkHttpClient.Builder()
-            .addInterceptor(loggingInterceptor)
+            .addInterceptor(httpLoggingInterceptor)
             .addInterceptor(authInterceptor)
-            .addInterceptor(errorInterceptor)
+            .addInterceptor(ErrorInterceptor())
             .authenticator(tokenAuthenticator)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
             .build()
     }
-    
+
     @Provides
     @Singleton
     fun provideRetrofit(
-        okHttpClient: OkHttpClient,
-        gson: Gson
+        @Named("BASE_URL") baseUrl: String,
+        okHttpClient: OkHttpClient
     ): Retrofit {
         return Retrofit.Builder()
-            .baseUrl(BuildConfig.API_BASE_URL)
+            .baseUrl(baseUrl)
             .client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create(gson))
+            .addConverterFactory(GsonConverterFactory.create())
             .build()
     }
+
+    // ===== API 인터페이스 제공 =====
     
-    // API 인터페이스 제공
     @Provides
     @Singleton
     fun provideAuthApi(@Named("AuthRetrofit") retrofit: Retrofit): AuthApi {
         return retrofit.create(AuthApi::class.java)
     }
-    
+
     @Provides
     @Singleton
     fun providePetApi(retrofit: Retrofit): PetApi {
         return retrofit.create(PetApi::class.java)
     }
-    
+
+    @Provides
+    @Singleton
+    fun provideUserApi(retrofit: Retrofit): UserApi {
+        return retrofit.create(UserApi::class.java)
+    }
+
     @Provides
     @Singleton
     fun providePetCareApi(retrofit: Retrofit): PetCareApi {
         return retrofit.create(PetCareApi::class.java)
     }
-    
+
     @Provides
     @Singleton
     fun provideBreedApi(retrofit: Retrofit): BreedApi {
         return retrofit.create(BreedApi::class.java)
     }
-    
+
     @Provides
     @Singleton
     fun provideUploadApi(retrofit: Retrofit): UploadApi {
         return retrofit.create(UploadApi::class.java)
-    }
-    
-    @Provides
-    @Singleton
-    fun provideUserApi(retrofit: Retrofit): UserApi {
-        return retrofit.create(UserApi::class.java)
     }
 }

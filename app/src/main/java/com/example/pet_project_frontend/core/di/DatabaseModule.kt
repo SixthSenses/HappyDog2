@@ -1,3 +1,5 @@
+// app/src/main/java/com/example/pet_project_frontend/core/di/DatabaseModule.kt
+
 package com.example.pet_project_frontend.core.di
 
 import android.content.Context
@@ -87,6 +89,14 @@ object DatabaseModule {
         }
     }
 
+    // ===== 맵 기능용 DAO - 유지 =====
+    @Provides
+    fun providePlaceDao(database: PetCareDatabase): PlaceDao {
+        return database.placeDao()
+    }
+
+    // ===== 더 이상 사용하지 않는 DAO들 - 주석 처리 =====
+    /*
     @Provides
     fun provideUserDao(database: PetCareDatabase): UserDao {
         return database.userDao()
@@ -108,11 +118,6 @@ object DatabaseModule {
     }
 
     @Provides
-    fun providePlaceDao(database: PetCareDatabase): PlaceDao {
-        return database.placeDao()
-    }
-
-    @Provides
     fun provideBreedDao(database: PetCareDatabase): BreedDao {
         return database.breedDao()
     }
@@ -121,4 +126,5 @@ object DatabaseModule {
     fun provideHealthRecordDao(database: PetCareDatabase): HealthRecordDao {
         return database.healthRecordDao()
     }
+    */
 }
