@@ -6,6 +6,7 @@ import com.example.pet_project_frontend.data.remote.api.*
 import com.example.pet_project_frontend.data.remote.authenticator.TokenAuthenticator
 import com.example.pet_project_frontend.data.remote.interceptors.AuthInterceptor
 import com.example.pet_project_frontend.data.remote.interceptors.ErrorInterceptor
+import com.example.pet_project_frontend.BuildConfig
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -25,7 +26,7 @@ object NetworkModule {
     @Provides
     @Singleton
     @Named("BASE_URL")
-    fun provideBaseUrl(): String = "https://your-backend-api-url.com/" // TODO: 실제 API URL로 변경
+    fun provideBaseUrl(): String = BuildConfig.API_BASE_URL
 
     @Provides
     @Singleton
