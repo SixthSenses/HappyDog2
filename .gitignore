@@ -16,4 +16,5 @@ local.properties
 /.idea
 google-services.json
 .vscode
-.githubdomain 
+.github
+domain 
