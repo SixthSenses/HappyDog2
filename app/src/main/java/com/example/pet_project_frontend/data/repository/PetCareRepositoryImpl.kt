@@ -8,7 +8,7 @@ import com.example.pet_project_frontend.data.remote.api.PetCareApi
 import com.example.pet_project_frontend.data.remote.dto.request.CareRecordCreateRequest
 import com.example.pet_project_frontend.data.remote.dto.response.CareRecordResponse
 import com.example.pet_project_frontend.data.remote.dto.response.CareRecordsResponse
-import com.example.pet_project_frontend.data.remote.result.NetworkResult
+// no NetworkResult here; PetCareRepository uses kotlin.Result
 import com.example.pet_project_frontend.domain.repository.PetCareRepository
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -33,14 +33,14 @@ class PetCareRepositoryImpl @Inject constructor(
         limit: Int,
         cursor: String?,
         sort: String
-    ): NetworkResult<CareRecordsResponse> {
+    ): kotlin.Result<CareRecordsResponse> {
         return try {
             Log.d(TAG, "Getting care records for pet: $petId")
             
             val accessToken = tokenManager.getAccessToken()
             if (accessToken == null) {
                 Log.e(TAG, "Access token is null")
-                return NetworkResult.Error(401, "Access token is required")
+                return Result.failure(IllegalStateException("Access token is required"))
             }
             
             val response = petCareApi.getCareRecords(
@@ -57,11 +57,11 @@ class PetCareRepositoryImpl @Inject constructor(
             )
             
             Log.d(TAG, "Care records fetched successfully: ${response.records.size} records")
-            NetworkResult.Success(response)
+            kotlin.Result.success(response)
             
         } catch (e: Exception) {
             Log.e(TAG, "Exception while getting care records", e)
-            NetworkResult.Exception(e)
+            kotlin.Result.failure(e)
         }
     }
 
@@ -71,14 +71,14 @@ class PetCareRepositoryImpl @Inject constructor(
         timestamp: Long,
         data: Any,
         notes: String?
-    ): NetworkResult<CareRecordResponse> {
+    ): kotlin.Result<CareRecordResponse> {
         return try {
             Log.d(TAG, "Creating care record for pet: $petId, type: $recordType")
             
             val accessToken = tokenManager.getAccessToken()
             if (accessToken == null) {
                 Log.e(TAG, "Access token is null")
-                return NetworkResult.Error(401, "Access token is required")
+                return kotlin.Result.failure(IllegalStateException("Access token is required"))
             }
             
             val request = CareRecordCreateRequest(
@@ -94,11 +94,11 @@ class PetCareRepositoryImpl @Inject constructor(
             )
             
             Log.d(TAG, "Care record created successfully: ${response.logId}")
-            NetworkResult.Success(response)
+            kotlin.Result.success(response)
             
         } catch (e: Exception) {
             Log.e(TAG, "Exception while creating care record", e)
-            NetworkResult.Exception(e)
+            kotlin.Result.failure(e)
         }
     }
 
@@ -110,14 +110,14 @@ class PetCareRepositoryImpl @Inject constructor(
         endDate: String?,
         limit: Int,
         cursor: String?
-    ): NetworkResult<CareRecordsResponse> {
+    ): kotlin.Result<CareRecordsResponse> {
         return try {
             Log.d(TAG, "Getting care records by type for pet: $petId, type: $recordType")
             
             val accessToken = tokenManager.getAccessToken()
             if (accessToken == null) {
                 Log.e(TAG, "Access token is null")
-                return NetworkResult.Error(401, "Access token is required")
+                return kotlin.Result.failure(IllegalStateException("Access token is required"))
             }
             
             val response = petCareApi.getRecordsByType(
@@ -132,11 +132,11 @@ class PetCareRepositoryImpl @Inject constructor(
             )
             
             Log.d(TAG, "Care records by type fetched successfully: ${response.records.size} records")
-            NetworkResult.Success(response)
+            kotlin.Result.success(response)
             
         } catch (e: Exception) {
             Log.e(TAG, "Exception while getting care records by type", e)
-            NetworkResult.Exception(e)
+            kotlin.Result.failure(e)
         }
     }
 }
