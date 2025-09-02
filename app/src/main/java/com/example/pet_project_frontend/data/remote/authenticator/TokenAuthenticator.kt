@@ -11,10 +11,11 @@ import okhttp3.Response
 import okhttp3.Route
 import retrofit2.Retrofit
 import javax.inject.Inject
+import javax.inject.Named
 
 class TokenAuthenticator @Inject constructor(
     private val tokenManager: TokenManager,
-    private val authRetrofit: Retrofit
+    @Named("AuthRetrofit") private val authRetrofit: Retrofit
 ) : Authenticator {
     
     private val mutex = Mutex()
@@ -59,10 +60,9 @@ class TokenAuthenticator @Inject constructor(
                     
                     if (refreshResponse.isSuccessful) {
                         refreshResponse.body()?.let { tokenResponse ->
-                            // 새로운 토큰 저장
+                            // 새로운 액세스 토큰만 저장 (리프레시 토큰은 유지)
                             tokenManager.saveAccessToken(tokenResponse.accessToken)
-                            tokenManager.saveRefreshToken(tokenResponse.refreshToken)
-                            
+
                             // 새로운 액세스 토큰으로 원래 요청 재시도
                             return@withLock response.request.newBuilder()
                                 .header("Authorization", "Bearer ${tokenResponse.accessToken}")
