@@ -15,4 +15,7 @@ interface UserApi {
     
     @POST("api/users/me/fcm-token")
     suspend fun updateFcmToken(@Body request: UpdateFcmTokenRequest): Response<Unit>
+
+    @DELETE("api/users/me")
+    suspend fun deleteMe(): Response<Unit>
 }
