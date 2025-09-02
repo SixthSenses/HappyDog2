@@ -3,6 +3,7 @@ package com.example.pet_project_frontend.domain.repository
 import com.example.pet_project_frontend.data.remote.dto.response.SocialLoginResponse
 import com.example.pet_project_frontend.data.remote.dto.response.TokenRefreshResponse
 import com.example.pet_project_frontend.data.remote.dto.response.UserInfo
+import com.example.pet_project_frontend.domain.model.User
 import com.example.pet_project_frontend.data.remote.result.NetworkResult
 import kotlinx.coroutines.flow.Flow
 
@@ -21,4 +22,6 @@ interface AuthRepository {
     suspend fun saveUserInfo(userInfo: UserInfo)
     suspend fun getUserInfo(): UserInfo?
     suspend fun clearUserInfo()
+    // 도메인 중심 저장(신규)
+    suspend fun saveUser(user: User)
 }

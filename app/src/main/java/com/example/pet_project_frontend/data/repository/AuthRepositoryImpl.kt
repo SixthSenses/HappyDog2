@@ -10,6 +10,7 @@ import com.example.pet_project_frontend.data.remote.api.AuthApi
 import com.example.pet_project_frontend.data.remote.dto.request.*
 import com.example.pet_project_frontend.data.remote.dto.response.*
 import com.example.pet_project_frontend.data.remote.result.NetworkResult
+import com.example.pet_project_frontend.data.remote.util.SafeApiCall
 import com.example.pet_project_frontend.domain.repository.AuthRepository
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
@@ -31,95 +32,49 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun socialLogin(authCode: String): NetworkResult<SocialLoginResponse> {
-        return try {
-            Log.d(TAG, "Attempting social login with auth code")
-
-            val request = SocialLoginRequest(
-                provider = "google",
-                authCode = authCode
-            )
-
-            Log.d(TAG, "Sending request to: /api/auth/social")
-            val response = authApi.socialLogin(request)
-
-            if (response.isSuccessful) {
-                response.body()?.let { loginResponse ->
-                    Log.d(TAG, "Login successful. User ID: ${loginResponse.userId}, Is new: ${loginResponse.isNewUser}")
-                    NetworkResult.Success(loginResponse)
-                } ?: run {
-                    Log.e(TAG, "Response body is null")
-                    NetworkResult.Error(response.code(), "응답이 비어있습니다.")
-                }
-            } else {
-                val errorBody = response.errorBody()?.string()
-                Log.e(TAG, "Login failed. Code: ${response.code()}, Error: $errorBody")
-                NetworkResult.Error(
-                    response.code(),
-                    errorBody ?: "로그인에 실패했습니다: ${response.code()}"
-                )
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Exception during social login", e)
-            NetworkResult.Exception(e)
+        Log.d(TAG, "Attempting social login with auth code")
+        val request = SocialLoginRequest(
+            provider = "google",
+            authCode = authCode
+        )
+        val result: NetworkResult<SocialLoginResponse> = SafeApiCall.call { authApi.socialLogin(request) }
+        if (result is NetworkResult.Success) {
+            Log.d(TAG, "Login successful. User ID: ${result.data.userId}, Is new: ${result.data.isNewUser}")
+        } else if (result is NetworkResult.Error) {
+            Log.e(TAG, "Login failed. Code: ${result.code}, Error: ${result.message}")
         }
+        return result
     }
 
     override suspend fun refreshToken(refreshToken: String): NetworkResult<TokenRefreshResponse> {
-        return try {
-            Log.d(TAG, "Attempting to refresh token")
-
-            val response = authApi.refreshToken("Bearer $refreshToken")
-
-            if (response.isSuccessful) {
-                response.body()?.let { tokenResponse ->
-                    Log.d(TAG, "Token refresh successful")
-                    // 새 토큰 자동 저장
-                    saveTokens(tokenResponse.accessToken, tokenResponse.refreshToken)
-                    NetworkResult.Success(tokenResponse)
-                } ?: run {
-                    Log.e(TAG, "Token refresh response body is null")
-                    NetworkResult.Error(response.code(), "응답이 비어있습니다.")
-                }
-            } else {
-                Log.e(TAG, "Token refresh failed. Code: ${response.code()}")
-                NetworkResult.Error(response.code(), "토큰 갱신에 실패했습니다: ${response.code()}")
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Exception during token refresh", e)
-            NetworkResult.Exception(e)
+        Log.d(TAG, "Attempting to refresh token")
+        val result: NetworkResult<TokenRefreshResponse> = SafeApiCall.call { authApi.refreshToken("Bearer $refreshToken") }
+        if (result is NetworkResult.Success) {
+            Log.d(TAG, "Token refresh successful")
+            // 리프레시 토큰은 서버에서 재발급하지 않으므로 기존 값을 유지하고 액세스 토큰만 갱신
+            tokenManager.saveAccessToken(result.data.accessToken)
+        } else if (result is NetworkResult.Error) {
+            Log.e(TAG, "Token refresh failed. Code: ${result.code}, Error: ${result.message}")
         }
+        return result
     }
 
     override suspend fun logout(accessToken: String, refreshToken: String): NetworkResult<Unit> {
-        return try {
-            Log.d(TAG, "Attempting logout")
-
-            val request = LogoutRequest(
-                accessToken = accessToken,
-                refreshToken = refreshToken
-            )
-
-            val response = authApi.logout(request)
-
-            if (response.isSuccessful) {
-                Log.d(TAG, "Logout successful")
-                clearTokens()
-                clearUserInfo()
-                NetworkResult.Success(Unit)
-            } else {
-                Log.e(TAG, "Logout failed. Code: ${response.code()}")
-                // 서버 로그아웃 실패해도 로컬 토큰은 삭제
-                clearTokens()
-                clearUserInfo()
-                NetworkResult.Error(response.code(), "로그아웃에 실패했습니다: ${response.code()}")
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Exception during logout", e)
-            // 예외 발생해도 로컬 토큰은 삭제
-            clearTokens()
-            clearUserInfo()
-            NetworkResult.Exception(e)
+        Log.d(TAG, "Attempting logout")
+        val request = LogoutRequest(
+            accessToken = accessToken,
+            refreshToken = refreshToken
+        )
+        val result: NetworkResult<Unit> = SafeApiCall.call { authApi.logout(request) }
+        when (result) {
+            is NetworkResult.Success -> Log.d(TAG, "Logout successful")
+            is NetworkResult.Error -> Log.e(TAG, "Logout failed. Code: ${result.code}, Error: ${result.message}")
+            is NetworkResult.Exception -> Log.e(TAG, "Exception during logout", result.throwable)
         }
+        // 서버 성공/실패와 무관하게 로컬 정리 수행
+        clearTokens()
+        clearUserInfo()
+        return result
     }
 
     override suspend fun saveTokens(accessToken: String, refreshToken: String) {
@@ -177,6 +132,16 @@ class AuthRepositoryImpl @Inject constructor(
             preferences.remove(USER_EMAIL_KEY)
             preferences.remove(USER_NICKNAME_KEY)
             preferences.remove(USER_PROFILE_IMAGE_URL_KEY)
+        }
+    }
+
+    override suspend fun saveUser(user: com.example.pet_project_frontend.domain.model.User) {
+        Log.d(TAG, "Saving user (domain): ${user.id}")
+        dataStore.edit { preferences ->
+            preferences[USER_ID_KEY] = user.id
+            preferences[USER_EMAIL_KEY] = user.email
+            preferences[USER_NICKNAME_KEY] = user.name
+            preferences[USER_PROFILE_IMAGE_URL_KEY] = user.profileImageUrl ?: ""
         }
     }
 }
