@@ -4,12 +4,11 @@ package com.example.pet_project_frontend.core.di
 
 import android.content.Context
 import androidx.room.Room
-import androidx.room.RoomDatabase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import com.example.pet_project_frontend.data.local.database.PetCareDatabase
-import com.example.pet_project_frontend.data.local.database.dao.*
+import com.example.pet_project_frontend.data.local.database.dao.PlaceDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -26,22 +25,27 @@ object DatabaseModule {
     fun providePetCareDatabase(
         @ApplicationContext context: Context
     ): PetCareDatabase {
-        return Room.databaseBuilder(
+        val db = Room.databaseBuilder(
             context,
             PetCareDatabase::class.java,
             "pet_care_database"
-        ).addCallback(object : RoomDatabase.Callback() {
-            override fun onCreate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
-                super.onCreate(db)
-                CoroutineScope(Dispatchers.IO).launch {
-                    initializePlacesData(context, db)
-                }
-            }
-        }).build()
+        )
+            .fallbackToDestructiveMigration()
+            .build()
+
+        // Seed places data once on first run (idempotent by count check)
+        CoroutineScope(Dispatchers.IO).launch {
+            initializePlacesData(context, db)
+        }
+
+        return db
     }
-    
-    private suspend fun initializePlacesData(context: Context, db: androidx.sqlite.db.SupportSQLiteDatabase) {
+
+    private suspend fun initializePlacesData(context: Context, database: PetCareDatabase) {
         try {
+            // Avoid re-seeding if data already exists
+            if (database.placeDao().getPlacesCount() > 0) return
+
             val inputStream = context.assets.open("places.csv")
             val reader = inputStream.bufferedReader()
             val lines = reader.readLines().drop(1) // 헤더 제거
@@ -81,8 +85,7 @@ object DatabaseModule {
             }
             
             // 데이터베이스에 삽입
-            val placeDao = providePetCareDatabase(context).placeDao()
-            placeDao.insertPlaces(placeEntities)
+            database.placeDao().insertPlaces(placeEntities)
             
         } catch (e: Exception) {
             // 에러 처리
@@ -94,37 +97,4 @@ object DatabaseModule {
     fun providePlaceDao(database: PetCareDatabase): PlaceDao {
         return database.placeDao()
     }
-
-    // ===== 더 이상 사용하지 않는 DAO들 - 주석 처리 =====
-    /*
-    @Provides
-    fun provideUserDao(database: PetCareDatabase): UserDao {
-        return database.userDao()
-    }
-
-    @Provides
-    fun providePetDao(database: PetCareDatabase): PetDao {
-        return database.petDao()
-    }
-
-    @Provides
-    fun providePetCareSettingsDao(database: PetCareDatabase): PetCareSettingsDao {
-        return database.petCareSettingsDao()
-    }
-
-    @Provides
-    fun provideCareRecordDao(database: PetCareDatabase): CareRecordDao {
-        return database.careRecordDao()
-    }
-
-    @Provides
-    fun provideBreedDao(database: PetCareDatabase): BreedDao {
-        return database.breedDao()
-    }
-
-    @Provides
-    fun provideHealthRecordDao(database: PetCareDatabase): HealthRecordDao {
-        return database.healthRecordDao()
-    }
-    */
 }
