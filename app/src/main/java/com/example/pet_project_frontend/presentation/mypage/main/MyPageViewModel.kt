@@ -2,7 +2,9 @@ package com.example.pet_project_frontend.presentation.mypage.main
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.pet_project_frontend.domain.model.Pet
+import com.example.pet_project_frontend.domain.model.Gender
+import java.time.LocalDate
+import java.time.Period
 import com.example.pet_project_frontend.domain.repository.PetRepository
 import com.example.pet_project_frontend.domain.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -41,13 +43,24 @@ class MyPageViewModel @Inject constructor(
                         when (petResult) {
                             is com.example.pet_project_frontend.data.remote.result.NetworkResult.Success -> {
                                 val pet = petResult.data
+                                val ageYears = Period.between(pet.birthDate, LocalDate.now()).years
+                val ageText = when {
+                                    ageYears == 0 -> "1살 미만"
+                                    ageYears == 1 -> "1살"
+                                    else -> "${ageYears}살"
+                                }
+                val genderText = when (pet.gender) {
+                                    Gender.MALE -> "수컷"
+                                    Gender.FEMALE -> "암컷"
+                                    Gender.UNKNOWN -> "미상"
+                                }
                                 _uiState.update { 
                                     it.copy(
                                         petName = pet.name,
                                         breed = pet.breed,
-                                        age = pet.ageDisplay,
+                    age = ageText,
                                         birthDate = pet.birthDate.toString(),
-                                        gender = pet.genderDisplay,
+                    gender = genderText,
                                         profileImageUrl = user.profileImageUrl,
                                         isLoading = false,
                                         error = null
