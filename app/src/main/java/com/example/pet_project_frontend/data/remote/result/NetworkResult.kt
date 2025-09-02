@@ -1,8 +1,10 @@
 package com.example.pet_project_frontend.data.remote.result
 
+import com.example.pet_project_frontend.data.remote.dto.response.ErrorResponse
+
 sealed class NetworkResult<out T> {
     data class Success<T>(val data: T) : NetworkResult<T>()
-    data class Error(val code: Int, val message: String) : NetworkResult<Nothing>()
+    data class Error(val code: Int, val message: String, val error: ErrorResponse? = null) : NetworkResult<Nothing>()
     data class Exception(val throwable: Throwable) : NetworkResult<Nothing>()
     
     fun isSuccess(): Boolean = this is Success
