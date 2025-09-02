@@ -4,6 +4,7 @@ import com.example.pet_project_frontend.data.remote.api.UploadApi
 import com.example.pet_project_frontend.data.remote.dto.request.GetUploadUrlRequest
 import com.example.pet_project_frontend.data.remote.dto.response.UploadUrlResponse
 import com.example.pet_project_frontend.data.remote.result.NetworkResult
+import com.example.pet_project_frontend.data.remote.util.SafeApiCall
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -91,25 +92,12 @@ class FileUploadManager @Inject constructor(
         filename: String,
         contentType: String
     ): NetworkResult<UploadUrlResponse> {
-        return try {
-            val request = GetUploadUrlRequest(
-                uploadType = uploadType.value,
-                filename = filename,
-                contentType = contentType
-            )
-            
-            val response = uploadApi.getUploadUrl(request)
-            
-            if (response.isSuccessful) {
-                response.body()?.let {
-                    NetworkResult.Success(it)
-                } ?: NetworkResult.Error(response.code(), "Empty response body")
-            } else {
-                NetworkResult.Error(response.code(), "Failed to get upload URL: ${response.code()}")
-            }
-        } catch (e: Exception) {
-            NetworkResult.Exception(e)
-        }
+        val request = GetUploadUrlRequest(
+            uploadType = uploadType.value,
+            filename = filename,
+            contentType = contentType
+        )
+        return SafeApiCall.call { uploadApi.getUploadUrl(request) }
     }
     
     /**
@@ -120,26 +108,78 @@ class FileUploadManager @Inject constructor(
         file: File,
         contentType: String
     ): NetworkResult<Unit> = withContext(Dispatchers.IO) {
-        try {
-            val fileBytes = file.readBytes()
-            val requestBody = fileBytes.toRequestBody(contentType.toMediaType())
-            
-            val request = Request.Builder()
-                .url(uploadUrl)
-                .put(requestBody)
-                .header("Content-Type", contentType)
-                .build()
-            
-            val response = okHttpClient.newCall(request).execute()
-            
-            if (response.isSuccessful) {
-                NetworkResult.Success(Unit)
-            } else {
-                NetworkResult.Error(response.code, "Upload failed: ${response.code}")
+        // 간단한 재시도 정책: 최대 2회 재시도(총 3회 시도), 타임아웃/일시 오류에 한해 재시도
+        val maxAttempts = 3
+        var lastError: Throwable? = null
+        for (attempt in 1..maxAttempts) {
+            try {
+                val fileBytes = file.readBytes()
+                val requestBody = fileBytes.toRequestBody(contentType.toMediaType())
+
+                val request = Request.Builder()
+                    .url(uploadUrl)
+                    .put(requestBody)
+                    .header("Content-Type", contentType)
+                    .build()
+
+                val response = okHttpClient.newCall(request).execute()
+                response.use { resp ->
+                    if (resp.isSuccessful) {
+                        return@withContext NetworkResult.Success(Unit)
+                    }
+                    // 5xx 또는 429이면 재시도 대상, 그 외는 즉시 실패
+                    if (resp.code in 500..599 || resp.code == 429) {
+                        // 429인 경우 Retry-After 헤더를 존중
+                        if (resp.code == 429) {
+                            val retryAfter = resp.header("Retry-After")?.toLongOrNull()
+                            if (retryAfter != null && retryAfter > 0) {
+                                // Retry-After는 초 단위가 일반적
+                                kotlinx.coroutines.delay(retryAfter * 1000)
+                            }
+                        }
+                        // 아래에서 백오프 후 다음 반복으로 이동
+                    } else {
+                        return@withContext NetworkResult.Error(
+                            resp.code,
+                            "파일 업로드 실패(${resp.code}): 서버에서 요청을 처리하지 못했습니다."
+                        )
+                    }
+                }
+
+                // 재시도 케이스: 지수 백오프 적용(기본 300ms, 최대 ~2.4s)
+                if (attempt < maxAttempts) {
+                    val backoffMs = (300L * (1 shl (attempt - 1)).coerceAtMost(8)).coerceAtMost(2400)
+                    kotlinx.coroutines.delay(backoffMs)
+                    // 다음 attempt로 진행 (루프가 자연스럽게 다음 반복으로 이동)
+                }
+            } catch (e: java.net.SocketTimeoutException) {
+                lastError = e
+                if (attempt >= maxAttempts) {
+                    return@withContext NetworkResult.Error(
+                        408,
+                        "파일 업로드 시간이 초과되었습니다. 네트워크 상태를 확인 후 다시 시도해주세요."
+                    )
+                } else {
+                    val backoffMs = (300L * (1 shl (attempt - 1)).coerceAtMost(8)).coerceAtMost(2400)
+                    kotlinx.coroutines.delay(backoffMs)
+                }
+            } catch (e: java.io.IOException) {
+                lastError = e
+                if (attempt >= maxAttempts) {
+                    return@withContext NetworkResult.Error(
+                        0,
+                        "네트워크 오류로 파일 업로드에 실패했습니다. 연결을 확인한 뒤 다시 시도해주세요."
+                    )
+                } else {
+                    val backoffMs = (300L * (1 shl (attempt - 1)).coerceAtMost(8)).coerceAtMost(2400)
+                    kotlinx.coroutines.delay(backoffMs)
+                }
+            } catch (e: Exception) {
+                return@withContext NetworkResult.Exception(e)
             }
-        } catch (e: Exception) {
-            NetworkResult.Exception(e)
         }
+        // 재시도 모두 실패
+        NetworkResult.Exception(lastError ?: RuntimeException("알 수 없는 업로드 오류"))
     }
     
     /**
