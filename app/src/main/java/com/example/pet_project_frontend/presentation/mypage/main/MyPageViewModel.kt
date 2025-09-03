@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pet_project_frontend.domain.model.Gender
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import java.time.Period
 import com.example.pet_project_frontend.domain.repository.PetRepository
 import com.example.pet_project_frontend.data.local.preferences.TokenManager
@@ -67,12 +68,13 @@ class MyPageViewModel @Inject constructor(
                                     Gender.FEMALE -> "암컷"
                                     Gender.UNKNOWN -> "미상"
                                 }
-                                _uiState.update { 
+                val birthDateText = pet.birthDate.format(DateTimeFormatter.ofPattern("yyyy.MM.dd"))
+                _uiState.update { 
                                     it.copy(
                                         petName = pet.name,
                                         breed = pet.breed,
                     age = ageText,
-                                        birthDate = pet.birthDate.toString(),
+                    birthDate = birthDateText,
                     gender = genderText,
                                         profileImageUrl = user.profileImageUrl,
                                         isLoading = false,
@@ -142,6 +144,7 @@ data class MyPageUiState(
     val birthDate: String = "",
     val gender: String = "",
     val profileImageUrl: String? = null,
+    val uploadedImageUrls: List<String> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null
 )
