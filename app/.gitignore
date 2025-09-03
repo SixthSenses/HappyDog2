@@ -15,3 +15,4 @@
 local.properties
 load.properties
 google-services.json
+*.csv

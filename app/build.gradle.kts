@@ -35,10 +35,17 @@ android {
             useSupportLibrary = true
         }
 
-        buildConfigField("String", "GOOGLE_SERVER_CLIENT_ID", "\"${project.findProperty("GOOGLE_SERVER_AUTH_CODE") ?: ""}\"")
-        buildConfigField("String", "KAKAO_NATIVE_APP_KEY", "\"${project.findProperty("KAKAO_NATIVE_APP_KEY") ?: ""}\"")
+    // Populate BuildConfig from local.properties so runtime injection has actual values
+    val googleClientId = localProperties.getProperty("GOOGLE_SERVER_CLIENT_ID") ?: (project.findProperty("GOOGLE_SERVER_CLIENT_ID") as? String) ?: ""
+    val kakaoNativeAppKey = localProperties.getProperty("KAKAO_NATIVE_APP_KEY") ?: (project.findProperty("KAKAO_NATIVE_APP_KEY") as? String) ?: ""
 
-        manifestPlaceholders["kakaoAppKey"] = localProperties.getProperty("KAKAO_NATIVE_APP_KEY")
+    buildConfigField("String", "GOOGLE_SERVER_CLIENT_ID", "\"$googleClientId\"")
+    buildConfigField("String", "KAKAO_NATIVE_APP_KEY", "\"$kakaoNativeAppKey\"")
+
+    // For Kakao Map SDK meta-data replacement in AndroidManifest
+    manifestPlaceholders["kakaoAppKey"] = kakaoNativeAppKey
+    // Some Kakao artifacts reference upper-cased placeholder name; set both to be safe
+    manifestPlaceholders["KAKAO_APP_KEY"] = kakaoNativeAppKey
     }
 
     buildTypes {
