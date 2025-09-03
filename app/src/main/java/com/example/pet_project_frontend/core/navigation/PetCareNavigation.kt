@@ -24,12 +24,10 @@ fun PetCareNavHost(
 	) {
 		// 로그인 화면
 		composable(Screen.Login.route) {
-			// [수정됨] LoginScreen 호출 방식을 변경합니다.
 			LoginScreen(
-				onLoginSuccess = {
-					// 로그인 성공 시 마이페이지로 이동하고,
-					// 뒤로가기 버튼을 눌러도 로그인 화면으로 돌아오지 않도록 스택을 정리합니다.
-					navController.navigate(Screen.MyPage.route) {
+				onLoginResult = { isNewUser ->
+					val target = if ( isNewUser ) Screen.PetRegistration.route else Screen.PetCare.route
+					navController.navigate(target) {
 						popUpTo(Screen.Login.route) { inclusive = true }
 					}
 				}
@@ -49,11 +47,9 @@ fun PetCareNavHost(
 		// 지도 화면
 		composable(Screen.Map.route) { MapScreen() }
 
-		// 커뮤니티 화면 (임시)
-		composable(Screen.Community.route) { MyPageScreen() }
-
-		// 번역기 화면 (임시)
-		composable(Screen.Translator.route) { MyPageScreen() }
+		// 커뮤니티/번역기는 임시로 펫케어 메인으로 연결하거나 별도 화면 구성 필요 시 교체
+		composable(Screen.Community.route) { PetCareMainScreen() }
+		composable(Screen.Translator.route) { PetCareMainScreen() }
 
 		// 마이페이지 화면
 		composable(Screen.MyPage.route) { MyPageScreen() }

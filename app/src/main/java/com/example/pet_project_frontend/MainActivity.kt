@@ -59,7 +59,21 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        KakaoMapSdk.init(this, nativeAppKey)
+        // Initialize Kakao Map SDK only when app key is available to avoid runtime crash
+        val resolvedKey = when {
+            !nativeAppKey.isNullOrBlank() -> nativeAppKey
+            else -> {
+                // Fallback: read from AndroidManifest meta-data if provided
+                val appInfo = packageManager.getApplicationInfo(packageName, android.content.pm.PackageManager.GET_META_DATA)
+                appInfo.metaData?.getString("com.kakao.vectormap.APP_KEY", "") ?: ""
+            }
+        }
+
+        if (resolvedKey.isNullOrBlank()) {
+            android.util.Log.e("MainActivity", "Kakao APP KEY is missing. Please set KAKAO_NATIVE_APP_KEY in local.properties or Gradle properties.")
+        } else {
+            KakaoMapSdk.init(this, resolvedKey)
+        }
 
         setContent {
             PetCareTheme {
@@ -105,10 +119,11 @@ class MainActivity : ComponentActivity() {
                             CircularProgressIndicator()
                         }
                     } else {
-                        // [수정됨] startDestination 파라미터를 여기서 전달합니다!
+                        // startDestination은 로그인 여부에 따라 분기합니다.
+                        // 로그인 상태라면 기본 홈은 PetCare로 둡니다(신규 유저 분기는 LoginScreen 내부에서 처리).
                         PetCareNavHost(
                             navController = navController,
-                            startDestination = if (isLoggedIn) Screen.MyPage.route else Screen.Login.route,
+                            startDestination = if (isLoggedIn) Screen.PetCare.route else Screen.Login.route,
                             modifier = Modifier.padding(innerPadding)
                         )
                     }

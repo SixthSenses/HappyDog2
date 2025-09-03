@@ -30,7 +30,8 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(
-    onLoginSuccess: () -> Unit,
+    // 로그인 성공 결과에 따라 분기할 수 있도록 isNewUser를 전달합니다.
+    onLoginResult: (isNewUser: Boolean) -> Unit,
     viewModel: AuthViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -95,7 +96,7 @@ fun LoginScreen(
         when (authState) {
             is AuthState.Success -> {
                 Log.d("LoginScreen", "Login successful, navigating...")
-                onLoginSuccess()
+                onLoginResult((authState as AuthState.Success).response.isNewUser)
             }
             is AuthState.Error -> {
                 snackbarHostState.showSnackbar(
