@@ -4,6 +4,7 @@ import com.example.pet_project_frontend.data.remote.dto.request.PetRegistrationR
 import com.example.pet_project_frontend.data.remote.dto.response.PetProfileResponse
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
 
@@ -11,7 +12,7 @@ interface PetApi {
     @POST("api/pets")
     suspend fun registerPet(@Body createPetRequest: PetRegistrationRequest): Response<PetProfileResponse>
     
-    @POST("api/pets/{petId}")
+    @GET("api/pets/{petId}")
     suspend fun getPetProfile(@retrofit2.http.Path("petId") petId: String): Response<PetProfileResponse>
     
     @PUT("api/pets/{petId}")
