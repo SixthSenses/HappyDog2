@@ -37,14 +37,7 @@ class PetCareRepositoryImpl @Inject constructor(
         return try {
             Log.d(TAG, "Getting care records for pet: $petId")
             
-            val accessToken = tokenManager.getAccessToken()
-            if (accessToken == null) {
-                Log.e(TAG, "Access token is null")
-                return Result.failure(IllegalStateException("Access token is required"))
-            }
-            
             val response = petCareApi.getCareRecords(
-                accessToken = "Bearer $accessToken",
                 petId = petId,
                 date = date,
                 startDate = startDate,
@@ -75,12 +68,6 @@ class PetCareRepositoryImpl @Inject constructor(
         return try {
             Log.d(TAG, "Creating care record for pet: $petId, type: $recordType")
             
-            val accessToken = tokenManager.getAccessToken()
-            if (accessToken == null) {
-                Log.e(TAG, "Access token is null")
-                return kotlin.Result.failure(IllegalStateException("Access token is required"))
-            }
-            
             val request = CareRecordCreateRequest(
                 recordType = recordType,
                 timestamp = timestamp,
@@ -89,7 +76,7 @@ class PetCareRepositoryImpl @Inject constructor(
             )
             
             val response = petCareApi.createCareRecord(
-                accessToken = "Bearer $accessToken",
+                petId = petId,
                 recordRequest = request
             )
             
@@ -114,16 +101,9 @@ class PetCareRepositoryImpl @Inject constructor(
         return try {
             Log.d(TAG, "Getting care records by type for pet: $petId, type: $recordType")
             
-            val accessToken = tokenManager.getAccessToken()
-            if (accessToken == null) {
-                Log.e(TAG, "Access token is null")
-                return kotlin.Result.failure(IllegalStateException("Access token is required"))
-            }
-            
             val response = petCareApi.getRecordsByType(
-                accessToken = "Bearer $accessToken",
-                recordType = recordType,
                 petId = petId,
+                recordType = recordType,
                 date = date,
                 startDate = startDate,
                 endDate = endDate,

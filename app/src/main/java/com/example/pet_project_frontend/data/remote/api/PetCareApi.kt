@@ -7,22 +7,19 @@ import com.example.pet_project_frontend.data.remote.dto.response.CareRecordsResp
 import retrofit2.http.*
 
 interface PetCareApi {
-    // 펫 케어 설정 조회
+    // 펫 케어 설정 조회/수정 (인증 자동 부착)
     @GET("api/pet-care/settings")
-    suspend fun getPetCareSettings(@Header("Authorization") accessToken: String): PetCareSettings
-    
-    // 펫 케어 설정 수정
+    suspend fun getPetCareSettings(): PetCareSettings
+
     @PUT("api/pet-care/settings")
     suspend fun updatePetCareSettings(
-        @Header("Authorization") accessToken: String,
         @Body settingsRequest: PetCareSettings
     ): PetCareSettings
-    
-    // 케어 기록 조회
-    @GET("api/pet-care/records")
+
+    // 케어 기록 조회: 경로 기반 pet_id, 표준 sort 값(timestamp_asc|timestamp_desc)
+    @GET("api/pet-care/{pet_id}/records")
     suspend fun getCareRecords(
-        @Header("Authorization") accessToken: String,
-        @Query("pet_id") petId: String,
+        @Path("pet_id") petId: String,
         @Query("date") date: String? = null,
         @Query("start_date") startDate: String? = null,
         @Query("end_date") endDate: String? = null,
@@ -30,22 +27,21 @@ interface PetCareApi {
         @Query("grouped") grouped: Boolean = false,
         @Query("limit") limit: Int = 10,
         @Query("cursor") cursor: String? = null,
-        @Query("sort") sort: String = "desc"
+        @Query("sort") sort: String = "timestamp_desc"
     ): CareRecordsResponse
-    
-    // 케어 기록 생성
-    @POST("api/pet-care/records")
+
+    // 케어 기록 생성: 경로 기반 pet_id
+    @POST("api/pet-care/{pet_id}/records")
     suspend fun createCareRecord(
-        @Header("Authorization") accessToken: String,
+        @Path("pet_id") petId: String,
         @Body recordRequest: CareRecordCreateRequest
     ): CareRecordResponse
-    
-    // 특정 타입의 케어 기록 조회
-    @GET("api/pet-care/records/{record_type}")
+
+    // 특정 타입의 케어 기록 조회: 경로 기반 pet_id 및 record_type
+    @GET("api/pet-care/{pet_id}/records/{record_type}")
     suspend fun getRecordsByType(
-        @Header("Authorization") accessToken: String,
+        @Path("pet_id") petId: String,
         @Path("record_type") recordType: String,
-        @Query("pet_id") petId: String,
         @Query("date") date: String? = null,
         @Query("start_date") startDate: String? = null,
         @Query("end_date") endDate: String? = null,

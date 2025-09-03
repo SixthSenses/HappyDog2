@@ -6,6 +6,7 @@ import com.example.pet_project_frontend.data.remote.api.*
 import com.example.pet_project_frontend.data.remote.authenticator.TokenAuthenticator
 import com.example.pet_project_frontend.data.remote.interceptors.AuthInterceptor
 import com.example.pet_project_frontend.data.remote.interceptors.ErrorInterceptor
+import com.example.pet_project_frontend.data.remote.interceptors.ProtectedErrorInterceptor
 import com.example.pet_project_frontend.BuildConfig
 import dagger.Module
 import dagger.Provides
@@ -63,12 +64,14 @@ object NetworkModule {
     fun provideOkHttpClient(
         httpLoggingInterceptor: HttpLoggingInterceptor,
         authInterceptor: AuthInterceptor,
-        tokenAuthenticator: TokenAuthenticator
+        tokenAuthenticator: TokenAuthenticator,
+        protectedErrorInterceptor: ProtectedErrorInterceptor
     ): OkHttpClient {
         return OkHttpClient.Builder()
             .addInterceptor(httpLoggingInterceptor)
             .addInterceptor(authInterceptor)
             .addInterceptor(ErrorInterceptor())
+            .addInterceptor(protectedErrorInterceptor)
             .authenticator(tokenAuthenticator)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
