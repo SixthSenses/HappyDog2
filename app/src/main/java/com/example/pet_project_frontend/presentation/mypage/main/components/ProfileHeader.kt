@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -40,9 +41,18 @@ fun ProfileHeader(
                     .background(MyPageColors.Primary)
                     .clickable { onProfileImageClick() }
             ) {
-                profileImageUrl?.let {
+                if (profileImageUrl.isNullOrBlank()) {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = "기본 프로필",
+                        tint = MyPageColors.Background,
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .size(32.dp)
+                    )
+                } else {
                     AsyncImage(
-                        model = it,
+                        model = profileImageUrl,
                         contentDescription = "프로필 사진",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
