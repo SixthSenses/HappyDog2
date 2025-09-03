@@ -6,6 +6,7 @@ import com.example.pet_project_frontend.data.remote.dto.response.BreedResponse
 import com.example.pet_project_frontend.data.remote.result.NetworkResult
 import com.example.pet_project_frontend.domain.model.Gender
 import com.example.pet_project_frontend.presentation.model.PetUiState
+import com.example.pet_project_frontend.data.local.preferences.TokenManager
 import com.example.pet_project_frontend.domain.usecase.breed.SearchBreedsUseCase
 import com.example.pet_project_frontend.domain.usecase.pet.RegisterPetUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -25,7 +26,8 @@ import java.time.Period
 @HiltViewModel
 class PetRegistrationViewModel @Inject constructor(
     private val registerPetUseCase: RegisterPetUseCase,
-    private val searchBreedsUseCase: SearchBreedsUseCase
+    private val searchBreedsUseCase: SearchBreedsUseCase,
+    private val tokenManager: TokenManager
 ) : ViewModel() {
     
     // UI State
@@ -237,6 +239,8 @@ class PetRegistrationViewModel @Inject constructor(
             when (result) {
                 is NetworkResult.Success -> {
                     val petUi = result.data.toUiState()
+                    // 등록 성공 시 선택된 반려동물 ID를 로컬에 저장
+                    tokenManager.saveSelectedPetId(petUi.id)
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         isSuccess = true,

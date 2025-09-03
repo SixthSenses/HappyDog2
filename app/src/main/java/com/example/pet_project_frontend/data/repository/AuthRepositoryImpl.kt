@@ -92,7 +92,9 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun clearTokens() {
         Log.d(TAG, "Clearing tokens")
-        tokenManager.clearTokens()
+    tokenManager.clearTokens()
+    // 선택된 반려동물 ID도 함께 정리
+    tokenManager.clearSelectedPetId()
     }
 
     override suspend fun saveUserInfo(userInfo: UserInfo) {
