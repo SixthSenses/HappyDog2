@@ -3,12 +3,15 @@ package com.example.pet_project_frontend.presentation.mypage.main
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pet_project_frontend.domain.model.Gender
+import com.example.pet_project_frontend.core.common.AppResult
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.Period
 import com.example.pet_project_frontend.domain.repository.PetRepository
 import com.example.pet_project_frontend.data.local.preferences.TokenManager
 import com.example.pet_project_frontend.domain.repository.UserRepository
+import com.example.pet_project_frontend.data.remote.upload.FileUploadManager
+import com.example.pet_project_frontend.data.remote.upload.UploadType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,7 +24,8 @@ import javax.inject.Inject
 class MyPageViewModel @Inject constructor(
     private val petRepository: PetRepository,
     private val userRepository: UserRepository,
-    private val tokenManager: TokenManager
+    private val tokenManager: TokenManager,
+    private val fileUploadManager: FileUploadManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MyPageUiState())
@@ -39,7 +43,7 @@ class MyPageViewModel @Inject constructor(
                 // 사용자 정보 로드
                 val userResult = userRepository.getUserInfo()
                 when (userResult) {
-                    is com.example.pet_project_frontend.data.remote.result.NetworkResult.Success -> {
+                    is AppResult.Success -> {
                         val user = userResult.data
                         // 저장된 pet_id 조회
                         val petId = tokenManager.getSelectedPetId()
@@ -55,7 +59,7 @@ class MyPageViewModel @Inject constructor(
                         // 반려동물 정보 로드
                         val petResult = petRepository.getPetProfile(petId)
                         when (petResult) {
-                            is com.example.pet_project_frontend.data.remote.result.NetworkResult.Success -> {
+                            is AppResult.Success -> {
                                 val pet = petResult.data
                                 val ageYears = Period.between(pet.birthDate, LocalDate.now()).years
                 val ageText = when {
@@ -82,7 +86,7 @@ class MyPageViewModel @Inject constructor(
                                     )
                                 }
                             }
-                            is com.example.pet_project_frontend.data.remote.result.NetworkResult.Error -> {
+                            is AppResult.Error -> {
                                 // 권한 문제나 유효하지 않은 petId면 로컬 pet_id를 제거하고 안내
                                 if (petResult.code == 403 || petResult.code == 404) {
                                     tokenManager.clearSelectedPetId()
@@ -94,7 +98,7 @@ class MyPageViewModel @Inject constructor(
                                     )
                                 }
                             }
-                            is com.example.pet_project_frontend.data.remote.result.NetworkResult.Exception -> {
+                            is AppResult.Exception -> {
                                 _uiState.update { 
                                     it.copy(
                                         isLoading = false,
@@ -104,7 +108,7 @@ class MyPageViewModel @Inject constructor(
                             }
                         }
                     }
-                    is com.example.pet_project_frontend.data.remote.result.NetworkResult.Error -> {
+                    is AppResult.Error -> {
                         _uiState.update { 
                             it.copy(
                                 isLoading = false,
@@ -112,7 +116,7 @@ class MyPageViewModel @Inject constructor(
                             )
                         }
                     }
-                    is com.example.pet_project_frontend.data.remote.result.NetworkResult.Exception -> {
+                    is AppResult.Exception -> {
                         _uiState.update { 
                             it.copy(
                                 isLoading = false,
@@ -135,6 +139,34 @@ class MyPageViewModel @Inject constructor(
     fun clearError() {
         _uiState.update { it.copy(error = null) }
     }
+
+    fun uploadAndApplyProfileImage(localFilePath: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isUploading = true, error = null) }
+            when (val upload = fileUploadManager.uploadFile(java.io.File(localFilePath), UploadType.USER_PROFILE)) {
+                is AppResult.Success -> {
+                    val filePath = upload.data // backend file_path
+                    when (val res = userRepository.updateProfileImage(filePath)) {
+                        is AppResult.Success -> {
+                            _uiState.update { it.copy(profileImageUrl = res.data.profileImageUrl, isUploading = false) }
+                        }
+                        is AppResult.Error -> {
+                            _uiState.update { it.copy(isUploading = false, error = res.message ?: res.validation?.generalMessage ?: "프로필 갱신 실패") }
+                        }
+                        is AppResult.Exception -> {
+                            _uiState.update { it.copy(isUploading = false, error = res.throwable.message ?: "프로필 갱신 오류") }
+                        }
+                    }
+                }
+                is AppResult.Error -> {
+                    _uiState.update { it.copy(isUploading = false, error = upload.message ?: "업로드 실패") }
+                }
+                is AppResult.Exception -> {
+                    _uiState.update { it.copy(isUploading = false, error = upload.throwable.message ?: "업로드 오류") }
+                }
+            }
+        }
+    }
 }
 
 data class MyPageUiState(
@@ -146,5 +178,6 @@ data class MyPageUiState(
     val profileImageUrl: String? = null,
     val uploadedImageUrls: List<String> = emptyList(),
     val isLoading: Boolean = false,
+    val isUploading: Boolean = false,
     val error: String? = null
 )
