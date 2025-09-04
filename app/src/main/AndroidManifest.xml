@@ -52,6 +52,17 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!-- app:// 딥링크 수신 -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="app" />
+                <!-- 예: app://pet-care/dashboard -->
+                <data android:host="pet-care" android:pathPrefix="/dashboard" />
+                <!-- 기타 경로는 NavHost에서 처리 -->
+            </intent-filter>
         </activity>
 
 

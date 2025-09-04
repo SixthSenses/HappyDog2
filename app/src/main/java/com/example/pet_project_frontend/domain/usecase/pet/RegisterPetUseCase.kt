@@ -2,7 +2,7 @@
 package com.example.pet_project_frontend.domain.usecase.pet
 
 import com.example.pet_project_frontend.data.remote.dto.request.PetRegistrationRequest
-import com.example.pet_project_frontend.data.remote.result.NetworkResult
+import com.example.pet_project_frontend.core.common.AppResult
 import com.example.pet_project_frontend.domain.model.Gender
 import com.example.pet_project_frontend.domain.model.Pet
 import com.example.pet_project_frontend.domain.repository.PetRepository
@@ -21,22 +21,22 @@ class RegisterPetUseCase @Inject constructor(
         currentWeight: Float,
         furColor: String? = null,
         healthConcerns: List<String> = emptyList()
-    ): NetworkResult<Pet> {
+    ): AppResult<Pet> {
         // 입력값 검증
         if (name.isBlank()) {
-            return NetworkResult.Error(400, "반려동물 이름을 입력해주세요")
+            return AppResult.Error(400, "반려동물 이름을 입력해주세요")
         }
         
         if (name.length > 20) {
-            return NetworkResult.Error(400, "반려동물 이름은 20자 이내로 입력해주세요")
+            return AppResult.Error(400, "반려동물 이름은 20자 이내로 입력해주세요")
         }
         
         if (currentWeight < 0.1 || currentWeight > 200) {
-            return NetworkResult.Error(400, "체중은 0.1kg ~ 200kg 사이로 입력해주세요")
+            return AppResult.Error(400, "체중은 0.1kg ~ 200kg 사이로 입력해주세요")
         }
         
         if (birthDate.isAfter(LocalDate.now())) {
-            return NetworkResult.Error(400, "생년월일이 올바르지 않습니다")
+            return AppResult.Error(400, "생년월일이 올바르지 않습니다")
         }
         
         val request = PetRegistrationRequest(

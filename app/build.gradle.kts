@@ -14,6 +14,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.kapt")
+    id("com.google.devtools.ksp")
     id("dagger.hilt.android.plugin")
     id("com.google.gms.google-services")
     id("kotlin-parcelize")
@@ -134,10 +135,10 @@ dependencies {
     // DataStore
     implementation("androidx.datastore:datastore-preferences:1.0.0")
 
-    // Room Database
+    // Room Database (KSP)
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
-    kapt("androidx.room:room-compiler:2.6.1")
+    ksp("androidx.room:room-compiler:2.6.1")
 
     // Google Services
     implementation("com.google.android.gms:play-services-location:21.3.0")
@@ -168,6 +169,11 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
+
+    // Core modules
+    implementation(project(":core:common"))
+    implementation(project(":core:navigation"))
+    implementation(project(":core:designsystem"))
 }
 
 kapt {

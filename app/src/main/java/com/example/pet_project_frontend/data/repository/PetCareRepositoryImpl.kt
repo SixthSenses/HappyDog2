@@ -3,12 +3,15 @@
 package com.example.pet_project_frontend.data.repository
 
 import android.util.Log
+import com.example.pet_project_frontend.core.common.AppResult
+import com.example.pet_project_frontend.core.common.SafeApi
 import com.example.pet_project_frontend.data.local.preferences.TokenManager
 import com.example.pet_project_frontend.data.remote.api.PetCareApi
 import com.example.pet_project_frontend.data.remote.dto.request.CareRecordCreateRequest
 import com.example.pet_project_frontend.data.remote.dto.response.CareRecordResponse
 import com.example.pet_project_frontend.data.remote.dto.response.CareRecordsResponse
-// no NetworkResult here; PetCareRepository uses kotlin.Result
+import com.example.pet_project_frontend.data.remote.dto.response.PetCareSettings
+import com.example.pet_project_frontend.data.remote.dto.request.CareRecordUpdateRequest
 import com.example.pet_project_frontend.domain.repository.PetCareRepository
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -33,10 +36,9 @@ class PetCareRepositoryImpl @Inject constructor(
         limit: Int,
         cursor: String?,
         sort: String
-    ): kotlin.Result<CareRecordsResponse> {
-        return try {
+    ): AppResult<CareRecordsResponse> {
+        return SafeApi.body {
             Log.d(TAG, "Getting care records for pet: $petId")
-            
             val response = petCareApi.getCareRecords(
                 petId = petId,
                 date = date,
@@ -48,13 +50,8 @@ class PetCareRepositoryImpl @Inject constructor(
                 cursor = cursor,
                 sort = sort
             )
-            
             Log.d(TAG, "Care records fetched successfully: ${response.records.size} records")
-            kotlin.Result.success(response)
-            
-        } catch (e: Exception) {
-            Log.e(TAG, "Exception while getting care records", e)
-            kotlin.Result.failure(e)
+            response
         }
     }
 
@@ -63,29 +60,21 @@ class PetCareRepositoryImpl @Inject constructor(
         recordType: String,
         timestamp: Long,
         data: Any,
-        notes: String?
-    ): kotlin.Result<CareRecordResponse> {
-        return try {
+    notes: String?,
+    requestId: String?
+    ): AppResult<CareRecordResponse> {
+        return SafeApi.body {
             Log.d(TAG, "Creating care record for pet: $petId, type: $recordType")
-            
             val request = CareRecordCreateRequest(
                 recordType = recordType,
                 timestamp = timestamp,
                 data = data,
-                notes = notes
+                notes = notes,
+                requestId = requestId
             )
-            
-            val response = petCareApi.createCareRecord(
-                petId = petId,
-                recordRequest = request
-            )
-            
+            val response = petCareApi.createCareRecord(petId = petId, recordRequest = request)
             Log.d(TAG, "Care record created successfully: ${response.logId}")
-            kotlin.Result.success(response)
-            
-        } catch (e: Exception) {
-            Log.e(TAG, "Exception while creating care record", e)
-            kotlin.Result.failure(e)
+            response
         }
     }
 
@@ -97,10 +86,9 @@ class PetCareRepositoryImpl @Inject constructor(
         endDate: String?,
         limit: Int,
         cursor: String?
-    ): kotlin.Result<CareRecordsResponse> {
-        return try {
+    ): AppResult<CareRecordsResponse> {
+        return SafeApi.body {
             Log.d(TAG, "Getting care records by type for pet: $petId, type: $recordType")
-            
             val response = petCareApi.getRecordsByType(
                 petId = petId,
                 recordType = recordType,
@@ -110,13 +98,34 @@ class PetCareRepositoryImpl @Inject constructor(
                 limit = limit,
                 cursor = cursor
             )
-            
             Log.d(TAG, "Care records by type fetched successfully: ${response.records.size} records")
-            kotlin.Result.success(response)
-            
-        } catch (e: Exception) {
-            Log.e(TAG, "Exception while getting care records by type", e)
-            kotlin.Result.failure(e)
+            response
+        }
+    }
+
+    override suspend fun getPetCareSettings(): AppResult<PetCareSettings> {
+    return SafeApi.body { petCareApi.getPetCareSettings() }
+    }
+
+    override suspend fun updatePetCareSettings(settings: PetCareSettings): AppResult<PetCareSettings> {
+    return SafeApi.body { petCareApi.updatePetCareSettings(settings) }
+    }
+
+    override suspend fun updateCareRecord(
+        petId: String,
+        logId: String,
+        update: CareRecordUpdateRequest
+    ): AppResult<CareRecordResponse> {
+        return SafeApi.body {
+            Log.d(TAG, "Updating care record: pet=$petId log=$logId")
+            petCareApi.updateCareRecord(petId, logId, update)
+        }
+    }
+
+    override suspend fun deleteCareRecord(petId: String, logId: String): AppResult<Unit> {
+    return SafeApi.responseUnit {
+            Log.d(TAG, "Deleting care record: pet=$petId log=$logId")
+            petCareApi.deleteCareRecord(petId, logId)
         }
     }
 }

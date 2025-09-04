@@ -3,7 +3,8 @@ package com.example.pet_project_frontend.presentation.petregistration
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pet_project_frontend.data.remote.dto.response.BreedResponse
-import com.example.pet_project_frontend.data.remote.result.NetworkResult
+import com.example.pet_project_frontend.core.common.AppResult
+import com.example.pet_project_frontend.core.common.ValidationError
 import com.example.pet_project_frontend.domain.model.Gender
 import com.example.pet_project_frontend.presentation.model.PetUiState
 import com.example.pet_project_frontend.data.local.preferences.TokenManager
@@ -237,7 +238,7 @@ class PetRegistrationViewModel @Inject constructor(
             )
             
             when (result) {
-                is NetworkResult.Success -> {
+                is AppResult.Success -> {
                     val petUi = result.data.toUiState()
                     // 등록 성공 시 선택된 반려동물 ID를 로컬에 저장
                     tokenManager.saveSelectedPetId(petUi.id)
@@ -247,13 +248,22 @@ class PetRegistrationViewModel @Inject constructor(
                         registeredPet = petUi
                     )
                 }
-                is NetworkResult.Error -> {
+                is AppResult.Error -> {
+                    // 서버 검증 오류 매핑: 필드명 기준으로 로컬 필드에 에러 전달
+                    val fieldErrors = result.validation?.fields.orEmpty()
+                    val fieldErrorMessage = when {
+                        fieldErrors.containsKey("name") -> fieldErrors["name"]
+                        fieldErrors.containsKey("breed") -> fieldErrors["breed"]
+                        fieldErrors.containsKey("birth_date") -> fieldErrors["birth_date"]
+                        fieldErrors.containsKey("weight") -> fieldErrors["weight"]
+                        else -> null
+                    }
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        error = result.message
+                        error = fieldErrorMessage ?: result.message ?: result.validation?.generalMessage
                     )
                 }
-                is NetworkResult.Exception -> {
+                is AppResult.Exception -> {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         error = "네트워크 오류가 발생했습니다. 다시 시도해주세요."

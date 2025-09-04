@@ -4,13 +4,13 @@ import com.example.pet_project_frontend.data.remote.dto.response.SocialLoginResp
 import com.example.pet_project_frontend.data.remote.dto.response.TokenRefreshResponse
 import com.example.pet_project_frontend.data.remote.dto.response.UserInfo
 import com.example.pet_project_frontend.domain.model.User
-import com.example.pet_project_frontend.data.remote.result.NetworkResult
+import com.example.pet_project_frontend.core.common.AppResult
 import kotlinx.coroutines.flow.Flow
 
 interface AuthRepository {
-    suspend fun socialLogin(authCode: String): NetworkResult<SocialLoginResponse>
-    suspend fun refreshToken(refreshToken: String): NetworkResult<TokenRefreshResponse>
-    suspend fun logout(accessToken: String, refreshToken: String): NetworkResult<Unit>
+    suspend fun socialLogin(authCode: String): AppResult<SocialLoginResponse>
+    suspend fun refreshToken(refreshToken: String): AppResult<TokenRefreshResponse>
+    suspend fun logout(accessToken: String, refreshToken: String): AppResult<Unit>
     
     // 토큰 관리
     suspend fun saveTokens(accessToken: String, refreshToken: String)

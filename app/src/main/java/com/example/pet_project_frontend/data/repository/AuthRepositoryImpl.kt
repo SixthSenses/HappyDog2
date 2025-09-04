@@ -9,8 +9,8 @@ import com.example.pet_project_frontend.data.local.preferences.TokenManager
 import com.example.pet_project_frontend.data.remote.api.AuthApi
 import com.example.pet_project_frontend.data.remote.dto.request.*
 import com.example.pet_project_frontend.data.remote.dto.response.*
-import com.example.pet_project_frontend.data.remote.result.NetworkResult
-import com.example.pet_project_frontend.data.remote.util.SafeApiCall
+import com.example.pet_project_frontend.core.common.AppResult
+import com.example.pet_project_frontend.core.common.SafeApi
 import com.example.pet_project_frontend.domain.repository.AuthRepository
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
@@ -31,45 +31,47 @@ class AuthRepositoryImpl @Inject constructor(
         private val USER_PROFILE_IMAGE_URL_KEY = stringPreferencesKey("user_profile_image_url")
     }
 
-    override suspend fun socialLogin(authCode: String): NetworkResult<SocialLoginResponse> {
+    override suspend fun socialLogin(authCode: String): AppResult<SocialLoginResponse> {
         Log.d(TAG, "Attempting social login with auth code")
         val request = SocialLoginRequest(
             provider = "google",
             authCode = authCode
         )
-        val result: NetworkResult<SocialLoginResponse> = SafeApiCall.call { authApi.socialLogin(request) }
-        if (result is NetworkResult.Success) {
-            Log.d(TAG, "Login successful. User ID: ${result.data.userId}, Is new: ${result.data.isNewUser}")
-        } else if (result is NetworkResult.Error) {
-            Log.e(TAG, "Login failed. Code: ${result.code}, Error: ${result.message}")
+        val result: AppResult<SocialLoginResponse> = SafeApi.response { authApi.socialLogin(request) }
+        when (result) {
+            is AppResult.Success -> Log.d(TAG, "Login successful. User ID: ${result.data.userId}, Is new: ${result.data.isNewUser}")
+            is AppResult.Error -> Log.e(TAG, "Login failed. Code: ${result.code}, Error: ${result.message}")
+            is AppResult.Exception -> Log.e(TAG, "Login exception", result.throwable)
         }
         return result
     }
 
-    override suspend fun refreshToken(refreshToken: String): NetworkResult<TokenRefreshResponse> {
+    override suspend fun refreshToken(refreshToken: String): AppResult<TokenRefreshResponse> {
         Log.d(TAG, "Attempting to refresh token")
-        val result: NetworkResult<TokenRefreshResponse> = SafeApiCall.call { authApi.refreshToken("Bearer $refreshToken") }
-        if (result is NetworkResult.Success) {
-            Log.d(TAG, "Token refresh successful")
-            // 리프레시 토큰은 서버에서 재발급하지 않으므로 기존 값을 유지하고 액세스 토큰만 갱신
-            tokenManager.saveAccessToken(result.data.accessToken)
-        } else if (result is NetworkResult.Error) {
-            Log.e(TAG, "Token refresh failed. Code: ${result.code}, Error: ${result.message}")
+        val result: AppResult<TokenRefreshResponse> = SafeApi.response { authApi.refreshToken("Bearer $refreshToken") }
+        when (result) {
+            is AppResult.Success -> {
+                Log.d(TAG, "Token refresh successful")
+                // 리프레시 토큰은 서버에서 재발급하지 않으므로 기존 값을 유지하고 액세스 토큰만 갱신
+                tokenManager.saveAccessToken(result.data.accessToken)
+            }
+            is AppResult.Error -> Log.e(TAG, "Token refresh failed. Code: ${result.code}, Error: ${result.message}")
+            is AppResult.Exception -> Log.e(TAG, "Token refresh exception", result.throwable)
         }
         return result
     }
 
-    override suspend fun logout(accessToken: String, refreshToken: String): NetworkResult<Unit> {
+    override suspend fun logout(accessToken: String, refreshToken: String): AppResult<Unit> {
         Log.d(TAG, "Attempting logout")
         val request = LogoutRequest(
             accessToken = accessToken,
             refreshToken = refreshToken
         )
-        val result: NetworkResult<Unit> = SafeApiCall.call { authApi.logout(request) }
+        val result: AppResult<Unit> = SafeApi.responseUnit { authApi.logout(request) }
         when (result) {
-            is NetworkResult.Success -> Log.d(TAG, "Logout successful")
-            is NetworkResult.Error -> Log.e(TAG, "Logout failed. Code: ${result.code}, Error: ${result.message}")
-            is NetworkResult.Exception -> Log.e(TAG, "Exception during logout", result.throwable)
+            is AppResult.Success -> Log.d(TAG, "Logout successful")
+            is AppResult.Error -> Log.e(TAG, "Logout failed. Code: ${result.code}, Error: ${result.message}")
+            is AppResult.Exception -> Log.e(TAG, "Exception during logout", result.throwable)
         }
         // 서버 성공/실패와 무관하게 로컬 정리 수행
         clearTokens()

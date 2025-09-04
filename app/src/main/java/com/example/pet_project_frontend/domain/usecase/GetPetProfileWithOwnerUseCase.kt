@@ -1,6 +1,6 @@
 package com.example.pet_project_frontend.domain.usecase
 
-import com.example.pet_project_frontend.data.remote.result.NetworkResult
+import com.example.pet_project_frontend.core.common.AppResult
 import com.example.pet_project_frontend.domain.model.Pet
 import com.example.pet_project_frontend.domain.model.User
 import com.example.pet_project_frontend.domain.repository.PetRepository
@@ -22,26 +22,40 @@ class GetPetProfileWithOwnerUseCase @Inject constructor(
         val owner: User
     )
 
-    fun execute(petId: String): Flow<NetworkResult<PetProfileWithUser>> = flow {
+    fun execute(petId: String): Flow<AppResult<PetProfileWithUser>> = flow {
         // 1) 반려동물 프로필 조회
-        when (val petRes = petRepository.getPetProfile(petId)) {
-            is NetworkResult.Success -> {
+        when (val petRes: AppResult<Pet> = petRepository.getPetProfile(petId)) {
+            is AppResult.Success<Pet> -> {
                 // 2) 소유자 프로필 조회 (간단화: 내 프로필로 대체)
-                when (val userRes = userRepository.getUserInfo()) {
-                    is NetworkResult.Success -> emit(
-                        NetworkResult.Success(
+                when (val userRes: AppResult<User> = userRepository.getUserInfo()) {
+                    is AppResult.Success<User> -> emit(
+                        AppResult.Success(
                             PetProfileWithUser(
                                 pet = petRes.data,
                                 owner = userRes.data
                             )
                         )
                     )
-                    is NetworkResult.Error -> emit(NetworkResult.Error(userRes.code, userRes.message, userRes.error))
-                    is NetworkResult.Exception -> emit(NetworkResult.Exception(userRes.throwable))
+                    is AppResult.Error -> emit(
+                        AppResult.Error(
+                            code = userRes.code,
+                            message = userRes.message,
+                            validation = userRes.validation,
+                            cause = userRes.cause
+                        )
+                    )
+                    is AppResult.Exception -> emit(AppResult.Exception(userRes.throwable))
                 }
             }
-            is NetworkResult.Error -> emit(NetworkResult.Error(petRes.code, petRes.message, petRes.error))
-            is NetworkResult.Exception -> emit(NetworkResult.Exception(petRes.throwable))
+            is AppResult.Error -> emit(
+                AppResult.Error(
+                    code = petRes.code,
+                    message = petRes.message,
+                    validation = petRes.validation,
+                    cause = petRes.cause
+                )
+            )
+            is AppResult.Exception -> emit(AppResult.Exception(petRes.throwable))
         }
     }
 }

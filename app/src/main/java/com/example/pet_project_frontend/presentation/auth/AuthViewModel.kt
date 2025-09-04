@@ -6,7 +6,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pet_project_frontend.data.remote.dto.response.SocialLoginResponse
-import com.example.pet_project_frontend.data.remote.result.NetworkResult
+import com.example.pet_project_frontend.core.common.AppResult
 import com.example.pet_project_frontend.data.mapper.UserMapper
 import com.example.pet_project_frontend.domain.repository.AuthRepository
 import com.example.pet_project_frontend.domain.repository.UserRepository
@@ -35,7 +35,7 @@ class AuthViewModel @Inject constructor(
                 Log.d("AuthViewModel", "Starting social login with auth code")
 
                 when (val result = socialLoginUseCase(authCode)) {
-                    is NetworkResult.Success -> {
+                    is AppResult.Success -> {
                         val response = result.data
                         Log.d("AuthViewModel", "Login successful, saving tokens")
 
@@ -57,12 +57,12 @@ class AuthViewModel @Inject constructor(
 
                         _authState.value = AuthState.Success(response)
                     }
-                    is NetworkResult.Error -> {
+                    is AppResult.Error -> {
                         val errorMessage = "로그인 실패: ${result.message}"
                         Log.e("AuthViewModel", "$errorMessage (Code: ${result.code})")
                         _authState.value = AuthState.Error(errorMessage)
                     }
-                    is NetworkResult.Exception -> {
+                    is AppResult.Exception -> {
                         val errorMessage = result.throwable.message ?: "알 수 없는 오류가 발생했습니다."
                         Log.e("AuthViewModel", "Login exception", result.throwable)
                         _authState.value = AuthState.Error(errorMessage)
@@ -87,13 +87,13 @@ class AuthViewModel @Inject constructor(
 
                 if (accessToken != null && refreshToken != null) {
                     when (val result = authRepository.logout(accessToken, refreshToken)) {
-                        is NetworkResult.Success -> {
+                        is AppResult.Success -> {
                             Log.d("AuthViewModel", "Logout successful")
                         }
-                        is NetworkResult.Error -> {
+                        is AppResult.Error -> {
                             Log.e("AuthViewModel", "Logout failed: ${result.message}")
                         }
-                        is NetworkResult.Exception -> {
+                        is AppResult.Exception -> {
                             Log.e("AuthViewModel", "Logout exception", result.throwable)
                         }
                     }
