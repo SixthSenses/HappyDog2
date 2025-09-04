@@ -1,5 +1,3 @@
-*.iml
-.gradle
 /local.properties
 /.idea/caches
 /.idea/libraries
@@ -17,5 +15,7 @@ local.properties
 google-services.json
 .vscode
 .github
-domain 
+docs
 *.csv
+*.csv
+docs

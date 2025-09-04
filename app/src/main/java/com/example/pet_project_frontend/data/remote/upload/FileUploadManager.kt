@@ -3,8 +3,8 @@ package com.example.pet_project_frontend.data.remote.upload
 import com.example.pet_project_frontend.data.remote.api.UploadApi
 import com.example.pet_project_frontend.data.remote.dto.request.GetUploadUrlRequest
 import com.example.pet_project_frontend.data.remote.dto.response.UploadUrlResponse
-import com.example.pet_project_frontend.data.remote.result.NetworkResult
-import com.example.pet_project_frontend.data.remote.util.SafeApiCall
+import com.example.pet_project_frontend.core.common.AppResult
+import com.example.pet_project_frontend.core.common.SafeApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -47,7 +47,7 @@ class FileUploadManager @Inject constructor(
     suspend fun uploadFile(
         file: File,
         uploadType: UploadType
-    ): NetworkResult<String> = withContext(Dispatchers.IO) {
+    ): AppResult<String> = withContext(Dispatchers.IO) {
         try {
             // 1단계: Pre-signed URL 요청
             val urlResult = getUploadUrl(
@@ -57,7 +57,7 @@ class FileUploadManager @Inject constructor(
             )
             
             when (urlResult) {
-                is NetworkResult.Success -> {
+                is AppResult.Success -> {
                     val uploadInfo = urlResult.data
                     
                     // 2단계: 실제 파일 업로드
@@ -68,19 +68,19 @@ class FileUploadManager @Inject constructor(
                     )
                     
                     when (uploadResult) {
-                        is NetworkResult.Success -> {
+                        is AppResult.Success -> {
                             // 업로드 성공 시 file_path 반환
-                            NetworkResult.Success(uploadInfo.filePath)
+                            AppResult.Success(uploadInfo.filePath)
                         }
-                        is NetworkResult.Error -> uploadResult
-                        is NetworkResult.Exception -> uploadResult
+                        is AppResult.Error -> uploadResult
+                        is AppResult.Exception -> uploadResult
                     }
                 }
-                is NetworkResult.Error -> urlResult
-                is NetworkResult.Exception -> urlResult
+                is AppResult.Error -> urlResult
+                is AppResult.Exception -> urlResult
             }
         } catch (e: Exception) {
-            NetworkResult.Exception(e)
+            AppResult.Exception(e)
         }
     }
     
@@ -91,13 +91,13 @@ class FileUploadManager @Inject constructor(
         uploadType: UploadType,
         filename: String,
         contentType: String
-    ): NetworkResult<UploadUrlResponse> {
+    ): AppResult<UploadUrlResponse> {
         val request = GetUploadUrlRequest(
             uploadType = uploadType.value,
             filename = filename,
             contentType = contentType
         )
-        return SafeApiCall.call { uploadApi.getUploadUrl(request) }
+        return SafeApi.response { uploadApi.getUploadUrl(request) }
     }
     
     /**
@@ -107,7 +107,7 @@ class FileUploadManager @Inject constructor(
         uploadUrl: String,
         file: File,
         contentType: String
-    ): NetworkResult<Unit> = withContext(Dispatchers.IO) {
+    ): AppResult<Unit> = withContext(Dispatchers.IO) {
         // 간단한 재시도 정책: 최대 2회 재시도(총 3회 시도), 타임아웃/일시 오류에 한해 재시도
         val maxAttempts = 3
         var lastError: Throwable? = null
@@ -125,7 +125,7 @@ class FileUploadManager @Inject constructor(
                 val response = okHttpClient.newCall(request).execute()
                 response.use { resp ->
                     if (resp.isSuccessful) {
-                        return@withContext NetworkResult.Success(Unit)
+                        return@withContext AppResult.Success(Unit)
                     }
                     // 5xx 또는 429이면 재시도 대상, 그 외는 즉시 실패
                     if (resp.code in 500..599 || resp.code == 429) {
@@ -139,7 +139,7 @@ class FileUploadManager @Inject constructor(
                         }
                         // 아래에서 백오프 후 다음 반복으로 이동
                     } else {
-                        return@withContext NetworkResult.Error(
+                        return@withContext AppResult.Error(
                             resp.code,
                             "파일 업로드 실패(${resp.code}): 서버에서 요청을 처리하지 못했습니다."
                         )
@@ -155,7 +155,7 @@ class FileUploadManager @Inject constructor(
             } catch (e: java.net.SocketTimeoutException) {
                 lastError = e
                 if (attempt >= maxAttempts) {
-                    return@withContext NetworkResult.Error(
+                    return@withContext AppResult.Error(
                         408,
                         "파일 업로드 시간이 초과되었습니다. 네트워크 상태를 확인 후 다시 시도해주세요."
                     )
@@ -166,7 +166,7 @@ class FileUploadManager @Inject constructor(
             } catch (e: java.io.IOException) {
                 lastError = e
                 if (attempt >= maxAttempts) {
-                    return@withContext NetworkResult.Error(
+                    return@withContext AppResult.Error(
                         0,
                         "네트워크 오류로 파일 업로드에 실패했습니다. 연결을 확인한 뒤 다시 시도해주세요."
                     )
@@ -175,11 +175,11 @@ class FileUploadManager @Inject constructor(
                     kotlinx.coroutines.delay(backoffMs)
                 }
             } catch (e: Exception) {
-                return@withContext NetworkResult.Exception(e)
+                return@withContext AppResult.Exception(e)
             }
         }
         // 재시도 모두 실패
-        NetworkResult.Exception(lastError ?: RuntimeException("알 수 없는 업로드 오류"))
+        AppResult.Exception(lastError ?: RuntimeException("알 수 없는 업로드 오류"))
     }
     
     /**

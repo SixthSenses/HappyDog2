@@ -3,15 +3,14 @@
 package com.example.pet_project_frontend.data.repository
 
 import android.util.Log
+import com.example.pet_project_frontend.core.common.AppResult
+import com.example.pet_project_frontend.core.common.SafeApi
 import com.example.pet_project_frontend.data.local.preferences.TokenManager
 import com.example.pet_project_frontend.data.mapper.UserMapper
 import com.example.pet_project_frontend.data.remote.api.UserApi
 import com.example.pet_project_frontend.data.remote.dto.request.UpdateFcmTokenRequest
 import com.example.pet_project_frontend.data.remote.dto.request.UpdateProfileImageRequest
 import com.example.pet_project_frontend.data.remote.dto.request.UserUpdateRequest
-import com.example.pet_project_frontend.data.remote.dto.response.UserProfileResponse
-import com.example.pet_project_frontend.data.remote.result.NetworkResult
-import com.example.pet_project_frontend.data.remote.util.SafeApiCall
 import com.example.pet_project_frontend.domain.model.User
 import com.example.pet_project_frontend.domain.repository.UserRepository
 import com.example.pet_project_frontend.domain.repository.AuthRepository
@@ -30,50 +29,53 @@ class UserRepositoryImpl @Inject constructor(
         private const val TAG = "UserRepositoryImpl"
     }
 
-    override suspend fun getUserInfo(): NetworkResult<User> {
+    override suspend fun getUserInfo(): AppResult<User> {
         val saved = authRepository.getUserInfo()
         val userId = saved?.userId
         if (userId == null) {
             Log.w(TAG, "No logged-in user. Cannot fetch profile.")
-            return NetworkResult.Error(401, "로그인이 필요합니다.")
+            return AppResult.Error(code = 401, message = "로그인이 필요합니다.")
         }
         Log.d(TAG, "Fetching user info from API: $userId")
-        val result: NetworkResult<UserProfileResponse> = SafeApiCall.call { userApi.getUserProfile(userId) }
-        return when (result) {
-            is NetworkResult.Success -> {
-                Log.d(TAG, "User profile fetched successfully: ${result.data.userId}")
-                NetworkResult.Success(UserMapper.mapToDomainModel(result.data))
+        return SafeApi.response { userApi.getUserProfile(userId) }
+            .let { res ->
+                when (res) {
+                    is AppResult.Success -> {
+                        Log.d(TAG, "User profile fetched successfully: ${res.data.userId}")
+                        AppResult.Success(UserMapper.mapToDomainModel(res.data))
+                    }
+                    is AppResult.Error -> res
+                    is AppResult.Exception -> res
+                }
             }
-            is NetworkResult.Error -> {
-                Log.e(TAG, "Failed to get user profile. Code: ${result.code}, Error: ${result.message}")
-                result
-            }
-            is NetworkResult.Exception -> {
-                Log.e(TAG, "Exception while getting user info", result.throwable)
-                result
-            }
-        }
     }
 
     // TODO: General profile update API is not specified in the spec. Keep only updateProfileImage.
-    override suspend fun updateUserProfile(request: UserUpdateRequest): NetworkResult<User> =
-        NetworkResult.Error(400, "일반 프로필 수정 API가 명세에 없습니다.")
+    override suspend fun updateUserProfile(request: UserUpdateRequest): AppResult<User> =
+        AppResult.Error(code = 400, message = "일반 프로필 수정 API가 명세에 없습니다.")
 
-    suspend fun updateProfileImage(filePath: String): NetworkResult<UserProfileResponse> {
+    override suspend fun updateProfileImage(filePath: String): AppResult<User> {
         Log.d(TAG, "Updating profile image with path: $filePath")
         val request = UpdateProfileImageRequest(filePath = filePath)
-        return SafeApiCall.call { userApi.updateProfileImage(request) }
+        return SafeApi.response { userApi.updateProfileImage(request) }
+            .let { res ->
+                when (res) {
+                    is AppResult.Success -> AppResult.Success(UserMapper.mapToDomainModel(res.data))
+                    is AppResult.Error -> res
+                    is AppResult.Exception -> res
+                }
+            }
     }
 
-    suspend fun updateFcmToken(fcmToken: String): NetworkResult<Unit> {
+    suspend fun updateFcmToken(fcmToken: String): AppResult<Unit> {
         Log.d(TAG, "Updating FCM token")
         val request = UpdateFcmTokenRequest(fcmToken = fcmToken)
-    return SafeApiCall.call { userApi.updateFcmToken(request) }
+        return SafeApi.responseUnit { userApi.updateFcmToken(request) }
     }
 
-    override suspend fun deleteUser(): NetworkResult<Unit> {
+    override suspend fun deleteUser(): AppResult<Unit> {
         Log.d(TAG, "Deleting user account")
-    val result: NetworkResult<Unit> = SafeApiCall.call { userApi.deleteMe() }
+        val result = SafeApi.responseUnit { userApi.deleteMe() }
         // 서버 성공/실패와 무관하게 로컬 정리 수행
         tokenManager.clearTokens()
         authRepository.clearUserInfo()
