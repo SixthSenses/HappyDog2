@@ -7,12 +7,14 @@ import com.example.pet_project_frontend.data.repository.BreedRepositoryImpl
 import com.example.pet_project_frontend.data.repository.MapRepositoryImpl
 import com.example.pet_project_frontend.data.repository.PetCareRepositoryImpl
 import com.example.pet_project_frontend.data.repository.PetRepositoryImpl
+import com.example.pet_project_frontend.data.repository.PostRepositoryImpl
 import com.example.pet_project_frontend.data.repository.UserRepositoryImpl
 import com.example.pet_project_frontend.domain.repository.AuthRepository
 import com.example.pet_project_frontend.domain.repository.BreedRepository
 import com.example.pet_project_frontend.domain.repository.MapRepository
 import com.example.pet_project_frontend.domain.repository.PetCareRepository
 import com.example.pet_project_frontend.domain.repository.PetRepository
+import com.example.pet_project_frontend.domain.repository.PostRepository
 import com.example.pet_project_frontend.domain.repository.UserRepository
 import dagger.Binds
 import dagger.Module
@@ -59,4 +61,10 @@ abstract class RepositoryModule {
     abstract fun bindMapRepository(
         mapRepositoryImpl: MapRepositoryImpl
     ): MapRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindPostRepository(
+        postRepositoryImpl: PostRepositoryImpl
+    ): PostRepository
 }

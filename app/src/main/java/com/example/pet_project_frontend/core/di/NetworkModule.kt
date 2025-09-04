@@ -129,4 +129,10 @@ object NetworkModule {
     fun provideUploadApi(retrofit: Retrofit): UploadApi {
         return retrofit.create(UploadApi::class.java)
     }
+
+    @Provides
+    @Singleton
+    fun providePostApi(retrofit: Retrofit): PostApi {
+        return retrofit.create(PostApi::class.java)
+    }
 }

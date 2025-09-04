@@ -11,7 +11,7 @@ class ErrorInterceptor : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
         val response = chain.proceed(request)
-        // 모든 상태코드는 그대로 반환하여 Retrofit 레벨에서 처리(SafeApiCall 등)
+    // 모든 상태코드는 그대로 반환하여 Retrofit 레벨에서 처리(SafeApi)
         return response
     }
 }

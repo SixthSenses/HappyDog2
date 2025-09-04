@@ -1,9 +1,11 @@
 package com.example.pet_project_frontend.data.remote.api
 
 import com.example.pet_project_frontend.data.remote.dto.request.CareRecordCreateRequest
+import com.example.pet_project_frontend.data.remote.dto.request.CareRecordUpdateRequest
 import com.example.pet_project_frontend.data.remote.dto.response.PetCareSettings
 import com.example.pet_project_frontend.data.remote.dto.response.CareRecordResponse
 import com.example.pet_project_frontend.data.remote.dto.response.CareRecordsResponse
+import retrofit2.Response
 import retrofit2.http.*
 
 interface PetCareApi {
@@ -48,4 +50,19 @@ interface PetCareApi {
         @Query("limit") limit: Int = 10,
         @Query("cursor") cursor: String? = null
     ): CareRecordsResponse
+
+    // 케어 기록 수정: 부분 업데이트(PATCH)
+    @PATCH("api/pet-care/{pet_id}/records/{log_id}")
+    suspend fun updateCareRecord(
+        @Path("pet_id") petId: String,
+        @Path("log_id") logId: String,
+        @Body updateRequest: CareRecordUpdateRequest
+    ): CareRecordResponse
+
+    // 케어 기록 삭제
+    @DELETE("api/pet-care/{pet_id}/records/{log_id}")
+    suspend fun deleteCareRecord(
+        @Path("pet_id") petId: String,
+        @Path("log_id") logId: String
+    ): Response<Unit>
 }

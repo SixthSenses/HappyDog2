@@ -10,6 +10,23 @@ sealed class Screen(val route: String) {
     object Translator : Screen("translator")
     object MyPage : Screen("mypage")
 
+    // 펫케어 대시보드(딥링크 표준과 맞춤) - core:navigation 상수 사용
+    object PetCareDashboard : Screen(com.example.pet_project_frontend.core.navigation.Routes.PetCare.Dashboard) {
+        fun createRoute(
+            petId: String? = null,
+            date: String? = null,
+            tab: String? = null
+        ): String {
+            val base = "pet_care/dashboard"
+            val params = buildList {
+                if (petId != null) add("petId=$petId")
+                if (date != null) add("date=$date")
+                if (tab != null) add("tab=$tab")
+            }.joinToString("&")
+            return if (params.isEmpty()) base else "$base?$params"
+        }
+    }
+
     // 인자가 필요한 화면들
     object PetProfile : Screen("pet_profile/{petId}") {
         fun createRoute(petId: String) = "pet_profile/$petId"

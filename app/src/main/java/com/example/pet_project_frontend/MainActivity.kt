@@ -24,7 +24,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.pet_project_frontend.core.navigation.BottomNavigation
 import com.example.pet_project_frontend.core.navigation.PetCareNavHost
 import com.example.pet_project_frontend.core.navigation.Screen
-import com.example.pet_project_frontend.core.theme.PetCareTheme
+import com.example.pet_project_frontend.core.designsystem.AppTheme
 import com.kakao.vectormap.KakaoMapSdk
 import com.kakao.vectormap.*
 import com.kakao.sdk.common.util.Utility
@@ -76,7 +76,7 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            PetCareTheme {
+            AppTheme {
                 val isLoggedIn by viewModel.isLoggedIn.collectAsStateWithLifecycle()
                 val navController = rememberNavController()
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
