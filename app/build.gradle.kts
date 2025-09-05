@@ -53,7 +53,12 @@ android {
         debug {
             isDebuggable = true
             isMinifyEnabled = false
-            val apiBaseUrl = project.findProperty("API_BASE_URL") as? String ?: "http://10.0.2.2:5000/"
+            // local.properties 우선, 없으면 -P API_BASE_URL, 그마저도 없으면 에뮬레이터 기본값
+            fun String.unquote() = this.trim().removeSurrounding("\"").removeSurrounding("'")
+            val rawApiBaseUrl = (localProperties.getProperty("API_BASE_URL")
+                ?: (project.findProperty("API_BASE_URL") as? String)
+                ?: "http://10.0.2.2:5000/")
+            val apiBaseUrl = rawApiBaseUrl.unquote()
             buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
         }
         release {
