@@ -24,6 +24,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.Job
 import javax.inject.Inject
 
 data class MapPlace(
@@ -89,67 +91,64 @@ class MapViewModel @Inject constructor(
 	private val _uiState = MutableStateFlow(MapUiState())
 	val uiState = _uiState.asStateFlow()
 
+	private var placesCollectJob: Job? = null
+
 	init {
 		loadPlacesFromDatabase()
 	}
 
 	fun updateCurrentLocation(location: Location) {
 		_uiState.update { it.copy(currentLocation = location) }
-		// 위치 정보가 업데이트되면 필터링을 다시 시도
+		// 위치 정보가 업데이트되면 필터링을 다시 시도 (이전 수집 취소 후 재시작)
 		filterAndFetchPlaces()
 	}
 
 	fun selectCategory(category: PlaceCategory) {
 		_uiState.update { it.copy(selectedCategory = category) }
+		// 카테고리 변경 시에도 동일하게 재수집
 		filterAndFetchPlaces()
 	}
 
 	private fun loadPlacesFromDatabase() {
-		viewModelScope.launch {
-			try {
-				// 데이터베이스에서 장소 데이터 로드
-				val categories = getCategoriesForSelectedCategory(_uiState.value.selectedCategory)
-				mapRepository.getPlacesByCategories(categories).collect { places ->
-					_uiState.update { it.copy(places = places, isLoading = false) }
-				}
-			} catch (e: Exception) {
-				_uiState.update { it.copy(isLoading = false) }
-			}
-		}
+		// 초기에는 현재 위치가 없으므로 카테고리 기준 기본 목록만 로드
+		filterAndFetchPlaces()
 	}
 
 	private fun filterAndFetchPlaces() {
 		val currentState = _uiState.value
 		val currentLocation = currentState.currentLocation
 
-		if (currentLocation == null) {
-			return
-		}
-
-		viewModelScope.launch {
+		// 이전 흐름 수집이 있다면 취소하여 중복 수집/로그 폭주 방지
+		placesCollectJob?.cancel()
+		placesCollectJob = viewModelScope.launch {
 			try {
 				val categories = getCategoriesForSelectedCategory(currentState.selectedCategory)
-				
-				// 현재 위치 기준으로 2km 반경 내의 장소들만 필터링
-				val bounds = calculateBounds(currentLocation, 2000.0) // 2km
-				
-				mapRepository.getPlacesInBounds(
-					categories = categories,
-					minLat = bounds[0],
-					maxLat = bounds[1],
-					minLng = bounds[2],
-					maxLng = bounds[3]
-				).collect { places ->
-					// 거리순으로 정렬
-					val sortedPlaces = places.sortedBy { place ->
-						val placeLocation = Location("place").apply {
-							latitude = place.latitude
-							longitude = place.longitude
-						}
-						currentLocation.distanceTo(placeLocation)
+
+				if (currentLocation == null) {
+					// 위치 미확인: 카테고리 전체 목록을 가져오되, 즉시 화면 표시
+					mapRepository.getPlacesByCategories(categories).collectLatest { places ->
+						_uiState.update { it.copy(places = places, isLoading = false) }
 					}
-					
-					_uiState.update { it.copy(places = sortedPlaces, isLoading = false) }
+				} else {
+					// 현재 위치 기준으로 2km 반경 내의 장소들만 필터링
+					val bounds = calculateBounds(currentLocation, 2000.0)
+					mapRepository.getPlacesInBounds(
+						categories = categories,
+						minLat = bounds[0],
+						maxLat = bounds[1],
+						minLng = bounds[2],
+						maxLng = bounds[3]
+					).collectLatest { places ->
+						// 거리순으로 정렬
+						val sortedPlaces = places.sortedBy { place ->
+							val placeLocation = Location("place").apply {
+								latitude = place.latitude
+								longitude = place.longitude
+							}
+							currentLocation.distanceTo(placeLocation)
+						}
+						_uiState.update { it.copy(places = sortedPlaces, isLoading = false) }
+					}
 				}
 			} catch (e: Exception) {
 				_uiState.update { it.copy(isLoading = false) }

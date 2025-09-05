@@ -58,6 +58,8 @@ import com.kakao.vectormap.label.LabelStyles
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import androidx.compose.ui.res.painterResource
+import android.os.Build
+import com.example.pet_project_frontend.BuildConfig
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,7 +67,17 @@ fun MapScreen(
 	viewModel: MapViewModel = hiltViewModel()
 ) {
 	val context = LocalContext.current
-	val mapView = remember { MapView(context) }
+	// 지도 지원 여부(키 유효 + ABI 지원 + 네이티브 라이브러리 로드 가능) 확인
+	val isKakaoKeyPresent = remember { BuildConfig.KAKAO_NATIVE_APP_KEY.isNotBlank() }
+	val isAbiSupported = remember {
+		Build.SUPPORTED_ABIS.any { it.contains("arm64-v8a") || it.contains("armeabi-v7a") }
+	}
+	val isNativeLoaded = remember {
+		// 라이브러리 사전 로드 시도(실패 시 false). 성공하면 중복 로드는 무해함.
+		runCatching { System.loadLibrary("K3fAndroid") }.isSuccess
+	}
+	val isMapSupported = isKakaoKeyPresent && isAbiSupported && isNativeLoaded
+
 	var kakaoMapInstance by remember { mutableStateOf<KakaoMap?>(null) }
 	val uiState by viewModel.uiState.collectAsState()
 	var isFirstLocationUpdate by remember { mutableStateOf(true) }
@@ -134,38 +146,65 @@ fun MapScreen(
 		Box(
 			modifier = Modifier.fillMaxSize()
 		) {
-			AndroidView(
-				modifier = Modifier
-					.matchParentSize()
-					.padding(innerPadding),
-				factory = {
-					mapView.apply {
-						start(object : MapLifeCycleCallback() {
-							override fun onMapDestroy() {}
-							override fun onMapError(error: Exception) { Log.e("KakaoMapError", "Map Error: ${error.message}") }
-						}, object : KakaoMapReadyCallback() {
-							override fun onMapReady(kakaoMap: KakaoMap) {
-								kakaoMapInstance = kakaoMap
-								kakaoMap.setOnLabelClickListener { _, _, label ->
-									(label.tag as? MapPlace)?.let { place ->
-										selectedPlace = place
-										scope.launch { scaffoldState.bottomSheetState.expand() }
+			if (isMapSupported) {
+				AndroidView(
+					modifier = Modifier
+						.matchParentSize()
+						.padding(innerPadding),
+					factory = {
+						// 지원 환경에서만 MapView 생성
+						MapView(context).apply {
+							start(object : MapLifeCycleCallback() {
+								override fun onMapDestroy() {}
+								override fun onMapError(error: Exception) { Log.e("KakaoMapError", "Map Error: ${error.message}") }
+							}, object : KakaoMapReadyCallback() {
+								override fun onMapReady(kakaoMap: KakaoMap) {
+									kakaoMapInstance = kakaoMap
+									kakaoMap.setOnLabelClickListener { _, _, label ->
+										(label.tag as? MapPlace)?.let { place ->
+											selectedPlace = place
+											scope.launch { scaffoldState.bottomSheetState.expand() }
+										}
+										true
 									}
-									true
-								}
-								if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-									getCurrentLocation(context as Activity) { lat, lon ->
-										val location = android.location.Location("").apply { latitude = lat; longitude = lon }
-										viewModel.updateCurrentLocation(location)
+									if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+										getCurrentLocation(context as Activity) { lat, lon ->
+											val location = android.location.Location("").apply { latitude = lat; longitude = lon }
+											viewModel.updateCurrentLocation(location)
+										}
+									} else {
+										permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
 									}
-								} else {
-									permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
 								}
-							}
-						})
+							})
+						}
 					}
+				)
+			} else {
+				// 미지원 환경: 대체 화면 제공(크래시 방지)
+				Column(
+					modifier = Modifier
+						.matchParentSize()
+						.padding(innerPadding)
+						.padding(16.dp),
+					horizontalAlignment = Alignment.CenterHorizontally,
+					verticalArrangement = Arrangement.Center
+				) {
+					Text(
+						text = "이 환경에서는 지도를 표시할 수 없습니다.",
+						color = MyPageColors.Secondary
+					)
+					Spacer(Modifier.height(8.dp))
+					Text(
+						text = when {
+							!isKakaoKeyPresent -> "KAKAO_NATIVE_APP_KEY가 비어 있습니다. local.properties에 키를 설정하세요."
+							!isAbiSupported -> "에뮬레이터 ABI가 미지원(x86_64)입니다. 실제 기기 또는 ARM64 에뮬레이터를 사용하세요."
+							else -> "지도 네이티브 라이브러리를 로드할 수 없습니다. 실제 기기에서 시도해 보세요."
+						},
+						color = MyPageColors.Tertiary
+					)
 				}
-			)
+			}
 
 			Box(
 				modifier = Modifier
