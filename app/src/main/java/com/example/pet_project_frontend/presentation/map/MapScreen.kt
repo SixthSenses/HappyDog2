@@ -58,6 +58,8 @@ import com.kakao.vectormap.label.LabelStyles
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import androidx.compose.ui.res.painterResource
+import android.os.Build
+import com.example.pet_project_frontend.BuildConfig
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,7 +67,16 @@ fun MapScreen(
 	viewModel: MapViewModel = hiltViewModel()
 ) {
 	val context = LocalContext.current
-	val mapView = remember { MapView(context) }
+	// 지도 지원 여부: 키만 체크하고 나머지는 SDK가 스스로 처리하도록 완화
+	val isKakaoKeyPresent = remember { BuildConfig.KAKAO_NATIVE_APP_KEY.isNotBlank() }
+	val isMapSupported = isKakaoKeyPresent
+	LaunchedEffect(Unit) {
+		android.util.Log.i(
+			"KakaoKey",
+			"keyPresent=${BuildConfig.KAKAO_NATIVE_APP_KEY.isNotBlank()} length=${BuildConfig.KAKAO_NATIVE_APP_KEY.length}"
+		)
+	}
+
 	var kakaoMapInstance by remember { mutableStateOf<KakaoMap?>(null) }
 	val uiState by viewModel.uiState.collectAsState()
 	var isFirstLocationUpdate by remember { mutableStateOf(true) }
@@ -134,38 +145,65 @@ fun MapScreen(
 		Box(
 			modifier = Modifier.fillMaxSize()
 		) {
-			AndroidView(
-				modifier = Modifier
-					.matchParentSize()
-					.padding(innerPadding),
-				factory = {
-					mapView.apply {
-						start(object : MapLifeCycleCallback() {
-							override fun onMapDestroy() {}
-							override fun onMapError(error: Exception) { Log.e("KakaoMapError", "Map Error: ${error.message}") }
-						}, object : KakaoMapReadyCallback() {
-							override fun onMapReady(kakaoMap: KakaoMap) {
-								kakaoMapInstance = kakaoMap
-								kakaoMap.setOnLabelClickListener { _, _, label ->
-									(label.tag as? MapPlace)?.let { place ->
-										selectedPlace = place
-										scope.launch { scaffoldState.bottomSheetState.expand() }
+			if (isMapSupported) {
+				AndroidView(
+					modifier = Modifier
+						.matchParentSize()
+						.padding(innerPadding),
+					factory = {
+						// 지원 환경에서만 MapView 생성
+						MapView(context).apply {
+							start(object : MapLifeCycleCallback() {
+								override fun onMapDestroy() {}
+								override fun onMapError(error: Exception) { Log.e("KakaoMapError", "Map Error: ${error.message}") }
+							}, object : KakaoMapReadyCallback() {
+								override fun onMapReady(kakaoMap: KakaoMap) {
+									kakaoMapInstance = kakaoMap
+									kakaoMap.setOnLabelClickListener { _, _, label ->
+										(label.tag as? MapPlace)?.let { place ->
+											selectedPlace = place
+											scope.launch { scaffoldState.bottomSheetState.expand() }
+										}
+										true
 									}
-									true
-								}
-								if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-									getCurrentLocation(context as Activity) { lat, lon ->
-										val location = android.location.Location("").apply { latitude = lat; longitude = lon }
-										viewModel.updateCurrentLocation(location)
+									if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+										getCurrentLocation(context as Activity) { lat, lon ->
+											val location = android.location.Location("").apply { latitude = lat; longitude = lon }
+											viewModel.updateCurrentLocation(location)
+										}
+									} else {
+										permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
 									}
-								} else {
-									permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
 								}
-							}
-						})
+							})
+						}
 					}
+				)
+			} else {
+				// 미지원 환경: 대체 화면 제공(크래시 방지)
+				Column(
+					modifier = Modifier
+						.matchParentSize()
+						.padding(innerPadding)
+						.padding(16.dp),
+					horizontalAlignment = Alignment.CenterHorizontally,
+					verticalArrangement = Arrangement.Center
+				) {
+					Text(
+						text = "이 환경에서는 지도를 표시할 수 없습니다.",
+						color = MyPageColors.Secondary
+					)
+					Spacer(Modifier.height(8.dp))
+					Text(
+						text = if (!isKakaoKeyPresent) {
+							"KAKAO_NATIVE_APP_KEY가 비어 있습니다. local.properties에 키를 설정하세요."
+						} else {
+							"지도를 초기화할 수 없습니다. 앱 키 또는 SDK 초기화를 확인하세요."
+						},
+						color = MyPageColors.Tertiary
+					)
 				}
-			)
+			}
 
 			Box(
 				modifier = Modifier

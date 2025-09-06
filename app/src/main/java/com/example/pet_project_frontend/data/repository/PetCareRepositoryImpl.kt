@@ -1,0 +1,131 @@
+// app/src/main/java/com/example/pet_project_frontend/data/repository/PetCareRepositoryImpl.kt
+
+package com.example.pet_project_frontend.data.repository
+
+import android.util.Log
+import com.example.pet_project_frontend.core.common.AppResult
+import com.example.pet_project_frontend.core.common.SafeApi
+import com.example.pet_project_frontend.data.local.preferences.TokenManager
+import com.example.pet_project_frontend.data.remote.api.PetCareApi
+import com.example.pet_project_frontend.data.remote.dto.request.CareRecordCreateRequest
+import com.example.pet_project_frontend.data.remote.dto.response.CareRecordResponse
+import com.example.pet_project_frontend.data.remote.dto.response.CareRecordsResponse
+import com.example.pet_project_frontend.data.remote.dto.response.PetCareSettings
+import com.example.pet_project_frontend.data.remote.dto.request.CareRecordUpdateRequest
+import com.example.pet_project_frontend.domain.repository.PetCareRepository
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class PetCareRepositoryImpl @Inject constructor(
+    private val petCareApi: PetCareApi,
+    private val tokenManager: TokenManager
+) : PetCareRepository {
+
+    companion object {
+        private const val TAG = "PetCareRepositoryImpl"
+    }
+
+    override suspend fun getCareRecords(
+        petId: String,
+        date: String?,
+        startDate: String?,
+        endDate: String?,
+        recordTypes: List<String>?,
+        grouped: Boolean,
+        limit: Int,
+        cursor: String?,
+        sort: String
+    ): AppResult<CareRecordsResponse> {
+        return SafeApi.body {
+            Log.d(TAG, "Getting care records for pet: $petId")
+            val response = petCareApi.getCareRecords(
+                petId = petId,
+                date = date,
+                startDate = startDate,
+                endDate = endDate,
+                recordTypes = recordTypes?.joinToString(","),
+                grouped = grouped,
+                limit = limit,
+                cursor = cursor,
+                sort = sort
+            )
+            Log.d(TAG, "Care records fetched successfully: ${response.records.size} records")
+            response
+        }
+    }
+
+    override suspend fun createCareRecord(
+        petId: String,
+        recordType: String,
+        timestamp: Long,
+        data: Any,
+    notes: String?,
+    requestId: String?
+    ): AppResult<CareRecordResponse> {
+        return SafeApi.body {
+            Log.d(TAG, "Creating care record for pet: $petId, type: $recordType")
+            val request = CareRecordCreateRequest(
+                recordType = recordType,
+                timestamp = timestamp,
+                data = data,
+                notes = notes,
+                requestId = requestId
+            )
+            val response = petCareApi.createCareRecord(petId = petId, recordRequest = request)
+            Log.d(TAG, "Care record created successfully: ${response.logId}")
+            response
+        }
+    }
+
+    override suspend fun getRecordsByType(
+        petId: String,
+        recordType: String,
+        date: String?,
+        startDate: String?,
+        endDate: String?,
+        limit: Int,
+        cursor: String?
+    ): AppResult<CareRecordsResponse> {
+        return SafeApi.body {
+            Log.d(TAG, "Getting care records by type for pet: $petId, type: $recordType")
+            val response = petCareApi.getRecordsByType(
+                petId = petId,
+                recordType = recordType,
+                date = date,
+                startDate = startDate,
+                endDate = endDate,
+                limit = limit,
+                cursor = cursor
+            )
+            Log.d(TAG, "Care records by type fetched successfully: ${response.records.size} records")
+            response
+        }
+    }
+
+    override suspend fun getPetCareSettings(): AppResult<PetCareSettings> {
+    return SafeApi.body { petCareApi.getPetCareSettings() }
+    }
+
+    override suspend fun updatePetCareSettings(settings: PetCareSettings): AppResult<PetCareSettings> {
+    return SafeApi.body { petCareApi.updatePetCareSettings(settings) }
+    }
+
+    override suspend fun updateCareRecord(
+        petId: String,
+        logId: String,
+        update: CareRecordUpdateRequest
+    ): AppResult<CareRecordResponse> {
+        return SafeApi.body {
+            Log.d(TAG, "Updating care record: pet=$petId log=$logId")
+            petCareApi.updateCareRecord(petId, logId, update)
+        }
+    }
+
+    override suspend fun deleteCareRecord(petId: String, logId: String): AppResult<Unit> {
+    return SafeApi.responseUnit {
+            Log.d(TAG, "Deleting care record: pet=$petId log=$logId")
+            petCareApi.deleteCareRecord(petId, logId)
+        }
+    }
+}

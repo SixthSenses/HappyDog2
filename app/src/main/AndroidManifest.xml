@@ -11,7 +11,8 @@
 
     <!-- 저장소 권한 (사진 선택) -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
 
     <!-- 위치 권한 (지도 기능) -->
@@ -51,30 +52,49 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
 
-
-<!--
-        # 카카오 로그인 설정 (사용하는 경우)
-        <activity
-            android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity"
-            android:exported="true">
+            <!-- app:// 딥링크 수신 -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-
-                카카오 앱 키 설정 필요
-                <data android:host="oauth"
-                    android:scheme="kakao${KAKAO_APP_KEY}" />
+                <data android:scheme="app" />
+                <!-- 예: app://pet-care/dashboard -->
+                <data android:host="pet-care" android:pathPrefix="/dashboard" />
+                <!-- 기타 경로는 NavHost에서 처리 -->
             </intent-filter>
         </activity>
--->
-        <!-- 네이버 지도 API 키 (사용하는 경우)
+
+
+        <!--
+                # 카카오 로그인 설정 (사용하는 경우)
+                <activity
+                    android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity"
+                    android:exported="true">
+                    <intent-filter>
+                        <action android:name="android.intent.action.VIEW" />
+                        <category android:name="android.intent.category.DEFAULT" />
+                        <category android:name="android.intent.category.BROWSABLE" />
+
+                        카카오 앱 키 설정 필요
+                        <data android:host="oauth"
+                            android:scheme="kakao${KAKAO_APP_KEY}" />
+                    </intent-filter>
+                </activity>
+        -->
+
+        <!-- [수정됨] 카카오맵 SDK 네이티브 앱 키 설정 -->
+        <!-- build.gradle.kts의 manifestPlaceholders["kakaoAppKey"] 에서 값을 가져옵니다. -->
         <meta-data
-            android:name="com.naver.maps.map.CLIENT_ID"
-            android:value="${NAVER_MAP_CLIENT_ID}" />
--->
+            android:name="com.kakao.vectormap.APP_KEY"
+            android:value="${kakaoAppKey}" />
+
+        <!--
+                네이버 지도 API 키 (사용하는 경우)
+                <meta-data
+                    android:name="com.naver.maps.map.CLIENT_ID"
+                    android:value="${NAVER_MAP_CLIENT_ID}" />
+        -->
         <!-- 파일 프로바이더 (카메라 촬영 시 필요) -->
         <provider
             android:name="androidx.core.content.FileProvider"

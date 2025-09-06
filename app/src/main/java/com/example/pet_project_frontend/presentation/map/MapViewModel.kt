@@ -1,8 +1,6 @@
 package com.example.pet_project_frontend.presentation.map
 
-import android.app.Application
 import android.location.Location
-import android.util.Log
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.ContentCut
@@ -20,15 +18,14 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pet_project_frontend.R
+import com.example.pet_project_frontend.domain.repository.MapRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.io.BufferedReader
-import java.io.InputStreamReader
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.Job
 import javax.inject.Inject
 
 data class MapPlace(
@@ -55,22 +52,22 @@ enum class DetailedPlaceCategory(
 ) {
 	// --- 반려의료 ---
 	ANIMAL_HOSPITAL("동물병원", PlaceCategory.HOSPITAL, R.drawable.hospital, R.drawable.hospital),
-	ANIMAL_PHARMACY("동물약국", PlaceCategory.HOSPITAL, R.drawable.pharmacy, R.drawable.pharmacy),
+	ANIMAL_PHARMACY("동물약국", PlaceCategory.HOSPITAL, R.drawable.my_location_marker, R.drawable.my_location_marker),
 
 	// --- 반려동물 동반가능 ---
-	ART_MUSEUM("미술관", PlaceCategory.PET_FACILITY, R.drawable.art_gallery, R.drawable.art_gallery),
+	ART_MUSEUM("미술관", PlaceCategory.PET_FACILITY, R.drawable.my_location_marker, R.drawable.my_location_marker),
 	CAFE("카페", PlaceCategory.PET_FACILITY, R.drawable.cafe, R.drawable.cafe),
-	PET_SUPPLIES("반려동물용품", PlaceCategory.PET_FACILITY, R.drawable.pet_supplies, R.drawable.pet_supplies),
-	GROOMING("미용", PlaceCategory.PET_FACILITY, R.drawable.beauty, R.drawable.beauty),
-	CULTURE_CENTER("문예회관", PlaceCategory.PET_FACILITY, R.drawable.cultural_center, R.drawable.cultural_center),
+	PET_SUPPLIES("반려동물용품", PlaceCategory.PET_FACILITY, R.drawable.my_location_marker, R.drawable.my_location_marker),
+	GROOMING("미용", PlaceCategory.PET_FACILITY, R.drawable.my_location_marker, R.drawable.my_location_marker),
+	CULTURE_CENTER("문예회관", PlaceCategory.PET_FACILITY, R.drawable.my_location_marker, R.drawable.my_location_marker),
 	PENSION("펜션", PlaceCategory.PET_FACILITY, R.drawable.pension, R.drawable.pension),
 	RESTAURANT("식당", PlaceCategory.PET_FACILITY, R.drawable.restaurant, R.drawable.restaurant),
 	TOURIST_SPOT("여행지", PlaceCategory.PET_FACILITY, R.drawable.travel, R.drawable.travel),
-	PET_SITTING("위탁관리", PlaceCategory.PET_FACILITY, R.drawable.pet_supplies, R.drawable.pet_supplies),
-	MUSEUM("박물관", PlaceCategory.PET_FACILITY, R.drawable.museum, R.drawable.museum),
+	PET_SITTING("위탁관리", PlaceCategory.PET_FACILITY, R.drawable.my_location_marker, R.drawable.my_location_marker),
+	MUSEUM("박물관", PlaceCategory.PET_FACILITY, R.drawable.my_location_marker, R.drawable.my_location_marker),
 
 	// CSV의 카테고리 이름과 일치하지 않을 경우를 대비한 기본값 -> 임의로 현재 위치 마커와 동일한 이미지 사용
-	UNKNOWN("기타", PlaceCategory.PET_FACILITY, R.drawable.map_marker,R.drawable.map_marker);
+	UNKNOWN("기타", PlaceCategory.PET_FACILITY, R.drawable.my_location_marker,R.drawable.my_location_marker);
 
 	companion object {
 		// CSV 이름(String)으로 해당하는 Enum 값을 찾기 위한 함수
@@ -88,110 +85,94 @@ data class MapUiState(
 
 @HiltViewModel
 class MapViewModel @Inject constructor(
-	private val application: Application
+	private val mapRepository: MapRepository
 ) : ViewModel() {
 
 	private val _uiState = MutableStateFlow(MapUiState())
 	val uiState = _uiState.asStateFlow()
 
-	private var allPlaces: List<MapPlace> = emptyList()
+	private var placesCollectJob: Job? = null
 
 	init {
-		loadPlacesFromCsv()
+		loadPlacesFromDatabase()
 	}
 
 	fun updateCurrentLocation(location: Location) {
 		_uiState.update { it.copy(currentLocation = location) }
-		// 위치 정보가 업데이트되면 필터링을 다시 시도
+		// 위치 정보가 업데이트되면 필터링을 다시 시도 (이전 수집 취소 후 재시작)
 		filterAndFetchPlaces()
 	}
 
 	fun selectCategory(category: PlaceCategory) {
 		_uiState.update { it.copy(selectedCategory = category) }
+		// 카테고리 변경 시에도 동일하게 재수집
 		filterAndFetchPlaces()
 	}
 
-	private fun loadPlacesFromCsv() {
-		viewModelScope.launch {
-			try {
-				val placesList = withContext(Dispatchers.IO) {
-					val inputStream = application.assets.open("places.csv")
-					val reader = BufferedReader(InputStreamReader(inputStream, "euc-kr"))
-					reader.readLines().drop(1)
-						.mapNotNull { line ->
-							val tokens = line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)".toRegex())
-							if (tokens.size < 14) return@mapNotNull null
-
-							try {
-								val name = tokens[0].trim().removeSurrounding("\"")
-								val address = tokens[14].trim().removeSurrounding("\"")
-								val lat = tokens[11].trim().removeSurrounding("\"").toDoubleOrNull()
-								val lon = tokens[12].trim().removeSurrounding("\"").toDoubleOrNull()
-								val shortAddress = tokens[4].trim().removeSurrounding("\"") + " " + tokens[5].trim().removeSurrounding("\"")
-								val phoneNumber = tokens[16].trim().removeSurrounding("\"")
-								val operateTime = tokens[19].trim().removeSurrounding("\"")
-								val homePage = tokens[17].trim().removeSurrounding("\"")
-								val detailedCategoryStr = tokens[3].trim().removeSurrounding("\"")
-
-								Log.d("CSV_DEBUG", "CSV에서 읽은 카테고리: '(${detailedCategoryStr})'")
-								if (lat == null || lon == null || address.isEmpty()) return@mapNotNull null
-
-								val category = DetailedPlaceCategory.fromCsvName(detailedCategoryStr)
-
-								MapPlace(
-									name = name,
-									latitude = lat,
-									longitude = lon,
-									category = category,
-									address = address,
-									shortAddress = shortAddress,
-									phoneNumber = if (phoneNumber.isNotEmpty()) phoneNumber else "정보 없음",
-									operateTime = operateTime,
-									homePage = homePage,
-								)
-							} catch (e: Exception) {
-								Log.e("CsvParsingError", "Error parsing line: $line", e)
-								null
-							}
-						}
-				}
-				allPlaces = placesList
-				// CSV 로딩이 완료되면 필터링을 다시 시도
-				filterAndFetchPlaces()
-			} catch (e: Exception) {
-				Log.e("CsvLoadingError", "Failed to load CSV file", e)
-				_uiState.update { it.copy(isLoading = false) }
-			}
-		}
+	private fun loadPlacesFromDatabase() {
+		// 초기에는 현재 위치가 없으므로 카테고리 기준 기본 목록만 로드
+		filterAndFetchPlaces()
 	}
 
 	private fun filterAndFetchPlaces() {
 		val currentState = _uiState.value
 		val currentLocation = currentState.currentLocation
 
-		if (currentLocation == null || allPlaces.isEmpty()) {
-			return
-		}
+		// 이전 흐름 수집이 있다면 취소하여 중복 수집/로그 폭주 방지
+		placesCollectJob?.cancel()
+		placesCollectJob = viewModelScope.launch {
+			try {
+				val categories = getCategoriesForSelectedCategory(currentState.selectedCategory)
 
-		val filteredPlaces = allPlaces.filter { place ->
-			val isCategoryMatch = place.category.parentCategory == currentState.selectedCategory
-			val placeLocation = Location("place").apply {
-				latitude = place.latitude
-				longitude = place.longitude
-			}
-			val distanceInMeters = currentLocation.distanceTo(placeLocation)
-			// 주변 2km 이내의 장소만 필터링
-			val isWithinDistance = distanceInMeters <= 2000
-			isCategoryMatch && isWithinDistance
-		}
-			.sortedBy { place ->
-				val placeLocation = Location("place").apply {
-					latitude = place.latitude
-					longitude = place.longitude
+				if (currentLocation == null) {
+					// 위치 미확인: 카테고리 전체 목록을 가져오되, 즉시 화면 표시
+					mapRepository.getPlacesByCategories(categories).collectLatest { places ->
+						_uiState.update { it.copy(places = places, isLoading = false) }
+					}
+				} else {
+					// 현재 위치 기준으로 2km 반경 내의 장소들만 필터링
+					val bounds = calculateBounds(currentLocation, 2000.0)
+					mapRepository.getPlacesInBounds(
+						categories = categories,
+						minLat = bounds[0],
+						maxLat = bounds[1],
+						minLng = bounds[2],
+						maxLng = bounds[3]
+					).collectLatest { places ->
+						// 거리순으로 정렬
+						val sortedPlaces = places.sortedBy { place ->
+							val placeLocation = Location("place").apply {
+								latitude = place.latitude
+								longitude = place.longitude
+							}
+							currentLocation.distanceTo(placeLocation)
+						}
+						_uiState.update { it.copy(places = sortedPlaces, isLoading = false) }
+					}
 				}
-				currentLocation.distanceTo(placeLocation)
+			} catch (e: Exception) {
+				_uiState.update { it.copy(isLoading = false) }
 			}
-
-		_uiState.update { it.copy(places = filteredPlaces, isLoading = false) }
+		}
+	}
+	
+	private fun getCategoriesForSelectedCategory(category: PlaceCategory): List<String> {
+		return when (category) {
+			PlaceCategory.HOSPITAL -> listOf("동물병원", "동물약국")
+			PlaceCategory.PET_FACILITY -> listOf("미술관", "카페", "반려동물용품", "미용", "문예회관", "펜션", "식당", "여행지", "위탁관리", "박물관")
+		}
+	}
+	
+	private fun calculateBounds(location: Location, radiusInMeters: Double): List<Double> {
+		// 위도 1도 = 약 111km, 경도 1도 = 약 88.9km (한반도 기준)
+		val latDelta = radiusInMeters / 111000.0
+		val lngDelta = radiusInMeters / (88900.0 * Math.cos(Math.toRadians(location.latitude)))
+		
+		return listOf(
+			location.latitude - latDelta, // minLat
+			location.latitude + latDelta, // maxLat
+			location.longitude - lngDelta, // minLng
+			location.longitude + lngDelta  // maxLng
+		)
 	}
 }
