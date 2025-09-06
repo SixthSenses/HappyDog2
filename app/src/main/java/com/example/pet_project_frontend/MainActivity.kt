@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -25,6 +26,7 @@ import com.example.pet_project_frontend.core.navigation.BottomNavigation
 import com.example.pet_project_frontend.core.navigation.PetCareNavHost
 import com.example.pet_project_frontend.core.navigation.Screen
 import com.example.pet_project_frontend.core.designsystem.AppTheme
+import com.example.pet_project_frontend.data.local.preferences.TokenManager
 import com.kakao.vectormap.KakaoMapSdk
 import com.kakao.vectormap.*
 import com.kakao.sdk.common.util.Utility
@@ -72,33 +74,33 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // Log length only, avoid printing secret
-        android.util.Log.i("KakaoKey", "resolvedKey length=${resolvedKey.length}")
-
         // Log length only, avoid printing secret; also print Kakao key-hash for Android app registration
         android.util.Log.i("KakaoKey", "resolvedKey length=${resolvedKey.length}")
         runCatching { Utility.getKeyHash(this) }
             .onSuccess { keyHash -> android.util.Log.i("KakaoKey", "keyHash=$keyHash") }
             .onFailure { e -> android.util.Log.w("KakaoKey", "Failed to get keyHash: ${e.message}") }
-    } else {
-        KakaoMapSdk.init(this, resolvedKey)
-    }
+
+        if (resolvedKey.isBlank()) {
+            android.util.Log.e("MainActivity", "Kakao APP KEY is missing. Please set KAKAO_NATIVE_APP_KEY in local.properties or Gradle properties.")
+        } else {
+            KakaoMapSdk.init(this, resolvedKey)
+        }
 
     setContent {
         AppTheme {
             val isLoggedIn by viewModel.isLoggedIn.collectAsStateWithLifecycle()
+            val selectedPetId by tokenManager.getSelectedPetIdFlow().collectAsStateWithLifecycle(initialValue = null)
             val navController = rememberNavController()
             val navBackStackEntry by navController.currentBackStackEntryAsState()
             val currentRoute = navBackStackEntry?.destination?.route
 
             val bottomBarRoutes = remember {
                 listOf(
-                    val selectedPetId by tokenManager.getSelectedPetIdFlow().collectAsStateWithLifecycle(initialValue = null)
-                Screen.PetCare.route,
-                Screen.Map.route,
-                Screen.Community.route,
-                Screen.Translator.route,
-                Screen.MyPage.route
+                    Screen.PetCare.route,
+                    Screen.Map.route,
+                    Screen.Community.route,
+                    Screen.Translator.route,
+                    Screen.MyPage.route
                 )
             }
             val showBottomBar = currentRoute in bottomBarRoutes
@@ -129,11 +131,8 @@ class MainActivity : ComponentActivity() {
                         CircularProgressIndicator()
                     }
                 } else {
-                    // startDestination은 로그인 여부에 따라 분기합니다.
-                    // 로그인 상태라면 기본 홈은 PetCare로 둡니다(신규 유저 분기는 LoginScreen 내부에서 처리).
-                    PetCareNavHost(
-                        navController = navController,
-                        val effectiveStart = when {
+                    // startDestination은 로그인 + 선택된 반려동물 유무에 따라 분기합니다.
+                    val effectiveStart = when {
                         !isLoggedIn -> Screen.Login.route
                         selectedPetId.isNullOrBlank() -> Screen.PetRegistration.route
                         else -> Screen.PetCare.route
@@ -149,12 +148,14 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     }
-                    startDestination = if (isLoggedIn) Screen.PetCare.route else Screen.Login.route,
-                    modifier = Modifier.padding(innerPadding)
+
+                    PetCareNavHost(
+                        navController = navController,
+                        startDestination = effectiveStart,
+                        modifier = Modifier.padding(innerPadding)
                     )
-                    startDestination = effectiveStart,
                 }
             }
         }
     }
-}
+}}
