@@ -9,6 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import com.example.pet_project_frontend.data.local.database.PetCareDatabase
 import com.example.pet_project_frontend.data.local.database.dao.PlaceDao
+import java.nio.charset.Charset
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -46,9 +47,15 @@ object DatabaseModule {
             // Already seeded? Exit early.
             if (database.placeDao().getPlacesCount() > 0) return
 
-            context.assets.open("places.csv").bufferedReader().useLines { seq ->
+            context.assets
+                .open("places_utf8.csv")
+                .reader(Charset.forName("UTF-8"))
+                .buffered()
+                .useLines { seq ->
                 // 헤더 1줄 제거 후 스트리밍 처리
-                val entitiesSeq = seq.drop(1).mapNotNull { line ->
+                val entitiesSeq = seq
+                    .drop(1) // 헤더 제거
+                    .mapNotNull { line ->
                     // CSV 안전 분리(따옴표 보호)
                     val tokens = line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)".toRegex())
                     // 필요한 인덱스 0,3,4,5,11,12,14,16,17,19 → 최소 20개 필요
