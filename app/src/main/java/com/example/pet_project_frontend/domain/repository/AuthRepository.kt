@@ -1,4 +1,27 @@
 package com.example.pet_project_frontend.domain.repository
 
+import com.example.pet_project_frontend.data.remote.dto.response.SocialLoginResponse
+import com.example.pet_project_frontend.data.remote.dto.response.TokenRefreshResponse
+import com.example.pet_project_frontend.data.remote.dto.response.UserInfo
+import com.example.pet_project_frontend.domain.model.User
+import com.example.pet_project_frontend.core.common.AppResult
+import kotlinx.coroutines.flow.Flow
+
 interface AuthRepository {
+    suspend fun socialLogin(authCode: String): AppResult<SocialLoginResponse>
+    suspend fun refreshToken(refreshToken: String): AppResult<TokenRefreshResponse>
+    suspend fun logout(accessToken: String, refreshToken: String): AppResult<Unit>
+    
+    // 토큰 관리
+    suspend fun saveTokens(accessToken: String, refreshToken: String)
+    suspend fun getAccessToken(): String?
+    suspend fun getRefreshToken(): String?
+    suspend fun clearTokens()
+    
+    // 사용자 정보 관리
+    suspend fun saveUserInfo(userInfo: UserInfo)
+    suspend fun getUserInfo(): UserInfo?
+    suspend fun clearUserInfo()
+    // 도메인 중심 저장(신규)
+    suspend fun saveUser(user: User)
 }

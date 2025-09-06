@@ -15,4 +15,5 @@ object MyPageColors {
     val AppVersion = Color(0xFF6B7684)
     val ProfileAddButton = Color(0xFFE4E7EA)
     val Scrim = Color(0x52000000) // 32% opacity
+    val TapChosen: Color = Color(0xFFFFFFFF)
 }

@@ -1,16 +1,82 @@
-*.iml
-.gradle
+# ===== Android/Gradle build outputs =====
+/.gradle/
+/build/
+*/build/
+/core/**/build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Generated/IDE out dirs
+/bin/
+/gen/
+/out/
+
+# Local machine config (DO NOT COMMIT)
 /local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
+
+# Android Studio / IntelliJ IDEA
+/.idea/
+*.iml
+/captures/
+/.externalNativeBuild/
+/.cxx/
+
+# VS Code
+/.vscode/
+
+# App artifacts
+*.apk
+*.ap_
+*.aab
+*.dex
+*.class
+
+# Proguard / logs
+/proguard/
+*.log
+
+# KSP/Room caches (covered by build/*, keep for clarity)
+**/kspCaches/
+
+# Test/coverage outputs
+/coverage/
+/test-results/
+/reports/
+/jacoco/
+*.ec
+
+# Secrets & signing (DO NOT COMMIT)
+*.jks
+*.keystore
+/keystore.properties
+/signing.properties
+*.pem
+*.p12
+*.p8
+*.key
+*.crt
+*.der
+*.mobileprovision
+*.provisionprofile
+
+# Environment files
+.env
+.env.*
+.envrc
+/.direnv/
+
+# Firebase/Crashlytics/Google Services (DO NOT COMMIT)
+/app/google-services.json
+**/google-services.json
+crashlytics.properties
+crashlytics-build.properties
+fabric.properties
+
+# OS-specific
 .DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-local.properties
-/.idea
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+docs
+.github

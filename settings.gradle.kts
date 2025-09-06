@@ -25,4 +25,6 @@ dependencyResolutionManagement {
 
 rootProject.name = "pet_project_frontend"
 include(":app")
- 
+include(":core:common")
+include(":core:navigation")
+include(":core:designsystem")
