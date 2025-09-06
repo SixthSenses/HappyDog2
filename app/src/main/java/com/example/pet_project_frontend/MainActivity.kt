@@ -43,6 +43,9 @@ class MainActivity : ComponentActivity() {
 
     private val viewModel: MainViewModel by viewModels()
 
+
+    @Inject
+    lateinit var tokenManager: TokenManager
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -60,7 +63,7 @@ class MainActivity : ComponentActivity() {
         }
 
         // Initialize Kakao Map SDK only when app key is available to avoid runtime crash
-    val resolvedKey = when {
+        val resolvedKey = when {
             !nativeAppKey.isNullOrBlank() -> nativeAppKey
             else -> {
                 // Fallback: read from AndroidManifest meta-data if provided
@@ -69,67 +72,87 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-    // Log length only, avoid printing secret
-    android.util.Log.i("KakaoKey", "resolvedKey length=${resolvedKey.length}")
+        // Log length only, avoid printing secret
+        android.util.Log.i("KakaoKey", "resolvedKey length=${resolvedKey.length}")
 
-    if (resolvedKey.isNullOrBlank()) {
-            android.util.Log.e("MainActivity", "Kakao APP KEY is missing. Please set KAKAO_NATIVE_APP_KEY in local.properties or Gradle properties.")
-        } else {
-            KakaoMapSdk.init(this, resolvedKey)
-        }
+        // Log length only, avoid printing secret; also print Kakao key-hash for Android app registration
+        android.util.Log.i("KakaoKey", "resolvedKey length=${resolvedKey.length}")
+        runCatching { Utility.getKeyHash(this) }
+            .onSuccess { keyHash -> android.util.Log.i("KakaoKey", "keyHash=$keyHash") }
+            .onFailure { e -> android.util.Log.w("KakaoKey", "Failed to get keyHash: ${e.message}") }
+    } else {
+        KakaoMapSdk.init(this, resolvedKey)
+    }
 
-        setContent {
-            AppTheme {
-                val isLoggedIn by viewModel.isLoggedIn.collectAsStateWithLifecycle()
-                val navController = rememberNavController()
-                val navBackStackEntry by navController.currentBackStackEntryAsState()
-                val currentRoute = navBackStackEntry?.destination?.route
+    setContent {
+        AppTheme {
+            val isLoggedIn by viewModel.isLoggedIn.collectAsStateWithLifecycle()
+            val navController = rememberNavController()
+            val navBackStackEntry by navController.currentBackStackEntryAsState()
+            val currentRoute = navBackStackEntry?.destination?.route
 
-                val bottomBarRoutes = remember {
-                    listOf(
-                        Screen.PetCare.route,
-                        Screen.Map.route,
-                        Screen.Community.route,
-                        Screen.Translator.route,
-                        Screen.MyPage.route
-                    )
-                }
-                val showBottomBar = currentRoute in bottomBarRoutes
+            val bottomBarRoutes = remember {
+                listOf(
+                    val selectedPetId by tokenManager.getSelectedPetIdFlow().collectAsStateWithLifecycle(initialValue = null)
+                Screen.PetCare.route,
+                Screen.Map.route,
+                Screen.Community.route,
+                Screen.Translator.route,
+                Screen.MyPage.route
+                )
+            }
+            val showBottomBar = currentRoute in bottomBarRoutes
 
-                Scaffold(
-                    bottomBar = {
-                        if (showBottomBar) {
-                            BottomNavigation(
-                                currentRoute = currentRoute ?: "",
-                                onNavigate = { route ->
-                                    navController.navigate(route) {
-                                        popUpTo(navController.graph.startDestinationId) {
-                                            saveState = true
-                                        }
-                                        launchSingleTop = true
-                                        restoreState = true
+            Scaffold(
+                bottomBar = {
+                    if (showBottomBar) {
+                        BottomNavigation(
+                            currentRoute = currentRoute ?: "",
+                            onNavigate = { route ->
+                                navController.navigate(route) {
+                                    popUpTo(navController.graph.startDestinationId) {
+                                        saveState = true
                                     }
+                                    launchSingleTop = true
+                                    restoreState = true
                                 }
-                            )
-                        }
-                    }
-                ) { innerPadding ->
-                    if (isLoading.value) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator()
-                        }
-                    } else {
-                        // startDestination은 로그인 여부에 따라 분기합니다.
-                        // 로그인 상태라면 기본 홈은 PetCare로 둡니다(신규 유저 분기는 LoginScreen 내부에서 처리).
-                        PetCareNavHost(
-                            navController = navController,
-                            startDestination = if (isLoggedIn) Screen.PetCare.route else Screen.Login.route,
-                            modifier = Modifier.padding(innerPadding)
+                            }
                         )
                     }
+                }
+            ) { innerPadding ->
+                if (isLoading.value) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                } else {
+                    // startDestination은 로그인 여부에 따라 분기합니다.
+                    // 로그인 상태라면 기본 홈은 PetCare로 둡니다(신규 유저 분기는 LoginScreen 내부에서 처리).
+                    PetCareNavHost(
+                        navController = navController,
+                        val effectiveStart = when {
+                        !isLoggedIn -> Screen.Login.route
+                        selectedPetId.isNullOrBlank() -> Screen.PetRegistration.route
+                        else -> Screen.PetCare.route
+                    }
+
+                    // selected_pet_id가 사라지면 런타임에도 등록 화면으로 유도
+                    LaunchedEffect(selectedPetId, currentRoute, isLoggedIn) {
+                        if (isLoggedIn && selectedPetId.isNullOrBlank() && currentRoute != Screen.Login.route && currentRoute != Screen.PetRegistration.route) {
+                            navController.navigate(Screen.PetRegistration.route) {
+                                popUpTo(navController.graph.startDestinationId) { saveState = false }
+                                launchSingleTop = true
+                                restoreState = false
+                            }
+                        }
+                    }
+                    startDestination = if (isLoggedIn) Screen.PetCare.route else Screen.Login.route,
+                    modifier = Modifier.padding(innerPadding)
+                    )
+                    startDestination = effectiveStart,
                 }
             }
         }
