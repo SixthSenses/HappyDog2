@@ -60,7 +60,7 @@ class MainActivity : ComponentActivity() {
         }
 
         // Initialize Kakao Map SDK only when app key is available to avoid runtime crash
-        val resolvedKey = when {
+    val resolvedKey = when {
             !nativeAppKey.isNullOrBlank() -> nativeAppKey
             else -> {
                 // Fallback: read from AndroidManifest meta-data if provided
@@ -69,7 +69,10 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        if (resolvedKey.isNullOrBlank()) {
+    // Log length only, avoid printing secret
+    android.util.Log.i("KakaoKey", "resolvedKey length=${resolvedKey.length}")
+
+    if (resolvedKey.isNullOrBlank()) {
             android.util.Log.e("MainActivity", "Kakao APP KEY is missing. Please set KAKAO_NATIVE_APP_KEY in local.properties or Gradle properties.")
         } else {
             KakaoMapSdk.init(this, resolvedKey)

@@ -1,6 +1,9 @@
 // [수정됨] 'java.util.Properties'를 사용하기 위해 import 구문을 파일 최상단에 추가합니다.
 import java.util.Properties
 
+// Helper to strip accidental quotes from properties like "VALUE" or 'VALUE'
+fun String.unquote(): String = this.trim().removeSurrounding("\"").removeSurrounding("'")
+
 // local.properties 파일을 읽기 위한 코드
 val localProperties = Properties()
 val localPropertiesFile = rootProject.file("local.properties")
@@ -37,8 +40,15 @@ android {
         }
 
     // Populate BuildConfig from local.properties so runtime injection has actual values
-    val googleClientId = localProperties.getProperty("GOOGLE_SERVER_CLIENT_ID") ?: (project.findProperty("GOOGLE_SERVER_CLIENT_ID") as? String) ?: ""
-    val kakaoNativeAppKey = localProperties.getProperty("KAKAO_NATIVE_APP_KEY") ?: (project.findProperty("KAKAO_NATIVE_APP_KEY") as? String) ?: ""
+    val googleClientIdRaw = localProperties.getProperty("GOOGLE_SERVER_CLIENT_ID")
+        ?: (project.findProperty("GOOGLE_SERVER_CLIENT_ID") as? String)
+        ?: ""
+    val kakaoNativeAppKeyRaw = localProperties.getProperty("KAKAO_NATIVE_APP_KEY")
+        ?: (project.findProperty("KAKAO_NATIVE_APP_KEY") as? String)
+        ?: ""
+
+    val googleClientId = googleClientIdRaw.unquote()
+    val kakaoNativeAppKey = kakaoNativeAppKeyRaw.unquote()
 
     buildConfigField("String", "GOOGLE_SERVER_CLIENT_ID", "\"$googleClientId\"")
     buildConfigField("String", "KAKAO_NATIVE_APP_KEY", "\"$kakaoNativeAppKey\"")
@@ -54,7 +64,6 @@ android {
             isDebuggable = true
             isMinifyEnabled = false
             // local.properties 우선, 없으면 -P API_BASE_URL, 그마저도 없으면 에뮬레이터 기본값
-            fun String.unquote() = this.trim().removeSurrounding("\"").removeSurrounding("'")
             val rawApiBaseUrl = (localProperties.getProperty("API_BASE_URL")
                 ?: (project.findProperty("API_BASE_URL") as? String)
                 ?: "http://10.0.2.2:5000/")

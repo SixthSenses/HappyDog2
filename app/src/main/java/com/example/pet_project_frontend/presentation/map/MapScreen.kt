@@ -67,16 +67,15 @@ fun MapScreen(
 	viewModel: MapViewModel = hiltViewModel()
 ) {
 	val context = LocalContext.current
-	// 지도 지원 여부(키 유효 + ABI 지원 + 네이티브 라이브러리 로드 가능) 확인
+	// 지도 지원 여부: 키만 체크하고 나머지는 SDK가 스스로 처리하도록 완화
 	val isKakaoKeyPresent = remember { BuildConfig.KAKAO_NATIVE_APP_KEY.isNotBlank() }
-	val isAbiSupported = remember {
-		Build.SUPPORTED_ABIS.any { it.contains("arm64-v8a") || it.contains("armeabi-v7a") }
+	val isMapSupported = isKakaoKeyPresent
+	LaunchedEffect(Unit) {
+		android.util.Log.i(
+			"KakaoKey",
+			"keyPresent=${BuildConfig.KAKAO_NATIVE_APP_KEY.isNotBlank()} length=${BuildConfig.KAKAO_NATIVE_APP_KEY.length}"
+		)
 	}
-	val isNativeLoaded = remember {
-		// 라이브러리 사전 로드 시도(실패 시 false). 성공하면 중복 로드는 무해함.
-		runCatching { System.loadLibrary("K3fAndroid") }.isSuccess
-	}
-	val isMapSupported = isKakaoKeyPresent && isAbiSupported && isNativeLoaded
 
 	var kakaoMapInstance by remember { mutableStateOf<KakaoMap?>(null) }
 	val uiState by viewModel.uiState.collectAsState()
@@ -196,10 +195,10 @@ fun MapScreen(
 					)
 					Spacer(Modifier.height(8.dp))
 					Text(
-						text = when {
-							!isKakaoKeyPresent -> "KAKAO_NATIVE_APP_KEY가 비어 있습니다. local.properties에 키를 설정하세요."
-							!isAbiSupported -> "에뮬레이터 ABI가 미지원(x86_64)입니다. 실제 기기 또는 ARM64 에뮬레이터를 사용하세요."
-							else -> "지도 네이티브 라이브러리를 로드할 수 없습니다. 실제 기기에서 시도해 보세요."
+						text = if (!isKakaoKeyPresent) {
+							"KAKAO_NATIVE_APP_KEY가 비어 있습니다. local.properties에 키를 설정하세요."
+						} else {
+							"지도를 초기화할 수 없습니다. 앱 키 또는 SDK 초기화를 확인하세요."
 						},
 						color = MyPageColors.Tertiary
 					)
