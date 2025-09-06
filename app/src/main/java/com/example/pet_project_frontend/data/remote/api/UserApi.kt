@@ -18,4 +18,11 @@ interface UserApi {
 
     @DELETE("api/users/me")
     suspend fun deleteMe(): Response<Unit>
+
+    // Selected pet persistence
+    @GET("api/users/me/selected-pet")
+    suspend fun getSelectedPet(): Response<com.example.pet_project_frontend.data.remote.dto.response.SelectedPetResponse>
+
+    @PATCH("api/users/me/selected-pet")
+    suspend fun setSelectedPet(@Body request: com.example.pet_project_frontend.data.remote.dto.request.SelectedPetUpdateRequest): Response<com.example.pet_project_frontend.data.remote.dto.response.SelectedPetResponse>
 }

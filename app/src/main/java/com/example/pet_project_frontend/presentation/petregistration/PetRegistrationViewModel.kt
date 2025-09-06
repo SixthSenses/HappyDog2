@@ -9,7 +9,9 @@ import com.example.pet_project_frontend.domain.model.Gender
 import com.example.pet_project_frontend.presentation.model.PetUiState
 import com.example.pet_project_frontend.data.local.preferences.TokenManager
 import com.example.pet_project_frontend.domain.usecase.breed.SearchBreedsUseCase
+import com.example.pet_project_frontend.domain.repository.UserRepository
 import com.example.pet_project_frontend.domain.usecase.pet.RegisterPetUseCase
+import com.example.pet_project_frontend.core.constants.BreedDefaults
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -28,7 +30,8 @@ import java.time.Period
 class PetRegistrationViewModel @Inject constructor(
     private val registerPetUseCase: RegisterPetUseCase,
     private val searchBreedsUseCase: SearchBreedsUseCase,
-    private val tokenManager: TokenManager
+    private val tokenManager: TokenManager,
+    private val userRepository: UserRepository
 ) : ViewModel() {
     
     // UI State
@@ -195,7 +198,7 @@ class PetRegistrationViewModel @Inject constructor(
     fun showBreedDialog() {
         _showBreedDialog.value = true
         // 다이얼로그 열 때 전체 목록 로드
-        _breedSearchQuery.value = ""
+    _breedSearchQuery.value = ""
     }
     
     /**
@@ -242,6 +245,13 @@ class PetRegistrationViewModel @Inject constructor(
                     val petUi = result.data.toUiState()
                     // 등록 성공 시 선택된 반려동물 ID를 로컬에 저장
                     tokenManager.saveSelectedPetId(petUi.id)
+                    // 서버에도 선택 펫으로 반영(멱등적)
+                    // 실패해도 UX를 막지 않으며, 부팅 시 복구 플로우가 커버
+                    when (val setRes = userRepository.setSelectedPet(petUi.id)) {
+                        is AppResult.Success -> { /* no-op */ }
+                        is AppResult.Error -> { /* optionally log */ }
+                        is AppResult.Exception -> { /* optionally log */ }
+                    }
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         isSuccess = true,

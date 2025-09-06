@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pet_project_frontend.data.remote.dto.response.BreedsResponse
 import com.example.pet_project_frontend.domain.repository.BreedRepository
+import com.example.pet_project_frontend.core.constants.BreedDefaults
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,7 +24,7 @@ class BreedSearchViewModel @Inject constructor(
     val searchState: StateFlow<BreedSearchState> = _searchState.asStateFlow()
 
     fun searchBreeds(query: String) {
-        if (query.length < 2) {
+        if (query.length < BreedDefaults.SEARCH_MIN_QUERY) {
             _uiState.value = BreedSearchUiState(breeds = emptyList())
             _searchState.value = BreedSearchState.Idle
             return
@@ -33,7 +34,7 @@ class BreedSearchViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             _searchState.value = BreedSearchState.Loading
 
-            breedRepository.searchBreeds(query)
+            breedRepository.searchBreeds(query, limit = BreedDefaults.PAGE_LIMIT)
                 .onSuccess { breedsResponse ->
                     _uiState.value = BreedSearchUiState(
                         breeds = breedsResponse.breeds,

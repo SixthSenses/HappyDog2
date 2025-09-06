@@ -104,6 +104,13 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+
+    // Use docs/image as an additional asset source to bundle placeholder BCS images
+    sourceSets {
+        getByName("main") {
+            assets.srcDirs("src/main/assets", rootProject.file("docs/image"))
+        }
+    }
 }
 
 dependencies {
@@ -121,6 +128,7 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.compose.foundation:foundation")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.activity:activity-compose:1.9.0")
     implementation("androidx.compose.material:material-icons-extended")
@@ -128,6 +136,10 @@ dependencies {
     // Navigation
     implementation("androidx.navigation:navigation-compose:2.7.7")
     implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
+
+    // Paging3
+    implementation("androidx.paging:paging-runtime:3.3.2")
+    implementation("androidx.paging:paging-compose:3.3.2")
 
     // Dependency Injection - Hilt
     implementation("com.google.dagger:hilt-android:2.50")
@@ -162,6 +174,7 @@ dependencies {
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-storage-ktx")
     implementation("com.google.firebase:firebase-messaging-ktx")
+    implementation("com.google.firebase:firebase-config-ktx")
 
     // Kakao Map SDK
     implementation ("com.kakao.maps.open:android:2.11.9")

@@ -94,7 +94,13 @@ class MainActivity : ComponentActivity() {
                         Screen.MyPage.route
                     )
                 }
-                val showBottomBar = currentRoute in bottomBarRoutes
+                // 하단 바 노출 기준: 탑 레벨 탭(route 일치) + 펫케어 하위(route가 "pet_care/"로 시작)
+                val showBottomBar = when {
+                    currentRoute == null -> true
+                    currentRoute in bottomBarRoutes -> true
+                    currentRoute.startsWith("pet_care/") -> true
+                    else -> false
+                }
 
                 Scaffold(
                     bottomBar = {

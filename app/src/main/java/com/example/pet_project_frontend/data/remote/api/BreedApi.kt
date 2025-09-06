@@ -4,6 +4,7 @@ import com.example.pet_project_frontend.data.remote.dto.response.BreedsResponse
 import com.example.pet_project_frontend.data.remote.dto.response.BreedResponse
 import retrofit2.http.GET
 import retrofit2.http.Query
+import retrofit2.http.Path
 
 interface BreedApi {
     @GET("api/breeds")
@@ -22,6 +23,6 @@ interface BreedApi {
     
     @GET("api/breeds/{breed_name}")
     suspend fun getBreedByName(
-        @Query("breed_name") breedName: String
+        @Path("breed_name") breedName: String
     ): BreedResponse
 }

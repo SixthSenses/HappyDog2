@@ -1,0 +1,40 @@
+<resources>
+    <!-- Tabs -->
+    <string name="tab_today">오늘</string>
+    <string name="tab_week">주</string>
+    <string name="tab_month">월</string>
+
+    <!-- Cards titles -->
+    <string name="card_water">물</string>
+    <string name="card_activity">활동량</string>
+    <string name="card_meal">사료</string>
+    <string name="card_weight">몸무게</string>
+    <string name="card_bcs">BCS</string>
+
+    <!-- Common actions -->
+    <string name="action_retry">재시도</string>
+    <string name="action_settings">설정</string>
+    <string name="action_chart">차트</string>
+    <string name="action_add">추가</string>
+
+    <!-- Messages -->
+    <string name="msg_failed_to_load">데이터를 불러오지 못했습니다.</string>
+    <string name="msg_loading">로딩 중…</string>
+    <string name="msg_no_records">기록 없음</string>
+    <string name="msg_profile_failed">프로필을 불러오지 못했어요</string>
+    <string name="msg_total_format">총합: %1$d</string>
+
+    <!-- Water card -->
+    <string name="water_goal_format">/ %1$d ml</string>
+    <string name="water_plus_format">+%1$d ml</string>
+
+    <!-- Meal card -->
+    <string name="meal_count_format">%1$d / %2$d 회</string>
+    <string name="meal_plus_format">+%1$d 회</string>
+
+    <!-- Activity card -->
+    <string name="activity_total_goal_format">%1$d 분 / 목표 %2$d분</string>
+
+    <!-- Weight card -->
+    <string name="weight_delta_format">%1$+.1f kg</string>
+</resources>

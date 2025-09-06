@@ -8,6 +8,8 @@ import com.example.pet_project_frontend.core.common.SafeApi
 import com.example.pet_project_frontend.data.local.preferences.TokenManager
 import com.example.pet_project_frontend.data.mapper.UserMapper
 import com.example.pet_project_frontend.data.remote.api.UserApi
+import com.example.pet_project_frontend.data.remote.dto.request.SelectedPetUpdateRequest
+import com.example.pet_project_frontend.data.remote.dto.response.SelectedPetResponse
 import com.example.pet_project_frontend.data.remote.dto.request.UpdateFcmTokenRequest
 import com.example.pet_project_frontend.data.remote.dto.request.UpdateProfileImageRequest
 import com.example.pet_project_frontend.data.remote.dto.request.UserUpdateRequest
@@ -89,5 +91,48 @@ class UserRepositoryImpl @Inject constructor(
 
     override fun getAccessToken(): Flow<String?> {
         return tokenManager.getAccessTokenFlow()
+    }
+
+    override suspend fun getSelectedPet(): AppResult<SelectedPetResponse?> {
+        // 204 No Content -> Success(null), 200 -> Success(body)
+        val res = SafeApi.responseNullable { userApi.getSelectedPet() }
+        return when (res) {
+            is AppResult.Success -> {
+                val body = res.data
+                if (body?.petId != null) {
+                    // Sync to DataStore
+                    tokenManager.saveSelectedPetId(body.petId)
+                }
+                AppResult.Success(body)
+            }
+            is AppResult.Error -> {
+                // 403/404 -> clear local selection as per spec
+                if (res.code == 403 || res.code == 404) {
+                    tokenManager.clearSelectedPetId()
+                }
+                res
+            }
+            is AppResult.Exception -> res
+        }
+    }
+
+    override suspend fun setSelectedPet(petId: String): AppResult<SelectedPetResponse> {
+        val req = SelectedPetUpdateRequest(petId = petId)
+        val res = SafeApi.response { userApi.setSelectedPet(req) }
+        return when (res) {
+            is AppResult.Success -> {
+                // On success, persist locally
+                tokenManager.saveSelectedPetId(res.data.petId)
+                res
+            }
+            is AppResult.Error -> {
+                // 403/404 -> clear local selection
+                if (res.code == 403 || res.code == 404) {
+                    tokenManager.clearSelectedPetId()
+                }
+                res
+            }
+            is AppResult.Exception -> res
+        }
     }
 }

@@ -49,6 +49,7 @@ fun MyPageScreen(
     onPrivacyClick: () -> Unit = {},
     onWithdrawClick: () -> Unit = {},
     onProfileImageClick: () -> Unit = {},
+    onRegisterPetClick: () -> Unit = {},
     viewModel: MyPageViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -87,6 +88,7 @@ fun MyPageScreen(
             }
             uiState.error != null -> {
                 val errorMessage = uiState.error
+                val isMissingPet = errorMessage?.contains("등록된 반려동물") == true
                 Column(
                     modifier = Modifier.align(Alignment.Center),
                     horizontalAlignment = Alignment.CenterHorizontally
@@ -97,8 +99,10 @@ fun MyPageScreen(
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Spacer(modifier = Modifier.height(16.dp))
-                    Button(onClick = { viewModel.loadUserData() }) {
-                        Text("다시 시도")
+                    if (isMissingPet) {
+                        Button(onClick = onRegisterPetClick) { Text("반려동물 등록하기") }
+                    } else {
+                        Button(onClick = { viewModel.loadUserData() }) { Text("다시 시도") }
                     }
                 }
             }

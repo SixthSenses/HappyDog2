@@ -35,6 +35,22 @@ object SafeApi {
         }
     }
 
+    // Like response(), but allows null body on success (e.g., 204 No Content)
+    suspend fun <T> responseNullable(block: suspend () -> Response<T>): AppResult<T?> {
+        return try {
+            val res = block()
+            if (res.isSuccessful) {
+                AppResult.Success(res.body())
+            } else {
+                mapHttpResponse(res)
+            }
+        } catch (e: HttpException) {
+            mapHttpException(e)
+        } catch (t: Throwable) {
+            AppResult.Exception(t)
+        }
+    }
+
     private fun mapHttpException(e: HttpException): AppResult.Error {
         val code = e.code()
         val raw = e.response()?.errorBody()?.string()

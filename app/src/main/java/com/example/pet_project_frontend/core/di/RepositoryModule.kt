@@ -21,6 +21,10 @@ import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
+import com.example.pet_project_frontend.core.remoteconfig.FeatureToggles
+import com.example.pet_project_frontend.core.remoteconfig.RemoteConfigToggles
+import dagger.Provides
+import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -67,4 +71,16 @@ abstract class RepositoryModule {
     abstract fun bindPostRepository(
         postRepositoryImpl: PostRepositoryImpl
     ): PostRepository
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
+object RemoteConfigModule {
+    @Provides
+    @Singleton
+    fun provideFirebaseRemoteConfig(): FirebaseRemoteConfig = FirebaseRemoteConfig.getInstance()
+
+    @Provides
+    @Singleton
+    fun provideFeatureToggles(rc: FirebaseRemoteConfig): FeatureToggles = RemoteConfigToggles(rc)
 }

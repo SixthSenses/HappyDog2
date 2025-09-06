@@ -12,4 +12,8 @@ interface UserRepository {
     suspend fun deleteUser(): AppResult<Unit>
     suspend fun saveAccessToken(token: String)
     fun getAccessToken(): kotlinx.coroutines.flow.Flow<String?>
+
+    // Selected pet persistence
+    suspend fun getSelectedPet(): AppResult<com.example.pet_project_frontend.data.remote.dto.response.SelectedPetResponse?>
+    suspend fun setSelectedPet(petId: String): AppResult<com.example.pet_project_frontend.data.remote.dto.response.SelectedPetResponse>
 }
