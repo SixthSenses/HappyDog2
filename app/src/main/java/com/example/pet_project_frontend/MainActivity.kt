@@ -4,17 +4,27 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -104,7 +114,12 @@ class MainActivity : ComponentActivity() {
                 )
             }
             val showBottomBar = currentRoute in bottomBarRoutes
-
+            var selectedNotice by remember { mutableStateOf<(@Composable () -> Unit)?>(null) }
+            val openNotice: (@Composable (closeNotice: () -> Unit) -> Unit) -> Unit = { composable ->
+                selectedNotice = {
+                    composable({ selectedNotice = null })
+                }
+            }
             Scaffold(
                 bottomBar = {
                     if (showBottomBar) {
@@ -132,11 +147,12 @@ class MainActivity : ComponentActivity() {
                     }
                 } else {
                     // startDestination은 로그인 + 선택된 반려동물 유무에 따라 분기합니다.
-                    val effectiveStart = when {
-                        !isLoggedIn -> Screen.Login.route
-                        selectedPetId.isNullOrBlank() -> Screen.PetRegistration.route
-                        else -> Screen.PetCare.route
-                    }
+                    // val effectiveStart = when {
+                    //     !isLoggedIn -> Screen.Login.route
+                    //     selectedPetId.isNullOrBlank() -> Screen.PetRegistration.route
+                    //     else -> Screen.PetCare.route
+                    // }
+                    val effectiveStart = Screen.PetCare.route
 
                     // selected_pet_id가 사라지면 런타임에도 등록 화면으로 유도
                     LaunchedEffect(selectedPetId, currentRoute, isLoggedIn) {
@@ -152,9 +168,30 @@ class MainActivity : ComponentActivity() {
                     PetCareNavHost(
                         navController = navController,
                         startDestination = effectiveStart,
+                        openNotice = openNotice,
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
+            }
+            AnimatedVisibility(
+                visible = selectedNotice != null,
+                enter = fadeIn(animationSpec = tween(300)),
+                exit = fadeOut(animationSpec = tween(300))
+            ) {
+                // 배경용 Box를 따로 둬서 페이드인/아웃 처리
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.32f))
+                )
+            }
+
+            AnimatedVisibility(
+                visible = selectedNotice != null,
+                enter = slideInVertically(initialOffsetY = { fullHeight -> fullHeight }),
+                exit = slideOutVertically(targetOffsetY = { fullHeight -> fullHeight })
+            ) {
+                selectedNotice?.invoke()
             }
         }
     }
