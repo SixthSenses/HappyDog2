@@ -1,3 +1,5 @@
+// 테스트용 주석
+
 package com.example.pet_project_frontend
 
 import android.os.Bundle
