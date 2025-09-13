@@ -8,7 +8,7 @@ plugins {
     id("com.google.dagger.hilt.android") version "2.50" apply false
 
     id("com.google.devtools.ksp") version "1.9.22-1.0.17" apply false
-    id("com.google.gms.google-services") version "4.4.3" apply false
+    // ❌ 제거됨: id("com.google.gms.google-services") version "4.4.3" apply false
 }
 
 tasks.register("clean", Delete::class) {

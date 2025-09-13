@@ -19,8 +19,9 @@ plugins {
     id("org.jetbrains.kotlin.kapt")
     id("com.google.devtools.ksp")
     id("dagger.hilt.android.plugin")
-    id("com.google.gms.google-services")
+    // ❌ 제거됨: id("com.google.gms.google-services")
     id("kotlin-parcelize")
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.8.10"
 }
 
 android {
@@ -39,24 +40,21 @@ android {
             useSupportLibrary = true
         }
 
-    // Populate BuildConfig from local.properties so runtime injection has actual values
-    val googleClientIdRaw = localProperties.getProperty("GOOGLE_SERVER_CLIENT_ID")
-        ?: (project.findProperty("GOOGLE_SERVER_CLIENT_ID") as? String)
-        ?: ""
-    val kakaoNativeAppKeyRaw = localProperties.getProperty("KAKAO_NATIVE_APP_KEY")
-        ?: (project.findProperty("KAKAO_NATIVE_APP_KEY") as? String)
-        ?: ""
+        // Populate BuildConfig from local.properties so runtime injection has actual values
+        // ❌ 제거됨: GOOGLE_SERVER_CLIENT_ID 관련 설정
+        val kakaoNativeAppKeyRaw = localProperties.getProperty("KAKAO_NATIVE_APP_KEY")
+            ?: (project.findProperty("KAKAO_NATIVE_APP_KEY") as? String)
+            ?: ""
 
-    val googleClientId = googleClientIdRaw.unquote()
-    val kakaoNativeAppKey = kakaoNativeAppKeyRaw.unquote()
+        val kakaoNativeAppKey = kakaoNativeAppKeyRaw.unquote()
 
-    buildConfigField("String", "GOOGLE_SERVER_CLIENT_ID", "\"$googleClientId\"")
-    buildConfigField("String", "KAKAO_NATIVE_APP_KEY", "\"$kakaoNativeAppKey\"")
+        // ❌ 제거됨: buildConfigField("String", "GOOGLE_SERVER_CLIENT_ID", "\"$googleClientId\"")
+        buildConfigField("String", "KAKAO_NATIVE_APP_KEY", "\"$kakaoNativeAppKey\"")
 
-    // For Kakao Map SDK meta-data replacement in AndroidManifest
-    manifestPlaceholders["kakaoAppKey"] = kakaoNativeAppKey
-    // Some Kakao artifacts reference upper-cased placeholder name; set both to be safe
-    manifestPlaceholders["KAKAO_APP_KEY"] = kakaoNativeAppKey
+        // For Kakao Map SDK meta-data replacement in AndroidManifest
+        manifestPlaceholders["kakaoAppKey"] = kakaoNativeAppKey
+        // Some Kakao artifacts reference upper-cased placeholder name; set both to be safe
+        manifestPlaceholders["KAKAO_APP_KEY"] = kakaoNativeAppKey
     }
 
     buildTypes {
@@ -133,18 +131,21 @@ dependencies {
     implementation("com.google.dagger:hilt-android:2.50")
     kapt("com.google.dagger:hilt-compiler:2.50")
     implementation("com.google.dagger:dagger:2.50")
+
     // Network - Retrofit
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:1.0.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
     // JSON Parsing
     implementation("com.google.code.gson:gson:2.10.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+    // ❌ 제거됨: implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
 
     // DataStore
     implementation("androidx.datastore:datastore-preferences:1.0.0")
@@ -154,18 +155,19 @@ dependencies {
     implementation("androidx.room:room-ktx:2.6.1")
     ksp("androidx.room:room-compiler:2.6.1")
 
-    // Google Services
-    implementation("com.google.android.gms:play-services-location:21.3.0")
-    implementation("com.google.android.gms:play-services-auth:20.7.0")
-    implementation(platform("com.google.firebase:firebase-bom:32.8.1"))
-    implementation("com.google.firebase:firebase-analytics")
-    implementation("com.google.firebase:firebase-auth-ktx")
-    implementation("com.google.firebase:firebase-storage-ktx")
-    implementation("com.google.firebase:firebase-messaging-ktx")
+    // ❌ 제거됨: Google Services 관련 의존성들
+    // implementation("com.google.android.gms:play-services-location:21.3.0")
+    // implementation("com.google.android.gms:play-services-auth:20.7.0")
+    // implementation(platform("com.google.firebase:firebase-bom:32.8.1"))
+    // implementation("com.google.firebase:firebase-analytics")
+    // implementation("com.google.firebase:firebase-auth-ktx")
+    // implementation("com.google.firebase:firebase-storage-ktx")
+    // implementation("com.google.firebase:firebase-messaging-ktx")
 
     // Kakao Map SDK
     implementation ("com.kakao.maps.open:android:2.11.9")
     implementation("com.kakao.sdk:v2-user:2.19.0")
+
     // Image Loading
     implementation("io.coil-kt:coil-compose:2.5.0")
 
@@ -193,4 +195,3 @@ dependencies {
 kapt {
     correctErrorTypes = true
 }
-

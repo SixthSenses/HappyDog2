@@ -5,6 +5,7 @@ import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
+import android.location.LocationManager
 import android.net.Uri
 import android.util.Log
 import android.widget.Toast
@@ -45,7 +46,6 @@ import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.pet_project_frontend.R
 import com.example.pet_project_frontend.core.theme.MyPageColors
-import com.google.android.gms.location.LocationServices
 import com.kakao.vectormap.KakaoMap
 import com.kakao.vectormap.KakaoMapReadyCallback
 import com.kakao.vectormap.LatLng
@@ -83,7 +83,7 @@ fun MapScreen(
 	var selectedPlace by remember { mutableStateOf<MapPlace?>(null) }
 
 	val refreshLocation = {
-		getCurrentLocation(context as Activity) { lat, lon ->
+		getCurrentLocationWithLocationManager(context as Activity) { lat, lon ->
 			val location = android.location.Location("").apply {
 				latitude = lat
 				longitude = lon
@@ -118,7 +118,6 @@ fun MapScreen(
 		sheetPeekHeight = sheetPeekHeight,
 		sheetContainerColor = MyPageColors.CardBackground,
 		sheetContent = {
-			// [수정됨 1] Wrapper Box 패턴 적용
 			Box(
 				modifier = Modifier
 					.fillMaxWidth()
@@ -151,7 +150,6 @@ fun MapScreen(
 						.matchParentSize()
 						.padding(innerPadding),
 					factory = {
-						// 지원 환경에서만 MapView 생성
 						MapView(context).apply {
 							start(object : MapLifeCycleCallback() {
 								override fun onMapDestroy() {}
@@ -167,7 +165,7 @@ fun MapScreen(
 										true
 									}
 									if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-										getCurrentLocation(context as Activity) { lat, lon ->
+										getCurrentLocationWithLocationManager(context as Activity) { lat, lon ->
 											val location = android.location.Location("").apply { latitude = lat; longitude = lon }
 											viewModel.updateCurrentLocation(location)
 										}
@@ -180,7 +178,6 @@ fun MapScreen(
 					}
 				)
 			} else {
-				// 미지원 환경: 대체 화면 제공(크래시 방지)
 				Column(
 					modifier = Modifier
 						.matchParentSize()
@@ -211,13 +208,12 @@ fun MapScreen(
 					.padding(top = 16.dp),
 				contentAlignment = Alignment.TopCenter
 			) {
-				// [수정됨 2] TabRow 너비 문제 해결
 				TabRow(
 					selectedTabIndex = uiState.selectedCategory.ordinal,
 					containerColor = Color.Transparent,
 					modifier = Modifier
 						.shadow(elevation = 4.dp, spotColor = Color(0x26000000), ambientColor = Color(0x26000000))
-						.width(250.dp) // .wrapContentWidth() 삭제
+						.width(250.dp)
 						.height(38.dp)
 						.background(color = MyPageColors.Background, shape = RoundedCornerShape(size = 12.dp))
 						.padding(start = 4.dp, top = 3.dp, end = 4.dp, bottom = 3.dp),
@@ -272,7 +268,6 @@ fun MapScreen(
 					.align(Alignment.BottomEnd)
 					.padding(
 						end = 16.dp,
-						// [수정됨 3] FAB 위치 문제 해결
 						bottom = innerPadding.calculateBottomPadding() + 10.dp
 					),
 				shape = RoundedCornerShape(30.dp),
@@ -292,9 +287,9 @@ fun MapScreen(
 			map.labelManager?.clearAll()
 			uiState.currentLocation?.let {
 				val myLocationStyle = LabelStyle.from(R.drawable.map_marker)
-					.setAnchorPoint(0.5f, 0.5f) // <--- 이 부분을 추가하세요! (아이콘 모양에 맞게 u, v 값 조절)
+					.setAnchorPoint(0.5f, 0.5f)
 				val myLocationOptions = LabelOptions.from(LatLng.from(it.latitude, it.longitude))
-					.setStyles(LabelStyles.from(myLocationStyle)) // 수정된 스타일 적용
+					.setStyles(LabelStyles.from(myLocationStyle))
 				map.labelManager?.layer?.addLabel(myLocationOptions)
 				if (isFirstLocationUpdate) {
 					val position = LatLng.from(it.latitude, it.longitude)
@@ -384,16 +379,16 @@ fun PlaceDetail(
 			color = MyPageColors.Primary,
 			modifier = Modifier.padding(vertical = 8.dp)
 		)
-		val rawOperateTime = place.operateTime // "월~금: ...,토요일: ...,일요일: ..."
-		val lines = rawOperateTime.split(",") // 먼저 쉼표로 각 줄을 나눔
+		val rawOperateTime = place.operateTime
+		val lines = rawOperateTime.split(",")
 
 		val formattedOperateTime = lines.mapIndexed { index, line ->
-			if (index == 0) { // 첫 번째 줄에만
+			if (index == 0) {
 				"" + line.trim()
 			} else {
 				line.trim()
 			}
-		}.joinToString("\n") // 다시 \n으로 합침
+		}.joinToString("\n")
 		DetailInfoRow(icon = Icons.Default.LocationOn, content = place.address)
 		DetailInfoRow(icon = Icons.Default.Call, content = place.phoneNumber)
 		DetailInfoRow(icon = Icons.Default.Schedule, content = formattedOperateTime)
@@ -482,17 +477,31 @@ fun PlaceItem(place: MapPlace, currentLocation: Location?, onClick: () -> Unit) 
 	}
 }
 
-private fun getCurrentLocation(activity: Activity, onResult: (Double, Double) -> Unit) {
-	val fusedLocationClient = LocationServices.getFusedLocationProviderClient(activity)
+// ❌ Google Play Services FusedLocationProviderClient 대신 안드로이드 기본 LocationManager 사용
+private fun getCurrentLocationWithLocationManager(activity: Activity, onResult: (Double, Double) -> Unit) {
 	try {
 		if (ContextCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
 			ContextCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-			fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-				location?.let { onResult(it.latitude, it.longitude) }
-					?: Toast.makeText(activity, "현재 위치를 가져올 수 없습니다. GPS를 확인해주세요.", Toast.LENGTH_SHORT).show()
-			}.addOnFailureListener {
-				Log.e("LocationError", "Failed to get location.", it)
-				Toast.makeText(activity, "위치 정보를 가져오는데 실패했습니다.", Toast.LENGTH_SHORT).show()
+
+			val locationManager = activity.getSystemService(Activity.LOCATION_SERVICE) as LocationManager
+
+			// GPS와 네트워크 위치 제공자 중 사용 가능한 것 찾기
+			val providers = locationManager.getProviders(true)
+			var bestLocation: Location? = null
+
+			for (provider in providers) {
+				val location = locationManager.getLastKnownLocation(provider)
+				if (location != null) {
+					if (bestLocation == null || location.accuracy < bestLocation.accuracy) {
+						bestLocation = location
+					}
+				}
+			}
+
+			bestLocation?.let {
+				onResult(it.latitude, it.longitude)
+			} ?: run {
+				Toast.makeText(activity, "현재 위치를 가져올 수 없습니다. GPS를 확인해주세요.", Toast.LENGTH_SHORT).show()
 			}
 		} else {
 			Toast.makeText(activity, "위치 권한이 없습니다.", Toast.LENGTH_SHORT).show()
@@ -500,5 +509,8 @@ private fun getCurrentLocation(activity: Activity, onResult: (Double, Double) ->
 	} catch (e: SecurityException) {
 		Log.e("LocationError", "Location permission not granted.", e)
 		Toast.makeText(activity, "보안 문제로 위치 정보를 가져올 수 없습니다.", Toast.LENGTH_SHORT).show()
+	} catch (e: Exception) {
+		Log.e("LocationError", "Failed to get location.", e)
+		Toast.makeText(activity, "위치 정보를 가져오는데 실패했습니다.", Toast.LENGTH_SHORT).show()
 	}
 }

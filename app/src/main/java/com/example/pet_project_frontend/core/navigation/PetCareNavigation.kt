@@ -17,6 +17,9 @@ import com.example.pet_project_frontend.presentation.petcare.PetCareMainScreen
 import com.example.pet_project_frontend.presentation.petregistration.PetRegistrationScreen
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.example.pet_project_frontend.presentation.mungstar.MungStarFeed
+import com.example.pet_project_frontend.presentation.mungstar.FreeWriting
+import com.example.pet_project_frontend.presentation.mungstar.CartoonMaking
 
 @Composable
 fun PetCareNavHost(
@@ -71,8 +74,22 @@ fun PetCareNavHost(
 		// 지도 화면
 		composable(Screen.Map.route) { MapScreen() }
 
-		// 커뮤니티/번역기는 임시로 펫케어 메인으로 연결하거나 별도 화면 구성 필요 시 교체
-		composable(Screen.Community.route) { PetCareMainScreen() }
+		// 멍스타그램 메인 화면 (NavController 전달)
+		composable(Screen.Community.route) {
+			MungStarFeed(navController = navController)
+		}
+
+		// 자유글 작성 화면
+		composable("free_writing") { backStackEntry ->
+			FreeWriting(navController = navController)
+		}
+
+		// 만화 제작 화면
+		composable("cartoon_making") { backStackEntry ->
+			CartoonMaking(navController = navController)
+		}
+
+		// 번역기 화면
 		composable(Screen.Translator.route) { PetCareMainScreen() }
 
 		// 마이페이지 화면
