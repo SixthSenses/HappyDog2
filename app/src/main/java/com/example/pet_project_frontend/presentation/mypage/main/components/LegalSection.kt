@@ -40,17 +40,17 @@ fun LegalSection(
                 modifier = Modifier.padding(vertical = 8.dp)
             )
 
-            SettingsItemRow(
-                label = "서비스 이용 약관",
-                onClick = onTermsClick
-            )
+//            SettingsItemRow(
+//                label = "서비스 이용 약관",
+//                onClick = onTermsClick
+//            )
 
             Divider(color = MyPageColors.Background)
 
-            SettingsItemRow(
-                label = "개인정보 처리방침",
-                onClick = onPrivacyClick
-            )
+//            SettingsItemRow(
+//                label = "개인정보 처리방침",
+//                onClick = onPrivacyClick
+//            )
         }
     }
 }

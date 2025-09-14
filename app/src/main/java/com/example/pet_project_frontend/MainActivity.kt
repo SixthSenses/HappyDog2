@@ -24,9 +24,15 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.pet_project_frontend.core.navigation.BottomNavigation
 import com.example.pet_project_frontend.core.navigation.PetCareNavHost
+<<<<<<< HEAD
+import com.example.pet_project_frontend.core.theme.PetCareTheme
+import com.example.pet_project_frontend.core.navigation.NavigationRoutes
+import com.kakao.sdk.common.util.Utility
+=======
 import com.example.pet_project_frontend.core.navigation.Screen
 import com.example.pet_project_frontend.core.designsystem.AppTheme
 import com.example.pet_project_frontend.data.local.preferences.TokenManager
+>>>>>>> origin/develop
 import com.kakao.vectormap.KakaoMapSdk
 import com.kakao.vectormap.*
 import com.kakao.sdk.common.util.Utility
@@ -57,6 +63,26 @@ class MainActivity : ComponentActivity() {
             isLoading.value
         }
 
+<<<<<<< HEAD
+                Scaffold(
+                    bottomBar = {
+                        val showBottomBar = when (currentRoute) {
+                            NavigationRoutes.PET_CARE,
+                            NavigationRoutes.MAP,
+                            NavigationRoutes.COMMUNITY,
+                            NavigationRoutes.TRANSLATOR,
+                            NavigationRoutes.MY_PAGE -> true
+                            else -> false
+                        }
+                        if (showBottomBar) {
+                            BottomNavigation(
+                                currentRoute = currentRoute ?: "",
+                                onNavigate = { route ->
+                                    navController.navigate(route) {
+                                        popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                        launchSingleTop = true
+                                        restoreState = true
+=======
         lifecycleScope.launch {
             lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.isLoggedIn.first()
@@ -114,12 +140,11 @@ class MainActivity : ComponentActivity() {
                                 navController.navigate(route) {
                                     popUpTo(navController.graph.startDestinationId) {
                                         saveState = true
+>>>>>>> origin/develop
                                     }
-                                    launchSingleTop = true
-                                    restoreState = true
                                 }
-                            }
-                        )
+                            )
+                        }
                     }
                 }
             ) { innerPadding ->

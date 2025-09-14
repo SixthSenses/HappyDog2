@@ -5,77 +5,91 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.navArgument
 import androidx.navigation.NavType
-import androidx.navigation.navDeepLink
-import com.example.pet_project_frontend.core.navigation.DeepLinks
-import com.example.pet_project_frontend.core.navigation.Routes
-import com.example.pet_project_frontend.presentation.auth.LoginScreen
+import androidx.navigation.navArgument
 import com.example.pet_project_frontend.presentation.map.MapScreen
 import com.example.pet_project_frontend.presentation.mypage.main.MyPageScreen
-import com.example.pet_project_frontend.presentation.petcare.PetCareMainScreen
-import com.example.pet_project_frontend.presentation.petregistration.PetRegistrationScreen
-import androidx.navigation.compose.rememberNavController
-import androidx.navigation.compose.currentBackStackEntryAsState
+import com.example.pet_project_frontend.presentation.mypage.profile.gender.GenderSelectScreen
+import com.example.pet_project_frontend.presentation.mypage.profile.name.NameEditRoute
+//import com.example.pet_project_frontend.presentation.mypage.settings.notification.NotificationSettingsScreen
+
+import android.net.Uri
 
 @Composable
 fun PetCareNavHost(
 	navController: NavHostController,
-	startDestination: String,
 	modifier: Modifier = Modifier
 ) {
 	NavHost(
 		navController = navController,
-		startDestination = startDestination,
+		startDestination = NavigationRoutes.MY_PAGE,
 		modifier = modifier
 	) {
-		// 로그인 화면
-		composable(Screen.Login.route) {
-			LoginScreen(
-				onLoginResult = { isNewUser ->
-					val target = if ( isNewUser ) Screen.PetRegistration.route else Screen.PetCare.route
-					navController.navigate(target) {
-						popUpTo(Screen.Login.route) { inclusive = true }
-					}
-				}
+		// 펫케어 (임시)
+		composable(NavigationRoutes.PET_CARE) { MyPageScreen() }
+
+		// 지도
+		composable(NavigationRoutes.MAP) { MapScreen() }
+
+		// 커뮤니티 (임시)
+		composable(NavigationRoutes.COMMUNITY) { MyPageScreen() }
+
+		// 번역기 (임시)
+		composable(NavigationRoutes.TRANSLATOR) { MyPageScreen() }
+
+		// 마이페이지
+		composable(NavigationRoutes.GENDER_SELECT) {
+			GenderSelectScreen(
+				onBack = { navController.popBackStack() },
+				onSaved = { navController.popBackStack() }  // 저장 후 이전 화면
 			)
 		}
 
-		// 펫 등록 화면
-		composable(Screen.PetRegistration.route) {
-			PetRegistrationScreen(navController = navController)
-		}
+		// 알림
+//		composable(NavigationRoutes.NOTIFICATION) {
+//			NotificationSettingsScreen(
+//				onBack = { navController.popBackStack() }
+//			)
+//		}
 
-		// 펫케어 화면
-		composable(Screen.PetCare.route) {
-			PetCareMainScreen()
-		}
 
-		// 펫케어 대시보드(딥링크 진입 지원): app://pet-care/dashboard?petId=...&date=...&tab=...
 		composable(
-			route = Routes.PetCare.Dashboard,
+			route = "${NavigationRoutes.BIRTH_EDIT}?initialBirth={initialBirth}",
 			arguments = listOf(
-				navArgument("petId") { type = NavType.StringType; nullable = true; defaultValue = null },
-				navArgument("date") { type = NavType.StringType; nullable = true; defaultValue = null },
-				navArgument("tab") { type = NavType.StringType; nullable = true; defaultValue = null }
-			),
-			deepLinks = listOf(
-				navDeepLink { uriPattern = DeepLinks.PET_CARE_DASHBOARD + "?petId={petId}&date={date}&tab={tab}" },
-				navDeepLink { uriPattern = DeepLinks.PET_CARE_DASHBOARD }
+				navArgument("initialBirth") { type = NavType.StringType; defaultValue = "" }
 			)
-		) { backStackEntry ->
-			// TODO: 실제 대시보드 구현 시 인자 사용
-			PetCareMainScreen()
+		) {
+			com.example.pet_project_frontend.presentation.mypage.profile.birth.BirthEditRoute(
+				navController = navController
+			)
 		}
 
-		// 지도 화면
-		composable(Screen.Map.route) { MapScreen() }
+		composable(NavigationRoutes.MY_PAGE) {
+			MyPageScreen(
+			onNameClick = { name ->
+				navController.navigate(NavigationRoutes.nameEdit(name))
+			},
+			onBirthdateClick = { birth ->
+				val clean = if (birth == "연/월/일") "" else birth   // ← 플레이스홀더 문자열 방지
+				val encoded = Uri.encode(clean)                      // 슬래시 포함 값 안전 전송
+				navController.navigate("${NavigationRoutes.BIRTH_EDIT}?initialBirth=$encoded")
+			},
+			onGenderClick = {
+			 navController.navigate(NavigationRoutes.genderSelect())
+			},
+			onNotificationClick = {
+				navController.navigate(NavigationRoutes.NOTIFICATION)
+			}
+		) }
 
-		// 커뮤니티/번역기는 임시로 펫케어 메인으로 연결하거나 별도 화면 구성 필요 시 교체
-		composable(Screen.Community.route) { PetCareMainScreen() }
-		composable(Screen.Translator.route) { PetCareMainScreen() }
-
-		// 마이페이지 화면
-		composable(Screen.MyPage.route) { MyPageScreen() }
+		// 이름 수정
+		composable(NavigationRoutes.NAME_EDIT) {
+			// 필요한 경우 아래처럼 콜백을 넘겨도 됩니다.
+			// NameEditScreen(
+			//     onBack = { navController.popBackStack() },
+			//     onFinished = { navController.popBackStack() }
+			// )
+			NameEditRoute(navController)
+		}
 	}
 }

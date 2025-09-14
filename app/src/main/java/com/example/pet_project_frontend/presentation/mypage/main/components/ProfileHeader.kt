@@ -24,7 +24,8 @@ fun ProfileHeader(
     name: String,
     description: String,
     profileImageUrl: String? = null,
-    onProfileImageClick: () -> Unit
+    onProfileImageClick: () -> Unit,
+    onNameClick: () -> Unit = {}
 ) {
     Row(
         modifier = Modifier
@@ -102,4 +103,4 @@ fun ProfileHeader(
             )
         }
     }
-    }
+}
