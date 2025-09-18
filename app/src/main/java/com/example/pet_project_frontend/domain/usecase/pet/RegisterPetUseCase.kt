@@ -48,7 +48,6 @@ class RegisterPetUseCase @Inject constructor(
             },
             breed = breed,
             birthdate = birthDate.format(DateTimeFormatter.ISO_LOCAL_DATE),
-            currentWeight = currentWeight,
             furColor = furColor?.trim()?.takeIf { it.isNotEmpty() },
             healthConcerns = healthConcerns.filter { it.isNotBlank() }
         )
