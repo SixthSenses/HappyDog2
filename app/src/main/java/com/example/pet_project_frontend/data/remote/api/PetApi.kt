@@ -10,7 +10,8 @@ import retrofit2.http.POST
 import retrofit2.http.PUT
 
 interface PetApi {
-    @POST("api/pets")
+    // OpenAPI defines POST path as "/api/pets/" (with trailing slash)
+    @POST("api/pets/")
     suspend fun registerPet(@Body createPetRequest: PetRegistrationRequest): Response<PetProfileResponse>
     
     @GET("api/pets/{petId}")

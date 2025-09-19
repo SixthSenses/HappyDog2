@@ -46,7 +46,7 @@ class AuthViewModel @Inject constructor(
                         )
 
                         // 사용자 정보 저장 (도메인 중심)
-                        val domainUser = UserMapper.fromUserInfo(response.userInfo)
+                        val domainUser = UserMapper.fromAuthUserInfo(response.userInfo)
                         authRepository.saveUser(domainUser)
 
                         // UserRepository에도 액세스 토큰 저장 (중복이지만 기존 코드 호환성을 위해)

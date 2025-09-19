@@ -14,5 +14,8 @@ data class CreatePetRequest(
     @SerializedName("fur_color")
     val furColor: String? = null,
     @SerializedName("health_concerns")
-    val healthConcerns: List<String>? = null
+    val healthConcerns: List<String>? = null,
+    // Optional field per OpenAPI PetRegistrationSchema
+    @SerializedName("profile_image_url")
+    val profileImageUrl: String? = null
 )

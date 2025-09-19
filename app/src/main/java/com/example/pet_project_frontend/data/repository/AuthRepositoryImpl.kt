@@ -61,22 +61,32 @@ class AuthRepositoryImpl @Inject constructor(
         return result
     }
 
-    override suspend fun logout(accessToken: String, refreshToken: String): AppResult<LogoutResponse> {
+    override suspend fun logout(accessToken: String, refreshToken: String): AppResult<Unit> {
         Log.d(TAG, "Attempting logout")
         val request = LogoutRequest(
             accessToken = accessToken,
             refreshToken = refreshToken
         )
-    val result: AppResult<LogoutResponse> = SafeApi.response { authApi.logout(request) }
-        when (result) {
+        val apiResult: AppResult<LogoutResponse> = SafeApi.response { authApi.logout(request) }
+        when (apiResult) {
             is AppResult.Success -> Log.d(TAG, "Logout successful")
-            is AppResult.Error -> Log.e(TAG, "Logout failed. Code: ${result.code}, Error: ${result.message}")
-            is AppResult.Exception -> Log.e(TAG, "Exception during logout", result.throwable)
+            is AppResult.Error -> Log.e(TAG, "Logout failed. Code: ${apiResult.code}, Error: ${apiResult.message}")
+            is AppResult.Exception -> Log.e(TAG, "Exception during logout", apiResult.throwable)
         }
         // 서버 성공/실패와 무관하게 로컬 정리 수행
         clearTokens()
         clearUserInfo()
-        return result
+        // 도메인 계층에는 DTO를 숨기고 Unit으로 결과 매핑
+        return when (apiResult) {
+            is AppResult.Success -> AppResult.Success(Unit)
+            is AppResult.Error -> AppResult.Error(
+                code = apiResult.code,
+                message = apiResult.message,
+                validation = apiResult.validation,
+                cause = apiResult.cause
+            )
+            is AppResult.Exception -> AppResult.Exception(apiResult.throwable)
+        }
     }
 
     override suspend fun saveTokens(accessToken: String, refreshToken: String) {

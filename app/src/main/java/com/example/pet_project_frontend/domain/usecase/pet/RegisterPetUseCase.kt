@@ -18,7 +18,6 @@ class RegisterPetUseCase @Inject constructor(
         gender: Gender,
         breed: String,
         birthDate: LocalDate,
-        currentWeight: Float,
         furColor: String? = null,
         healthConcerns: List<String> = emptyList()
     ): AppResult<Pet> {
@@ -29,10 +28,6 @@ class RegisterPetUseCase @Inject constructor(
         
         if (name.length > 20) {
             return AppResult.Error(400, "반려동물 이름은 20자 이내로 입력해주세요")
-        }
-        
-        if (currentWeight < 0.1 || currentWeight > 200) {
-            return AppResult.Error(400, "체중은 0.1kg ~ 200kg 사이로 입력해주세요")
         }
         
         if (birthDate.isAfter(LocalDate.now())) {

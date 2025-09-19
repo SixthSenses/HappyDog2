@@ -19,8 +19,10 @@ data class PetProfileResponse(
     val birthdate: String,
     @SerializedName("fur_color")
     val furColor: String?,
+    @SerializedName("profile_image_url")
+    val profileImageUrl: String?,
     @SerializedName("health_concerns")
-    val healthConcerns: List<String>,
+    val healthConcerns: List<String>?,
     @SerializedName("is_verified")
     val isVerified: Boolean,
     @SerializedName("nose_print_url")

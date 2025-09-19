@@ -33,7 +33,7 @@ fun PetRegistrationScreen(
     val selectedGender by viewModel.selectedGender.collectAsState()
     val selectedBreed by viewModel.selectedBreed.collectAsState()
     val birthDate by viewModel.birthDate.collectAsState()
-    val weight by viewModel.weight.collectAsState()
+    // weight removed from schema/UI
     val furColor by viewModel.furColor.collectAsState()
     val healthConcerns by viewModel.healthConcerns.collectAsState()
     val showBreedDialog by viewModel.showBreedDialog.collectAsState()
@@ -158,17 +158,7 @@ fun PetRegistrationScreen(
                     }
                 }
 
-                // 체중 입력
-                item {
-                    OutlinedTextField(
-                        value = weight,
-                        onValueChange = viewModel::updateWeight,
-                        label = { Text("체중 (kg) *") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        isError = uiState.error?.contains("체중") == true
-                    )
-                }
+                // weight removed
 
                 // 털 색상 (선택)
                 item {

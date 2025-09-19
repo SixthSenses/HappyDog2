@@ -55,17 +55,23 @@ class PetRepositoryImpl @Inject constructor(
 
     override suspend fun getMyPetProfile(): AppResult<Pet> {
         Log.d(TAG, "Getting my pet profile (single-pet policy)")
-        return SafeApi.response { petApi.getMyPetProfile() }
-            .let { res ->
-                when (res) {
+        // OpenAPI: /api/pets/profile returns PetViewBasedResponse (요약 뷰)
+        // 도메인 Pet에는 상세 필드가 필요하므로 petId로 상세 조회를 한 번 더 수행합니다.
+        return when (val viewRes = SafeApi.response { petApi.getMyPetProfile() }) {
+            is AppResult.Success -> {
+                val petId = viewRes.data.petId
+                when (val profRes = SafeApi.response { petApi.getPetProfile(petId) }) {
                     is AppResult.Success -> {
-                        Log.d(TAG, "My pet profile fetched successfully: ${res.data.petId}")
-                        AppResult.Success(PetMapper.mapToDomainModel(res.data))
+                        Log.d(TAG, "My pet profile fetched successfully: ${profRes.data.petId}")
+                        AppResult.Success(PetMapper.mapToDomainModel(profRes.data))
                     }
-                    is AppResult.Error -> res
-                    is AppResult.Exception -> res
+                    is AppResult.Error -> profRes
+                    is AppResult.Exception -> profRes
                 }
             }
+            is AppResult.Error -> viewRes
+            is AppResult.Exception -> viewRes
+        }
     }
 
     override suspend fun updatePetProfile(petId: String, request: PetUpdateRequest): AppResult<Pet> {
