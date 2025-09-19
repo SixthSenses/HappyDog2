@@ -6,6 +6,7 @@ import com.example.pet_project_frontend.data.remote.api.*
 import com.example.pet_project_frontend.data.remote.authenticator.TokenAuthenticator
 import com.example.pet_project_frontend.data.remote.interceptors.AuthInterceptor
 import com.example.pet_project_frontend.data.remote.interceptors.ErrorInterceptor
+import com.example.pet_project_frontend.data.remote.interceptors.IdempotencyInterceptor
 import com.example.pet_project_frontend.data.remote.interceptors.ProtectedErrorInterceptor
 import com.example.pet_project_frontend.BuildConfig
 import dagger.Module
@@ -19,6 +20,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 import javax.inject.Named
 import javax.inject.Singleton
+import okhttp3.HttpUrl.Companion.toHttpUrl
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -28,6 +30,21 @@ object NetworkModule {
     @Singleton
     @Named("BASE_URL")
     fun provideBaseUrl(): String = BuildConfig.API_BASE_URL
+
+    @Provides
+    @Singleton
+    @Named("API_BASE_HOST")
+    fun provideApiBaseHost(@Named("BASE_URL") baseUrl: String): String {
+        return try {
+            val httpUrl = baseUrl.toHttpUrl()
+            httpUrl.host
+        } catch (e: IllegalArgumentException) {
+            // fallback: strip scheme if any and take host-like token
+            baseUrl.replace(Regex("^https?://"),"")
+                .trimEnd('/')
+                .substringBefore('/')
+        }
+    }
 
     @Provides
     @Singleton
@@ -42,10 +59,12 @@ object NetworkModule {
     @Named("AuthRetrofit")
     fun provideAuthRetrofit(
         @Named("BASE_URL") baseUrl: String,
-        httpLoggingInterceptor: HttpLoggingInterceptor
+        httpLoggingInterceptor: HttpLoggingInterceptor,
+        idempotencyInterceptor: IdempotencyInterceptor
     ): Retrofit {
         val okHttpClient = OkHttpClient.Builder()
             .addInterceptor(httpLoggingInterceptor)
+            .addInterceptor(idempotencyInterceptor)
             .addInterceptor(ErrorInterceptor())
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
@@ -65,11 +84,13 @@ object NetworkModule {
         httpLoggingInterceptor: HttpLoggingInterceptor,
         authInterceptor: AuthInterceptor,
         tokenAuthenticator: TokenAuthenticator,
-        protectedErrorInterceptor: ProtectedErrorInterceptor
+        protectedErrorInterceptor: ProtectedErrorInterceptor,
+        idempotencyInterceptor: IdempotencyInterceptor
     ): OkHttpClient {
         return OkHttpClient.Builder()
             .addInterceptor(httpLoggingInterceptor)
             .addInterceptor(authInterceptor)
+            .addInterceptor(idempotencyInterceptor)
             .addInterceptor(ErrorInterceptor())
             .addInterceptor(protectedErrorInterceptor)
             .authenticator(tokenAuthenticator)

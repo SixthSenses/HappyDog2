@@ -53,6 +53,21 @@ class PetRepositoryImpl @Inject constructor(
             }
     }
 
+    override suspend fun getMyPetProfile(): AppResult<Pet> {
+        Log.d(TAG, "Getting my pet profile (single-pet policy)")
+        return SafeApi.response { petApi.getMyPetProfile() }
+            .let { res ->
+                when (res) {
+                    is AppResult.Success -> {
+                        Log.d(TAG, "My pet profile fetched successfully: ${res.data.petId}")
+                        AppResult.Success(PetMapper.mapToDomainModel(res.data))
+                    }
+                    is AppResult.Error -> res
+                    is AppResult.Exception -> res
+                }
+            }
+    }
+
     override suspend fun updatePetProfile(petId: String, request: PetUpdateRequest): AppResult<Pet> {
         Log.d(TAG, "Updating pet profile: $petId")
         return SafeApi.response { petApi.updatePetProfile(petId, request) }
@@ -79,4 +94,14 @@ class PetRepositoryImpl @Inject constructor(
         val request = BiometricAnalysisRequest(filePath = filePath)
         return SafeApi.response { petApi.analyzeEye(petId, request) }
     }
+
+    override fun hasPet(): kotlinx.coroutines.flow.Flow<Boolean> =
+        kotlinx.coroutines.flow.flow {
+            // 서버 기준: 200이면 존재, 404 등이면 없음으로 취급
+            when (val res = SafeApi.response { petApi.getMyPetProfile() }) {
+                is AppResult.Success -> emit(true)
+                is AppResult.Error -> emit(false)
+                is AppResult.Exception -> emit(false)
+            }
+        }
 }

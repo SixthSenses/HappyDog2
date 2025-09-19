@@ -17,12 +17,10 @@ data class PetProfileResponse(
     val breed: String,
     @SerializedName("birthdate")
     val birthdate: String,
-    @SerializedName("current_weight")
-    val currentWeight: Float,
     @SerializedName("fur_color")
     val furColor: String?,
     @SerializedName("health_concerns")
-    val healthConcerns: List<String>?,
+    val healthConcerns: List<String>,
     @SerializedName("is_verified")
     val isVerified: Boolean,
     @SerializedName("nose_print_url")

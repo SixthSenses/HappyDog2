@@ -7,10 +7,11 @@ import com.example.pet_project_frontend.core.common.AppResult
 import com.example.pet_project_frontend.core.common.ValidationError
 import com.example.pet_project_frontend.domain.model.Gender
 import com.example.pet_project_frontend.presentation.model.PetUiState
-import com.example.pet_project_frontend.data.local.preferences.TokenManager
 import com.example.pet_project_frontend.domain.usecase.breed.SearchBreedsUseCase
 import com.example.pet_project_frontend.domain.usecase.pet.RegisterPetUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -24,11 +25,11 @@ import java.time.Period
  * - [RegisterPetUseCase]: 서버에 반려동물 등록을 수행합니다.
  * - [SearchBreedsUseCase]: 품종 검색 쿼리를 기반으로 품종 목록을 조회합니다.
  */
+@OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class PetRegistrationViewModel @Inject constructor(
     private val registerPetUseCase: RegisterPetUseCase,
-    private val searchBreedsUseCase: SearchBreedsUseCase,
-    private val tokenManager: TokenManager
+    private val searchBreedsUseCase: SearchBreedsUseCase
 ) : ViewModel() {
     
     // UI State
@@ -240,8 +241,6 @@ class PetRegistrationViewModel @Inject constructor(
             when (result) {
                 is AppResult.Success -> {
                     val petUi = result.data.toUiState()
-                    // 등록 성공 시 선택된 반려동물 ID를 로컬에 저장
-                    tokenManager.saveSelectedPetId(petUi.id)
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         isSuccess = true,

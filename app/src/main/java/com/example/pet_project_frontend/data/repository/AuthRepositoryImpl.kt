@@ -48,7 +48,7 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun refreshToken(refreshToken: String): AppResult<TokenRefreshResponse> {
         Log.d(TAG, "Attempting to refresh token")
-        val result: AppResult<TokenRefreshResponse> = SafeApi.response { authApi.refreshToken("Bearer $refreshToken") }
+        val result: AppResult<TokenRefreshResponse> = SafeApi.response { authApi.refreshToken("Bearer $refreshToken", EmptyRequest()) }
         when (result) {
             is AppResult.Success -> {
                 Log.d(TAG, "Token refresh successful")
@@ -61,13 +61,13 @@ class AuthRepositoryImpl @Inject constructor(
         return result
     }
 
-    override suspend fun logout(accessToken: String, refreshToken: String): AppResult<Unit> {
+    override suspend fun logout(accessToken: String, refreshToken: String): AppResult<LogoutResponse> {
         Log.d(TAG, "Attempting logout")
         val request = LogoutRequest(
             accessToken = accessToken,
             refreshToken = refreshToken
         )
-        val result: AppResult<Unit> = SafeApi.responseUnit { authApi.logout(request) }
+    val result: AppResult<LogoutResponse> = SafeApi.response { authApi.logout(request) }
         when (result) {
             is AppResult.Success -> Log.d(TAG, "Logout successful")
             is AppResult.Error -> Log.e(TAG, "Logout failed. Code: ${result.code}, Error: ${result.message}")
@@ -94,9 +94,7 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun clearTokens() {
         Log.d(TAG, "Clearing tokens")
-    tokenManager.clearTokens()
-    // 선택된 반려동물 ID도 함께 정리
-    tokenManager.clearSelectedPetId()
+        tokenManager.clearTokens()
     }
 
     override suspend fun saveUserInfo(userInfo: UserInfo) {
