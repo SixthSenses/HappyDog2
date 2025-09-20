@@ -1,6 +1,7 @@
 package com.example.pet_project_frontend.core.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -14,6 +15,7 @@ import com.example.pet_project_frontend.presentation.auth.LoginScreen
 import com.example.pet_project_frontend.presentation.map.MapScreen
 import com.example.pet_project_frontend.presentation.mypage.main.MyPageScreen
 import com.example.pet_project_frontend.presentation.petcare.PetCareMainScreen
+import com.example.pet_project_frontend.presentation.petcare.home.PetCareHomeScreen
 import com.example.pet_project_frontend.presentation.petregistration.PetRegistrationScreen
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -48,9 +50,19 @@ fun PetCareNavHost(
 			PetRegistrationScreen(navController = navController)
 		}
 
-		// 펫케어 화면
+		// 펫케어 메인 화면 (새로운 홈화면)
 		composable(Screen.PetCare.route) {
-			PetCareMainScreen()
+			PetCareHomeScreen(
+				onNotificationClick = { /* TODO: 알림 화면으로 네비게이션 */ },
+				onHealthSurveyClick = { /* TODO: 건강 설문지 화면으로 네비게이션 */ },
+				onBreedGuideClick = { /* TODO: 견종 가이드 화면으로 네비게이션 */ },
+				onEyeCheckClick = { /* TODO: AI 안구 검사 화면으로 네비게이션 */ },
+				onFeedClick = { /* TODO: 사료 기록 화면으로 네비게이션 */ },
+				onActivityClick = { /* TODO: 활동 기록 화면으로 네비게이션 */ },
+				onWeightClick = { /* TODO: 몸무게 기록 화면으로 네비게이션 */ },
+				onPoopClick = { /* TODO: 대변 기록 화면으로 네비게이션 */ },
+				onVomitClick = { /* TODO: 구토 기록 화면으로 네비게이션 */ }
+			)
 		}
 
 		// 펫케어 대시보드(딥링크 진입 지원): app://pet-care/dashboard?petId=...&date=...&tab=...

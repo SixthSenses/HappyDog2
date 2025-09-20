@@ -5,6 +5,7 @@ sealed class Screen(val route: String) {
     object Login : Screen("login")
     object PetRegistration : Screen("pet_registration")
     object PetCare : Screen("petcare")
+    object PetCareHome : Screen("petcare_home")
     object Map : Screen("map")
     object Community : Screen("community")
     object Translator : Screen("translator")
