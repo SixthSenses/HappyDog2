@@ -49,6 +49,6 @@ Endpoints
 - 에러: 공통 오류
 
 클라이언트 구현 요약
-- Interceptor: `AuthInterceptor`가 Bearer 자동 주입, `TokenAuthenticator`가 401에 대해 재발급 시도(무한루프 방지 헤더 `Retry-After-Refresh`).
-- 데이터 보관: `TokenManager`가 DataStore에 Access/Refresh/`selected_pet_id` 관리.
+- Interceptor: `AuthInterceptor`가 Bearer 자동 주입, `TokenAuthenticator`가 401에 대해 재발급 시도(무한루프 방지 헤더 `Retry-After-Refresh`). 재발급 요청 본문은 빈 JSON `{}` 입니다.
+- 데이터 보관: `TokenManager`는 DataStore에 Access/Refresh 토큰만 저장합니다(단일 펫 정책으로 `selected_pet_id` 개념 없음).
 - 딥링크/브라우저: 앱은 `/api/auth/google/authorize`로 브라우저 플로를 시작하고, 앱 내 콜백 스킴은 사용하지 않음. 토큰 교환은 앱에서 `POST /api/auth/social` 수행.
