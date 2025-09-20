@@ -11,6 +11,9 @@ import com.example.pet_project_frontend.data.remote.dto.request.*
 import com.example.pet_project_frontend.data.remote.dto.response.*
 import com.example.pet_project_frontend.domain.model.Pet
 import com.example.pet_project_frontend.domain.repository.PetRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -23,6 +26,29 @@ class PetRepositoryImpl @Inject constructor(
         private const val TAG = "PetRepositoryImpl"
     }
 
+    // StateFlow로 반려동물 보유 상태 관리
+    // null = 아직 확인 안됨, true = 보유, false = 미보유
+    private val _hasPet = MutableStateFlow<Boolean?>(null)
+    
+    // 서버에서 반려동물 상태를 확인하고 StateFlow 업데이트
+    private suspend fun refreshPetStatus() {
+        Log.d(TAG, "Refreshing pet status from server")
+        when (val res = SafeApi.response { petApi.getMyPetProfile() }) {
+            is AppResult.Success -> {
+                Log.d(TAG, "Pet found, setting hasPet = true")
+                _hasPet.value = true
+            }
+            is AppResult.Error -> {
+                Log.d(TAG, "Pet not found (${res.code}), setting hasPet = false")
+                _hasPet.value = false
+            }
+            is AppResult.Exception -> {
+                Log.e(TAG, "Exception checking pet status", res.throwable)
+                _hasPet.value = false
+            }
+        }
+    }
+
     override suspend fun registerPet(request: PetRegistrationRequest): AppResult<Pet> {
         Log.d(TAG, "Registering pet: ${request.name}")
         return SafeApi.response { petApi.registerPet(request) }
@@ -30,6 +56,9 @@ class PetRepositoryImpl @Inject constructor(
                 when (res) {
                     is AppResult.Success -> {
                         Log.d(TAG, "Pet registered successfully: ${res.data.petId}")
+                        // 🔥 핵심: 반려동물 등록 성공 시 즉시 상태 업데이트
+                        _hasPet.value = true
+                        Log.d(TAG, "Updated hasPet state to true after registration")
                         AppResult.Success(PetMapper.mapToDomainModel(res.data))
                     }
                     is AppResult.Error -> res
@@ -103,11 +132,28 @@ class PetRepositoryImpl @Inject constructor(
 
     override fun hasPet(): kotlinx.coroutines.flow.Flow<Boolean> =
         kotlinx.coroutines.flow.flow {
-            // 서버 기준: 200이면 존재, 404 등이면 없음으로 취급
-            when (val res = SafeApi.response { petApi.getMyPetProfile() }) {
-                is AppResult.Success -> emit(true)
-                is AppResult.Error -> emit(false)
-                is AppResult.Exception -> emit(false)
+            // 🔥 핵심: 캐시된 상태가 있으면 먼저 emit
+            _hasPet.value?.let { 
+                Log.d(TAG, "Emitting cached hasPet status: $it")
+                emit(it) 
+            }
+            
+            // 아직 확인하지 않았으면 서버에서 확인
+            if (_hasPet.value == null) {
+                Log.d(TAG, "Pet status not cached, checking server")
+                refreshPetStatus()
+                _hasPet.value?.let { 
+                    Log.d(TAG, "Emitting refreshed hasPet status: $it")
+                    emit(it) 
+                }
+            }
+            
+            // 🔥 핵심: StateFlow의 변화를 계속 감지하여 실시간 업데이트
+            _hasPet.asStateFlow().collect { hasPet ->
+                if (hasPet != null) {
+                    Log.d(TAG, "StateFlow changed, emitting new hasPet status: $hasPet")
+                    emit(hasPet)
+                }
             }
         }
 }
