@@ -8,7 +8,7 @@ https://console.firebase.google.com/u/0/project/happydog-test/settings/general/a
 google-services.json 다운 
 app\google-services.json 여기에 투하
 
- 핸드폰으로 킬거면cmd창 열어서  ipconfig 입력 "IPv4" +:5000
+핸드폰으로 킬거면cmd창 열어서  ipconfig 입력 "IPv4" +:5000
 #API_BASE_URL="http://IPv4:5000/" 
 애뮬레이터로 실행할거면
 API_BASE_URL="http://10.0.2.2:5000/"
