@@ -32,6 +32,7 @@ fun PetCareNavHost(
 		startDestination = startDestination,
 		modifier = modifier
 	) {
+
 		// 로그인 화면
 		composable(Screen.Login.route) {
 			LoginScreen(

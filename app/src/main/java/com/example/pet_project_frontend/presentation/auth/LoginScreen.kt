@@ -3,6 +3,9 @@
 package com.example.pet_project_frontend.presentation.auth
 
 import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -12,24 +15,104 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.pet_project_frontend.BuildConfig
+import com.example.pet_project_frontend.R
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(
-    onLoginResult: (isNewUser: Boolean) -> Unit
+    // 로그인 성공 결과에 따라 분기할 수 있도록 isNewUser를 전달합니다.
+    onLoginResult: (isNewUser: Boolean) -> Unit,
+    viewModel: AuthViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
+    val authState by viewModel.authState.collectAsState()
     val scope = rememberCoroutineScope()
-
-    // 로딩 상태 관리
-    var isLoading by remember { mutableStateOf(false) }
 
     // 에러 메시지를 위한 SnackbarHost
     val snackbarHostState = remember { SnackbarHostState() }
+
+    // Google Sign-In 설정 - ServerAuthCode를 요청하도록 수정
+    val gso = remember {
+        GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestServerAuthCode(BuildConfig.GOOGLE_SERVER_CLIENT_ID) // 서버 클라이언트 ID 사용
+            .requestEmail()
+            .requestProfile()
+            .build()
+    }
+
+    val googleSignInClient = remember {
+        GoogleSignIn.getClient(context, gso)
+    }
+
+    // Google Sign-In 결과 처리
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        try {
+            val account = task.getResult(ApiException::class.java)
+
+            // serverAuthCode를 가져와서 백엔드로 전송
+            account.serverAuthCode?.let { authCode ->
+                Log.d("LoginScreen", "Auth Code received: ${authCode.take(10)}...")
+                viewModel.socialLogin(authCode)
+            } ?: run {
+                Log.e("LoginScreen", "No auth code received")
+                scope.launch {
+                    snackbarHostState.showSnackbar(
+                        message = "인증 코드를 받지 못했습니다. 다시 시도해주세요.",
+                        duration = SnackbarDuration.Short
+                    )
+                }
+            }
+        } catch (e: ApiException) {
+            Log.e("LoginScreen", "Google Sign-In failed", e)
+            scope.launch {
+                val errorMessage = when (e.statusCode) {
+                    12501 -> "로그인이 취소되었습니다."
+                    12500 -> "로그인에 실패했습니다. 다시 시도해주세요."
+                    else -> "Google 로그인 실패: ${e.message}"
+                }
+                snackbarHostState.showSnackbar(
+                    message = errorMessage,
+                    duration = SnackbarDuration.Short
+                )
+            }
+        }
+    }
+
+    // 로그인 성공 시 처리
+    LaunchedEffect(authState) {
+        when (authState) {
+            is AuthState.Success -> {
+                Log.d("LoginScreen", "Login successful, navigating...")
+                onLoginResult((authState as AuthState.Success).response.isNewUser)
+            }
+            is AuthState.Error -> {
+                snackbarHostState.showSnackbar(
+                    message = (authState as AuthState.Error).message,
+                    duration = SnackbarDuration.Long
+                )
+            }
+            else -> {}
+        }
+    }
+
+    // 컴포넌트가 시작될 때 기존 로그인 정보 초기화
+    DisposableEffect(Unit) {
+        googleSignInClient.signOut()
+        onDispose { }
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -47,7 +130,7 @@ fun LoginScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                // 앱 로고
+                // 앱 로고 (실제 로고 이미지가 있다면 사용)
                 Card(
                     modifier = Modifier.size(120.dp),
                     shape = RoundedCornerShape(24.dp),
@@ -88,89 +171,50 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(64.dp))
 
-                // Kakao 로그인 버튼
+                // Google 로그인 버튼
                 Button(
                     onClick = {
-                        Log.d("LoginScreen", "Starting Kakao Sign-In...")
-                        isLoading = true
-                        scope.launch {
-                            try {
-                                // TODO: 실제 Kakao 로그인 구현
-                                kotlinx.coroutines.delay(2000) // 시뮬레이션
-
-                                // 임시로 성공 처리 (실제로는 Kakao SDK 결과 처리)
-                                onLoginResult(false) // isNewUser = false
-                            } catch (e: Exception) {
-                                snackbarHostState.showSnackbar(
-                                    message = "로그인에 실패했습니다: ${e.message}",
-                                    duration = SnackbarDuration.Short
-                                )
-                            } finally {
-                                isLoading = false
-                            }
-                        }
+                        Log.d("LoginScreen", "Starting Google Sign-In...")
+                        launcher.launch(googleSignInClient.signInIntent)
                     },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
-                    enabled = !isLoading,
+                    enabled = authState !is AuthState.Loading,
                     shape = RoundedCornerShape(28.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFFFE812) // Kakao Yellow
+                        containerColor = Color(0xFF4285F4) // Google Blue
                     )
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
+                        // Google 로고 아이콘 (실제 아이콘이 있다면 사용)
                         Text(
-                            text = "K",
+                            text = "G",
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.Black
+                            color = Color.White
                         )
 
                         Spacer(modifier = Modifier.width(12.dp))
 
                         Text(
-                            text = if (isLoading) {
+                            text = if (authState is AuthState.Loading) {
                                 "로그인 중..."
                             } else {
-                                "카카오로 계속하기"
+                                "Google로 계속하기"
                             },
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium,
-                            color = Color.Black
+                            color = Color.White
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // 게스트 로그인 버튼
-                OutlinedButton(
-                    onClick = {
-                        Log.d("LoginScreen", "Guest login...")
-                        scope.launch {
-                            // 게스트 로그인은 바로 성공 처리
-                            onLoginResult(true) // 게스트는 신규 사용자로 처리
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    enabled = !isLoading,
-                    shape = RoundedCornerShape(28.dp)
-                ) {
-                    Text(
-                        text = "게스트로 둘러보기",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-
                 // 로딩 인디케이터
-                if (isLoading) {
+                if (authState is AuthState.Loading) {
                     Spacer(modifier = Modifier.height(24.dp))
                     CircularProgressIndicator(
                         modifier = Modifier.size(32.dp),
