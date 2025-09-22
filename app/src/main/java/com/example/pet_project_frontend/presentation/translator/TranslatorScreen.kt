@@ -36,7 +36,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -75,8 +78,10 @@ import org.tensorflow.lite.support.image.TensorImage
 import org.tensorflow.lite.support.image.ops.ResizeOp
 import org.tensorflow.lite.support.tensorbuffer.TensorBuffer
 import com.example.pet_project_frontend.R
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlin.math.roundToInt
 import java.util.ArrayDeque
 import java.util.concurrent.Executor
@@ -120,8 +125,33 @@ fun TranslatorScreen(openNotice: ((@Composable (closeNotice: () -> Unit) -> Unit
             TranslatorNotice(closeNotice)
         }
     } else {
-        // 권한이 없을 경우, 권한 요청 메시지 또는 별도 UI 보여줘도 좋음
-        Text("카메라 권한이 필요합니다")
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = "카메라 권한이 필요합니다.",
+                    fontSize = 21.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White,
+                )
+                Spacer(modifier = Modifier.height(19.dp))
+                Text(
+                    "설정  >  애플리케이션  >  행복하개  >  권한  >  카메라  >  허용",
+                    fontSize = 16.sp,
+                    letterSpacing = (-0.1).em,
+                    color = Color.White,
+                )
+            }
+        }
     }
 }
 
@@ -522,6 +552,7 @@ fun TranslatorNotice(
         }
     }
 }
+
 class CameraStateHolder {
     var bestCandidate by mutableStateOf<FloatArray?>(null)
 
@@ -535,114 +566,122 @@ class CameraStateHolder {
         sequence.add(remappedKeypoints)
     }
 
-    val hasAtLeast10Keypoints: Boolean
-        get() = sequence.count { it != null } >= 10
+    val hasAtLeast1Keypoints: Boolean
+        get() = sequence.count { it != null } >= 1
 
-    var emotion: String? by mutableStateOf(null)
-        private set
-
-    fun updateEmotion(floatArray: FloatArray?) {
-        if (floatArray != null) {
-            emotion = when (floatArray.indices.maxByOrNull { floatArray[it] }) {
-                0 -> "\uD83D\uDE21  공격"
-                1 -> "\uD83D\uDE28  공포"
-                2 -> "\uD83D\uDE22  불안/슬픔"
-                3 -> "\uD83D\uDE0A  편안/안정"
-                4 -> "\uD83D\uDE0D  행복/즐거움"
-                5 -> "\uD83D\uDE12  불쾌"
-                else -> null
-            }
-        } else {
-            emotion = null
-        }
-    }
+    var mood: String? by mutableStateOf(null)
 }
 
 class ThrottledImageAnalyzer(
     private val context: Context,
     private val cameraStateHolder: CameraStateHolder
 ) : ImageAnalysis.Analyzer {
-    private var lastAnalyzedTimestamp = 0L
-    private var lastEmotionTimestamp = 0L // 감정 모델 주기 체크
-
-    private val interpreter: Interpreter by lazy {
+    private val yoloInterpreter by lazy {
         val modelBuffer = FileUtil.loadMappedFile(context, "best_float32.tflite")
         val options = Interpreter.Options().apply {
             setNumThreads(4)
         }
         Interpreter(modelBuffer, options)
     }
-    val inputDetails = interpreter.getInputTensor(0)
-    val outputDetails = interpreter.getOutputTensor(0)
-
-    private val lstmInterpreter: Interpreter by lazy {
+    private val dmuInterpreter by lazy {
         val modelBuffer = FileUtil.loadMappedFile(context, "dog_mood_understanding.tflite")
         val options = Interpreter.Options().apply {
-            setNumThreads(2)
-            addDelegate(FlexDelegate()) // Flex delegate 추가
+            setNumThreads(4)
+            addDelegate(FlexDelegate())
         }
         Interpreter(modelBuffer, options)
     }
-    val lstmInputDetails = lstmInterpreter.getInputTensor(0)
-    val lstmOutputDetails = lstmInterpreter.getOutputTensor(0)
+
+    private val yoloInputDetails = yoloInterpreter.getInputTensor(0)
+    private val yoloOutputDetails = yoloInterpreter.getOutputTensor(0)
+    private val dmuInputDetails = dmuInterpreter.getInputTensor(0)
+    private val dmuOutputDetails = dmuInterpreter.getOutputTensor(0)
+
+    private var lastYoloTimestamp = 0L
+    private var lastDmuTimestamp = 0L
+
+    private var tempYoloResult: FloatArray? = null
+    private var tempDmuResult: String? = null
 
     override fun analyze(image: ImageProxy) {
-        val currentTimestamp = System.currentTimeMillis()
-        if (currentTimestamp - lastAnalyzedTimestamp >= 200) {
-            val bitmap = image.toBitmap()
-            val tensorImage = TensorImage.fromBitmap(bitmap)
-            val imageProcessor = ImageProcessor.Builder()
-                .add(ResizeOp(640, 640, ResizeOp.ResizeMethod.BILINEAR))
-                .add(NormalizeOp(0f, 255f))
-                .build()
-            val processedTensorImage = imageProcessor.process(tensorImage)
-            val tensorBuffer = processedTensorImage.tensorBuffer
-            val inputBuffer = TensorBuffer.createFixedSize(inputDetails.shape(), inputDetails.dataType())
-            inputBuffer.loadArray(tensorBuffer.floatArray)
-            val outputBuffer = TensorBuffer.createFixedSize(outputDetails.shape(), outputDetails.dataType())
-            interpreter.run(inputBuffer.buffer, outputBuffer.buffer)
-            val outputArray = outputBuffer.floatArray
-            val firstCandidate = FloatArray(77) { feature ->
-                outputArray[feature * 8400]
-            }
-            val confidences = FloatArray(8400) { candidate ->
-                outputArray[4 * 8400 + candidate]
-            }
-            val validIndices = confidences
-                .toList()
-                .mapIndexedNotNull { idx, value -> if (value >= 0.5f) idx else null }
-            val bestIdx = validIndices.maxByOrNull { idx -> confidences[idx] }
-            val bestCandidate = bestIdx?.let { idx ->
-                FloatArray(77) { feature ->
-                    outputArray[feature * 8400 + idx]
+        runBlocking {
+            coroutineScope {
+                launch {
+                    val currentTimestamp = System.currentTimeMillis()
+                    if (currentTimestamp - lastYoloTimestamp >= 200) {
+                        cameraStateHolder.bestCandidate = tempYoloResult
+                        cameraStateHolder.addSequence(
+                            if (tempYoloResult != null) {
+                                remapKeypoints(normalizeKeypoints(tempYoloResult!!))
+                            } else {
+                                null
+                            }
+                        )
+                        lastYoloTimestamp = currentTimestamp
+                        tempYoloResult = null
+                    }
+                    if (tempYoloResult == null) {
+                        val bitmap = image.toBitmap()
+                        val tensorImage = TensorImage.fromBitmap(bitmap)
+                        val imageProcessor = ImageProcessor.Builder()
+                            .add(ResizeOp(640, 640, ResizeOp.ResizeMethod.BILINEAR))
+                            .add(NormalizeOp(0f, 255f))
+                            .build()
+                        val processedTensorImage = imageProcessor.process(tensorImage)
+                        val tensorBuffer = processedTensorImage.tensorBuffer
+                        val inputBuffer = TensorBuffer.createFixedSize(yoloInputDetails.shape(), yoloInputDetails.dataType())
+                        inputBuffer.loadArray(tensorBuffer.floatArray)
+                        val outputBuffer = TensorBuffer.createFixedSize(yoloOutputDetails.shape(), yoloOutputDetails.dataType())
+                        yoloInterpreter.run(inputBuffer.buffer, outputBuffer.buffer)
+                        val outputArray = outputBuffer.floatArray
+                        val confidences = FloatArray(8400) { candidate ->
+                            outputArray[4 * 8400 + candidate]
+                        }
+                        val validIndices = confidences
+                            .toList()
+                            .mapIndexedNotNull { idx, value -> if (value >= 0.7f) idx else null }
+                        val bestIdx = validIndices.maxByOrNull { idx -> confidences[idx] }
+                        val bestCandidate = bestIdx?.let { idx ->
+                            FloatArray(77) { feature ->
+                                outputArray[feature * 8400 + idx]
+                            }
+                        }
+                        tempYoloResult = bestCandidate
+                    }
+                }
+                launch {
+                    val currentTimestamp = System.currentTimeMillis()
+                    if (currentTimestamp - lastDmuTimestamp >= 2000) {
+                        cameraStateHolder.mood = tempDmuResult
+                        lastDmuTimestamp = currentTimestamp
+                        tempDmuResult = null
+                    }
+                    val nonNullSequence = cameraStateHolder.sequence.filterNotNull()
+                    if (tempDmuResult == null && nonNullSequence.size >= 10) {
+                        val last10 = nonNullSequence.takeLast(10)
+                        val flat = last10.flatMap { it.asList() }.toFloatArray()
+                        val inputBuffer = TensorBuffer.createFixedSize(dmuInputDetails.shape(), dmuInputDetails.dataType())
+                        inputBuffer.loadArray(flat)
+                        val outputBuffer = TensorBuffer.createFixedSize(dmuOutputDetails.shape(), dmuOutputDetails.dataType())
+                        dmuInterpreter.run(inputBuffer.buffer, outputBuffer.buffer)
+                        val outputArray = outputBuffer.floatArray
+                        val mood = when (
+                            outputArray.indices.maxByOrNull { outputArray[it] }
+                        ) {
+                            0 -> "\uD83D\uDE21  공격"
+                            1 -> "\uD83D\uDE28  공포"
+                            2 -> "\uD83D\uDE22  불안/슬픔"
+                            3 -> "\uD83D\uDE0A  편안/안정"
+                            4 -> "\uD83D\uDE0D  행복/즐거움"
+                            5 -> "\uD83D\uDE12  불쾌"
+                            else -> null
+                        }
+                        tempDmuResult = mood
+                    }
                 }
             }
-            cameraStateHolder.bestCandidate = bestCandidate
-            if (bestCandidate != null) {
-                val remappedKeypoints = remapKeypoints(normalizeKeypoints(bestCandidate))
-                cameraStateHolder.addSequence(remappedKeypoints)
-            } else {
-                cameraStateHolder.addSequence(null)
-            }
-            lastAnalyzedTimestamp = currentTimestamp
+            image.close()
         }
-        // 2초마다 emotion 모델 실행 null이어도 실행
-        if (cameraStateHolder.emotion == null || currentTimestamp - lastEmotionTimestamp >= 2000) {
-            if (cameraStateHolder.hasAtLeast10Keypoints) {
-                val sequence = cameraStateHolder.sequence
-                val last10 = sequence.filterNotNull().takeLast(10)
-                val flat = last10.flatMap { it.asList() }.toFloatArray()
-                val inputBuffer = TensorBuffer.createFixedSize(lstmInputDetails.shape(), lstmInputDetails.dataType())
-                inputBuffer.loadArray(flat)
-                val outputBuffer = TensorBuffer.createFixedSize(lstmOutputDetails.shape(), lstmOutputDetails.dataType())
-                lstmInterpreter.run(inputBuffer.buffer, outputBuffer.buffer)
-                cameraStateHolder.updateEmotion(outputBuffer.floatArray)
-            } else {
-                cameraStateHolder.updateEmotion(null)
-            }
-            lastEmotionTimestamp = currentTimestamp
-        }
-        image.close()
     }
 }
 
@@ -655,8 +694,8 @@ fun CameraPreviewScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val bestCandidate = stateHolder.bestCandidate
     val sequence = stateHolder.sequence
-    val hasAtLeast10Keypoints = stateHolder.hasAtLeast10Keypoints
-    val emotion = stateHolder.emotion
+    val hasAtLeast1Keypoints = stateHolder.hasAtLeast1Keypoints
+    val mood = stateHolder.mood
     var cameraProvider by remember { mutableStateOf<ProcessCameraProvider?>(null) }
 
     val previewView = remember { PreviewView(context) }
@@ -692,9 +731,10 @@ fun CameraPreviewScreen(
             factory = { previewView },
             modifier = Modifier.fillMaxSize()
         )
-        TranslationResult(emotion)
-        if (!hasAtLeast10Keypoints) {
+        if (!hasAtLeast1Keypoints) {
             TranslatorHint()
+        } else {
+            TranslationResult(mood)
         }
     }
 }
