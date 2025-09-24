@@ -1,5 +1,6 @@
 package com.example.pet_project_frontend.presentation.petregistration
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -11,8 +12,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush.Companion.verticalGradient
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.pet_project_frontend.core.navigation.Screen // [수정됨] Screen import
@@ -48,21 +54,7 @@ fun PetRegistrationScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("반려동물 등록") },
-                navigationIcon = {
-                    IconButton(onClick = { navController.navigateUp() }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "뒤로가기"
-                        )
-                    }
-                }
-            )
-        }
-    ) { paddingValues ->
+    Scaffold() { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -70,9 +62,28 @@ fun PetRegistrationScreen(
         ) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                contentPadding = PaddingValues(21.dp, 16.dp),
+                verticalArrangement = Arrangement.spacedBy(25.dp)
             ) {
+                item {
+                    Text(
+                        text = "회원가입",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF3182F6),
+                        lineHeight = 1.40.em,
+                        letterSpacing = (-0.015).em,
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "반려견의 정보를\n알려주세요",
+                        fontSize = 23.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        lineHeight = 1.40.em,
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    )
+                }
                 // 이름 입력
                 item {
                     OutlinedTextField(
@@ -180,6 +191,28 @@ fun PetRegistrationScreen(
                     )
                 }
 
+                // 건강 관심사 (선택)
+                item {
+                    HealthConcernsSection(
+                        healthConcerns = healthConcerns,
+                        onAdd = viewModel::addHealthConcern,
+                        onRemove = viewModel::removeHealthConcern
+                    )
+                }
+
+                // 건강 관심사 (선택)
+                item {
+                    HealthConcernsSection(
+                        healthConcerns = healthConcerns,
+                        onAdd = viewModel::addHealthConcern,
+                        onRemove = viewModel::removeHealthConcern
+                    )
+                }
+
+                item {
+                    Spacer(modifier = Modifier.height(92.dp))
+                }
+
                 // 에러 메시지
                 uiState.error?.let {
                     item {
@@ -197,39 +230,61 @@ fun PetRegistrationScreen(
                         }
                     }
                 }
-
-                // 등록 버튼
-                item {
+            }
+            Column(
+                modifier = Modifier
+                    .fillMaxSize(),
+                verticalArrangement = Arrangement.Bottom,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(30.dp)
+                        .background(
+                            brush = verticalGradient(
+                                colors = listOf(
+                                    Color.White.copy(alpha = 0f),
+                                    Color.White,
+                                )
+                            )
+                        )
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(78.dp)
+                        .background(Color.White),
+                    contentAlignment = Alignment.Center
+                ) {
                     Button(
                         onClick = { viewModel.registerPet() },
+                        shape = RoundedCornerShape(16.dp),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(56.dp),
+                            .height(58.dp)
+                            .padding(horizontal = 21.dp),
                         enabled = !uiState.isLoading,
-                        shape = RoundedCornerShape(12.dp)
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF3182F6),
+                            contentColor = Color.White
+                        )
                     ) {
-                        if (uiState.isLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                color = MaterialTheme.colorScheme.onPrimary
-                            )
-                        } else {
-                            Text(
-                                text = "등록하기",
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
+                        Text(
+                            text = "완료",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        )
                     }
                 }
-            }
 
-            // 품종 선택 다이얼로그
-            if (showBreedDialog) {
-                BreedSelectionDialog(
-                    viewModel = viewModel,
-                    onDismiss = { viewModel.hideBreedDialog() }
-                )
+                // 품종 선택 다이얼로그
+                if (showBreedDialog) {
+                    BreedSelectionDialog(
+                        viewModel = viewModel,
+                        onDismiss = { viewModel.hideBreedDialog() }
+                    )
+                }
             }
         }
     }
