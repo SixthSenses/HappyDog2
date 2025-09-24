@@ -5,6 +5,7 @@ import com.example.pet_project_frontend.data.remote.dto.request.PetRegistrationR
 import com.example.pet_project_frontend.data.remote.dto.request.PetUpdateRequest
 import com.example.pet_project_frontend.data.remote.dto.response.BiometricAnalysisResponse
 import com.example.pet_project_frontend.data.remote.dto.response.EyeAnalysisResponse
+import com.example.pet_project_frontend.data.remote.dto.response.PetViewBasedResponse
 import com.example.pet_project_frontend.domain.model.Pet
 import kotlinx.coroutines.flow.Flow
 
@@ -12,6 +13,7 @@ interface PetRepository {
     suspend fun registerPet(request: PetRegistrationRequest): AppResult<Pet>
     suspend fun getPetProfile(petId: String): AppResult<Pet>
     suspend fun getMyPetProfile(): AppResult<Pet>
+    suspend fun getPetProfileForPetCare(): AppResult<PetViewBasedResponse>
     suspend fun updatePetProfile(petId: String, request: PetUpdateRequest): AppResult<Pet>
     
     // 생체 인증

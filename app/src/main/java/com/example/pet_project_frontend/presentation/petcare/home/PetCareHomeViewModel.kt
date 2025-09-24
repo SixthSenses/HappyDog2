@@ -2,6 +2,8 @@ package com.example.pet_project_frontend.presentation.petcare.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.pet_project_frontend.core.common.AppResult
+import com.example.pet_project_frontend.domain.repository.PetRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,8 +24,8 @@ data class PetCareHomeUiState(
 
 @HiltViewModel
 class PetCareHomeViewModel @Inject constructor(
-    // TODO: Repository 의존성 추가
-    // private val petRepository: PetRepository,
+    private val petRepository: PetRepository
+    // TODO: 알림 Repository 추가
     // private val notificationRepository: NotificationRepository
 ) : ViewModel() {
 
@@ -42,20 +44,39 @@ class PetCareHomeViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(isLoading = true)
             
             try {
-                // TODO: 실제 데이터 로딩 구현
-                // val petInfo = petRepository.getCurrentPet()
-                // val notifications = notificationRepository.getUnreadCount()
-                
-                // 임시 데이터
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    petName = "멍멍이", // TODO: 실제 펫 이름으로 교체
-                    petImageUrl = null, // TODO: 실제 펫 이미지 URL로 교체
-                    hasNotification = true // TODO: 실제 알림 상태로 교체
-                )
+                // 펫케어용 프로필 정보 로딩
+                when (val result = petRepository.getPetProfileForPetCare()) {
+                    is AppResult.Success -> {
+                        val petProfile = result.data
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            petName = petProfile.name,
+                            petImageUrl = petProfile.profileImageUrl,
+                            hasNotification = false // TODO: 실제 알림 상태로 교체
+                        )
+                    }
+                    is AppResult.Error -> {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            petName = "반려견 이름",
+                            petImageUrl = null,
+                            errorMessage = "반려동물 정보를 불러올 수 없습니다."
+                        )
+                    }
+                    is AppResult.Exception -> {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            petName = "반려견 이름",
+                            petImageUrl = null,
+                            errorMessage = "네트워크 오류가 발생했습니다."
+                        )
+                    }
+                }
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
+                    petName = "반려견 이름",
+                    petImageUrl = null,
                     errorMessage = "데이터를 불러오는 중 오류가 발생했습니다."
                 )
             }

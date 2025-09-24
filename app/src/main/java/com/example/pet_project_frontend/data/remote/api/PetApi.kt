@@ -21,6 +21,10 @@ interface PetApi {
     @GET("api/pets/profile")
     suspend fun getMyPetProfile(): Response<PetViewBasedResponse>
     
+    // 펫케어 홈 화면용 프로필 조회 (view=petcare)
+    @GET("api/pets/profile")
+    suspend fun getPetProfileForPetCare(@retrofit2.http.Query("view") view: String = "petcare"): Response<PetViewBasedResponse>
+    
     @PUT("api/pets/{petId}")
     suspend fun updatePetProfile(
         @retrofit2.http.Path("petId") petId: String,
