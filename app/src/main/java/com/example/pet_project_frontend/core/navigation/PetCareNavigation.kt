@@ -20,6 +20,8 @@ import com.example.pet_project_frontend.presentation.petregistration.PetRegistra
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.pet_project_frontend.presentation.translator.TranslatorScreen
+import com.example.pet_project_frontend.presentation.eye_health.EyeHealthScreen
+import com.example.pet_project_frontend.presentation.eye_health.EyeHealthHistoryScreen
 
 @Composable
 fun PetCareNavHost(
@@ -56,7 +58,9 @@ fun PetCareNavHost(
 				onNotificationClick = { /* TODO: 알림 화면으로 네비게이션 */ },
 				onHealthSurveyClick = { /* TODO: 건강 설문지 화면으로 네비게이션 */ },
 				onBreedGuideClick = { /* TODO: 견종 가이드 화면으로 네비게이션 */ },
-				onEyeCheckClick = { /* TODO: AI 안구 검사 화면으로 네비게이션 */ },
+				onEyeCheckClick = { 
+					navController.navigate(Screen.EyeHealth.route)
+				},
 				onFeedClick = { /* TODO: 사료 기록 화면으로 네비게이션 */ },
 				onActivityClick = { /* TODO: 활동 기록 화면으로 네비게이션 */ },
 				onWeightClick = { /* TODO: 몸무게 기록 화면으로 네비게이션 */ },
@@ -91,5 +95,20 @@ fun PetCareNavHost(
 
 		// 마이페이지 화면
 		composable(Screen.MyPage.route) { MyPageScreen() }
+
+		// AI 안구 검사 화면
+		composable(Screen.EyeHealth.route) {
+			EyeHealthScreen(
+				onBackClick = { navController.popBackStack() },
+				onNavigateToHistory = { navController.navigate(Screen.EyeHealthHistory.route) }
+			)
+		}
+
+		// 안구 검사 기록 화면
+		composable(Screen.EyeHealthHistory.route) {
+			EyeHealthHistoryScreen(
+				onBackClick = { navController.popBackStack() }
+			)
+		}
 	}
 }

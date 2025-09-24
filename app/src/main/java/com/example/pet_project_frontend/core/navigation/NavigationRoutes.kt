@@ -10,6 +10,8 @@ sealed class Screen(val route: String) {
     object Community : Screen("community")
     object Translator : Screen("translator")
     object MyPage : Screen("mypage")
+    object EyeHealth : Screen("eye_health") // AI 안구 검사 화면
+    object EyeHealthHistory : Screen("eye_health_history") // 안구 검사 기록 화면
 
     // 펫케어 대시보드(딥링크 표준과 맞춤) - core:navigation 상수 사용
     object PetCareDashboard : Screen(com.example.pet_project_frontend.core.navigation.Routes.PetCare.Dashboard) {
