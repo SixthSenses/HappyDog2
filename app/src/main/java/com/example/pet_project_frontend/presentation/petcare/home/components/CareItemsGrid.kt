@@ -11,8 +11,12 @@ import androidx.compose.ui.unit.dp
  */
 @Composable
 fun CareItemsGrid(
-    onFeedClick: () -> Unit = {},
-    onActivityClick: () -> Unit = {},
+    onFeedDetailClick: () -> Unit = {},
+    onFeedPlusClick: () -> Unit = {},
+    onFeedMinusClick: () -> Unit = {},
+    onActivityDetailClick: () -> Unit = {},
+    onActivityPlusClick: () -> Unit = {},
+    onActivityMinusClick: () -> Unit = {},
     onWeightClick: () -> Unit = {},
     onPoopClick: () -> Unit = {},
     onVomitClick: () -> Unit = {},
@@ -30,12 +34,16 @@ fun CareItemsGrid(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             FeedCareCard(
-                onClick = onFeedClick,
+                onDetailClick = onFeedDetailClick,
+                onPlusClick = onFeedPlusClick,
+                onMinusClick = onFeedMinusClick,
                 modifier = Modifier.weight(1f)
             )
             
             ActivityCareCard(
-                onClick = onActivityClick,
+                onDetailClick = onActivityDetailClick,
+                onPlusClick = onActivityPlusClick,
+                onMinusClick = onActivityMinusClick,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -46,12 +54,12 @@ fun CareItemsGrid(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             WeightCareCard(
-                onClick = onWeightClick,
+                onDetailClick = onWeightClick,
                 modifier = Modifier.weight(1f)
             )
             
             PoopCareCard(
-                onClick = onPoopClick,
+                onDetailClick = onPoopClick,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -62,7 +70,7 @@ fun CareItemsGrid(
             horizontalArrangement = Arrangement.Start
         ) {
             VomitCareCard(
-                onClick = onVomitClick,
+                onDetailClick = onVomitClick,
                 modifier = Modifier.weight(0.48f) // 다른 카드들과 같은 크기
             )
             

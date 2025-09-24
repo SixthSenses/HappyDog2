@@ -27,7 +27,7 @@ fun BreedGuideCard(
 ) {
     Card(
         modifier = modifier
-            .aspectRatio(1f) // 정사각형에 가까운 네모 박스
+            .aspectRatio(0.9f) // 사료 박스와 동일한 비율 (세로로 살짝 긴 박스)
             .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
@@ -40,21 +40,33 @@ fun BreedGuideCard(
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            // 왼쪽 위: 제목
-            Text(
-                text = "견종\n가이드북",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                color = MyPageColors.Orange800,
+            // 왼쪽 위: 제목들
+            Column(
                 modifier = Modifier.align(Alignment.TopStart)
-            )
+            ) {
+                Text(
+                    text = "견종",
+                    fontSize = 14.sp, // 크기 줄임 (16sp -> 14sp)
+                    fontWeight = FontWeight.ExtraBold, // 두께 굵게 (Bold -> ExtraBold)
+                    color = MyPageColors.Orange800
+                )
+                
+                Spacer(modifier = Modifier.height(4.dp))
+                
+                Text(
+                    text = "가이드북",
+                    fontSize = 14.sp, // 크기 줄임 (16sp -> 14sp)
+                    fontWeight = FontWeight.ExtraBold, // 두께 굵게 (Bold -> ExtraBold)
+                    color = MyPageColors.Orange800
+                )
+            }
             
             // 오른쪽 아래: 이미지
             Image(
                 painter = painterResource(id = R.drawable.breed_guide_icon),
                 contentDescription = "견종 가이드북",
                 modifier = Modifier
-                    .size(48.dp)
+                    .size(72.dp)
                     .align(Alignment.BottomEnd),
                 contentScale = ContentScale.Fit
             )

@@ -1,5 +1,6 @@
 package com.example.pet_project_frontend.presentation.petcare.home
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
@@ -8,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.pet_project_frontend.presentation.petcare.home.components.*
+import com.example.pet_project_frontend.core.theme.MyPageColors
 import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -28,11 +30,13 @@ fun PetCareHomeScreen(
     val uiState by viewModel.uiState.collectAsState()
     
     Scaffold(
-        modifier = modifier.fillMaxSize()
+        modifier = modifier.fillMaxSize(),
+        containerColor = MyPageColors.White // Color.kt에서 정의된 White 사용
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
+                .background(MyPageColors.White) // Color.kt에서 정의된 White 사용
                 .padding(paddingValues),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
@@ -72,8 +76,12 @@ fun PetCareHomeScreen(
             item {
                 // 케어 항목 그리드
                 CareItemsGrid(
-                    onFeedClick = onFeedClick,
-                    onActivityClick = onActivityClick,
+                    onFeedDetailClick = onFeedClick,
+                    onFeedPlusClick = { /* TODO: 사료 + 버튼 액션 */ },
+                    onFeedMinusClick = { /* TODO: 사료 - 버튼 액션 */ },
+                    onActivityDetailClick = onActivityClick,
+                    onActivityPlusClick = { /* TODO: 활동 + 버튼 액션 */ },
+                    onActivityMinusClick = { /* TODO: 활동 - 버튼 액션 */ },
                     onWeightClick = onWeightClick,
                     onPoopClick = onPoopClick,
                     onVomitClick = onVomitClick

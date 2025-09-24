@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.pet_project_frontend.R
+import com.example.pet_project_frontend.core.theme.MyPageColors
 
 @Composable
 fun EyeHealthCard(
@@ -41,61 +42,40 @@ fun EyeHealthCard(
         )
         
         // 기존 콘텐츠 레이아웃
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+        Box(
+            modifier = Modifier.fillMaxSize()
         ) {
-            // 왼쪽: 텍스트 내용 (기존과 동일)
+            // 왼쪽: 텍스트 내용 (가운데 정렬)
             Column(
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .padding(start = 20.dp)
             ) {
                 Text(
                     text = "한눈에 보는 눈 건강",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MyPageColors.GreyOpacity600.copy(alpha = 0.6f)
                 )
                 
                 Spacer(modifier = Modifier.height(4.dp))
                 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "AI 안구 검사",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color.White.copy(alpha = 0.9f)
-                    )
-                    
-                    Spacer(modifier = Modifier.width(8.dp))
-                    
-                    // "탭" 표시를 위한 작은 칩
-                    Surface(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp)),
-                        color = Color.White.copy(alpha = 0.2f)
-                    ) {
-                        Text(
-                            text = "TAP",
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                        )
-                    }
-                }
+                Text(
+                    text = "AI 안구 검사",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MyPageColors.Grey900
+                )
             }
             
-            // 오른쪽: 아이콘 이미지 (기존과 동일한 위치)
+            // 오른쪽: 아이콘 이미지 (오른쪽으로 이동, 크기 증가, 아래쪽 정렬)
             Image(
-                painter = painterResource(id = R.drawable.eye_check_icon), // 기존 아이콘
+                painter = painterResource(id = R.drawable.eye_check_icon),
                 contentDescription = "AI 안구 검사",
                 modifier = Modifier
-                    .size(60.dp)
+                    .size(250.dp) // 크기 더 증가 (220dp -> 250dp)
+                    .align(Alignment.BottomEnd) // 오른쪽 아래 정렬
+                    .offset(x = 20.dp, y = 10.dp) // 오른쪽으로 더 이동, 아래로 살짝 이동
                     .clip(RoundedCornerShape(12.dp)),
                 contentScale = ContentScale.Fit
             )
