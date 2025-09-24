@@ -147,12 +147,12 @@ class MainActivity : ComponentActivity() {
                     }
                 } else {
                     // startDestination은 로그인 + 선택된 반려동물 유무에 따라 분기합니다.
-                    // val effectiveStart = when {
-                    //     !isLoggedIn -> Screen.Login.route
-                    //     selectedPetId.isNullOrBlank() -> Screen.PetRegistration.route
-                    //     else -> Screen.PetCare.route
-                    // }
-                    val effectiveStart = Screen.PetCare.route
+                    val effectiveStart = when {
+                        !isLoggedIn -> Screen.Login.route
+                        selectedPetId.isNullOrBlank() -> Screen.PetRegistration.route
+                        else -> Screen.PetCare.route
+                    }
+                    // val effectiveStart = Screen.PetCare.route
 
                     // selected_pet_id가 사라지면 런타임에도 등록 화면으로 유도
                     LaunchedEffect(selectedPetId, currentRoute, isLoggedIn) {
