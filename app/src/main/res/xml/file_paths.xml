@@ -5,5 +5,5 @@
         path="Pictures" />
     <cache-path
         name="cache_images"
-        path="images/" />
+        path="." />
 </paths>

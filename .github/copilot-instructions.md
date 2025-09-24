@@ -1,48 +1,67 @@
 ## Non-negotiables
 
-- Android Architecture Compliance (must follow): Adhere end-to-end to Google’s official Android Architecture recommendations: https://developer.android.com/topic/architecture/recommendations?hl=en. Enforce separation of concerns across layered architecture (UI, Domain, Data), MVVM with unidirectional data flow and a single source of truth, repositories as data boundaries, coroutines/Flow between layers, lifecycle-aware state collection (repeatOnLifecycle / collectAsStateWithLifecycle), and Hilt DI. ViewModels expose a single immutable uiState (StateFlow) created with stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), initial). Avoid Android lifecycle references or AndroidViewModel in ViewModels; never place business logic in Activities/Fragments/Composables.
-- Professional, production-grade code: All code must be production quality—clear, typed APIs; minimal but meaningful tests when changing public behavior; precise naming; comments only when non-obvious; remove dead code; no TODOs without an owner/issue; follow Kotlin/Android style guides.
-- Root-cause fixes only: When resolving errors, identify and fix the true root cause—do not add workarounds, silence exceptions, blanket-disable lint rules, or add arbitrary delays. Document the cause and resolution in commits and add a regression test when feasible.
+- **Android Architecture Compliance (must follow)**: Adhere end-to-end to Google's official Android Architecture recommendations: https://developer.android.com/topic/architecture/recommendations?hl=en. Enforce separation of concerns across layered architecture (UI, Domain, Data), MVVM with unidirectional data flow and a single source of truth, repositories as data boundaries, coroutines/Flow between layers, lifecycle-aware state collection (repeatOnLifecycle / collectAsStateWithLifecycle), and Hilt DI. ViewModels expose a single immutable uiState (StateFlow) created with stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), initial). Avoid Android lifecycle references or AndroidViewModel in ViewModels; never place business logic in Activities/Fragments/Composables.
+- **Professional, production-grade code**: All code must be production quality—clear, typed APIs; minimal but meaningful tests when changing public behavior; precise naming; comments only when non-obvious; remove dead code; no TODOs without an owner/issue; follow Kotlin/Android style guides.
+- **Root-cause fixes only**: When resolving errors, identify and fix the true root cause—do not add workarounds, silence exceptions, blanket-disable lint rules, or add arbitrary delays. Document the cause and resolution in commits and add a regression test when feasible.
+- **File corruption awareness**: EyeHealthScreen.kt and similar UI files are prone to import/content corruption. When build errors mention "Function declaration must have a name" or duplicate imports, delete corrupted files completely and recreate them cleanly rather than attempting to edit.
 
-## HappyDog2 – AI Agent Working Guide (concise)
+## HappyDog2 – AI Agent Working Guide
 
-Architecture and state
-- Modules: UI/Domain/Data inside `app/`, shared: `core:common`, `core:navigation`, `core:designsystem` (see `settings.gradle.kts`).
+**Architecture and State Management**
+- Modules: UI/Domain/Data inside `app/`, shared: `core:common`, `core:navigation`, `core:designsystem` (see `settings.gradle.kts`)
 - MVVM + UDF/SSoT: ViewModel owns a single `StateFlow<UiState>`; repositories persist via DataStore. No mutable state to UI.
 - Only expose `suspend`/`Flow` from Data/Domain. Launch coroutines in ViewModel with `viewModelScope`.
+- State collection pattern: Use `collectAsStateWithLifecycle()` in UI, `stateIn(scope, SharingStarted.WhileSubscribed(5000), initial)` in ViewModels
 
-UI, navigation, and examples
-- Collect state with `collectAsStateWithLifecycle()`; see `app/MainActivity.kt` (branches on `isLoggedIn` and `hasPet`).
-- Start route is `Screen.PetCare`; if `hasPet == false`, redirect to registration (see `PetCareNavigation.kt`, `NavigationRoutes.kt`).
-- Deep links live in `core/navigation/DeepLinks.kt`; e.g., register `pet_care/dashboard?petId={?}&date={?}&tab={?}`.
-- Use `stateIn(scope, SharingStarted.WhileSubscribed(5000), initial)`; example in `app/MainViewModel.kt`.
+**Navigation System**
+- Sealed class routes in `core/navigation/NavigationRoutes.kt`: `Screen.Login`, `Screen.PetCare`, `Screen.EyeHealth`, etc.
+- Navigation logic in `MainActivity.kt`: `!isLoggedIn -> Screen.Login.route`, `!hasPet -> Screen.PetRegistration.route`, else `Screen.PetCare.route`
+- Deep links: Register constants in `core/navigation/DeepLinks.kt` and use in `PetCareNavigation.kt`
+- Bottom nav routes: `Screen.PetCare`, `Screen.Map`, `Screen.Community`, `Screen.Translator`, `Screen.MyPage`
 
-Networking, auth, and idempotency
-- Retrofit + OkHttp; APIs under `app/data/remote/api/*Api.kt`; provided via Hilt in `core/di/NetworkModule.kt`.
-- Bearer auth: `AuthInterceptor` injects token; `data/remote/authenticator/TokenAuthenticator.kt` refreshes on 401 using an empty JSON `{}` body and a loop-guard header.
-- Idempotency: Write requests add `X-Idempotency-Key` (UUIDv4). Auto-injection via `data/remote/interceptors/IdempotencyInterceptor.kt`. Treat `Idempotent-Replay|Idempotency-Replay: true` as success replay. Policy: `docs/DEEPLINKS_AND_IDEMPOTENCY.md`.
-- DTOs use Gson `@SerializedName` (`app/data/remote/dto/**`); map to domain in `app/data/mapper/**`. Align with `docs/openapi_pretty.json` and `docs/api/*`.
+**Networking, Auth, and Idempotency**
+- Retrofit + OkHttp; APIs under `app/data/remote/api/*Api.kt`; provided via Hilt in `NetworkModule.kt`
+- Bearer auth: `AuthInterceptor` injects token; `TokenAuthenticator` refreshes on 401 using empty JSON `{}` body
+- Idempotency: Write requests (POST/PUT/PATCH) add `X-Idempotency-Key` (UUIDv4). Auto-injection via `IdempotencyInterceptor`. Treat `Idempotent-Replay: true` as success replay
+- DTOs use Gson `@SerializedName` (`app/data/remote/dto/**`); map to domain in `app/data/mapper/**`
+- Align with `docs/openapi_pretty.json` and `docs/api/*` documentation
 
-Storage and DI
-- Tokens only: `TokenManager` via AndroidX DataStore (see usages in `data/repository/*Impl.kt`). No other client-side selections persisted (single-pet policy).
-- Hilt modules in `core/di/*.kt` (NetworkModule, RepositoryModule, DataStoreModule, AppModule). Bind repositories in `RepositoryModule` to `app/domain/repository/*`.
+**DI and Repository Binding (Hilt)**
+- All repositories bind in `RepositoryModule.kt` using `@Binds @Singleton abstract fun bind*Repository(*RepositoryImpl): *Repository`
+- Pattern: 1) Define in `domain/repository/*`, 2) Implement in `data/repository/*Impl.kt`, 3) Bind in `RepositoryModule`
+- Hilt modules in `app/src/main/java/com/example/pet_project_frontend/core/di/` (NetworkModule, RepositoryModule, DataStoreModule, AppModule)
 
-Build, run, and local environment (Windows/cmd)
-- Build APK: `gradlew.bat assembleDebug`; run unit tests: `gradlew.bat test`; device tests: `gradlew.bat connectedAndroidTest`.
-- Firebase: add `app/google-services.json` and register SHA1 (`gradlew.bat signingReport`).
-- Backend base URL in `local.properties` → `BuildConfig.API_BASE_URL`. Emulator: `http://10.0.2.2:5000/`. Real device: use `ipconfig` IPv4, e.g., `http://<IPv4>:5000/`.
-- Required keys in `local.properties`: `API_BASE_URL`, `GOOGLE_SERVER_CLIENT_ID`, `KAKAO_NATIVE_APP_KEY`. Kakao placeholders come from BuildConfig.
+**Storage and Environment Setup**
+- Tokens only: `TokenManager` via AndroidX DataStore. No other client-side selections persisted (single-pet policy)
+- Backend URL: `local.properties` → `BuildConfig.API_BASE_URL`. Emulator: `http://10.0.2.2:5000/`. Real device: use `ipconfig` IPv4 + `:5000`
+- Required keys in `local.properties`: `API_BASE_URL`, `GOOGLE_SERVER_CLIENT_ID`, `KAKAO_NATIVE_APP_KEY`
+- Firebase: Add `app/google-services.json` and register SHA1 (`gradlew.bat signingReport`)
 
-Do and Don’t
-- Do: centralize URLs/routes (`BuildConfig`, `core:navigation`), and strings in `strings.xml`/`core:common`.
-- Don’t: start coroutines in repository/domain, leak mutable state, or log secrets/tokens.
+**Build and Development (Windows)**
+- Build: `.\gradlew.bat assembleDebug` (use `.\` prefix in PowerShell)
+- Tests: `gradlew.bat test`; Device tests: `gradlew.bat connectedAndroidTest`
+- Backend setup: Use appropriate conda env from `pet_project_backend/envs/` (Windows CPU/CUDA, macOS CPU)
 
-When adding a feature
-1) API: define in `data/remote/api` (+ Hilt provide if needed).
-2) Repository: add contract `domain/repository`, implement `data/repository/*Impl`, bind in `RepositoryModule`.
-3) ViewModel: expose single `uiState` via `stateIn(WhileSubscribed(5000))` and intents.
-4) UI: collect with lifecycle and navigate via `Screen.*.route` and `DeepLinks`.
+**Critical Component Patterns**
+- ViewModel state: Single `StateFlow<UiState>` exposed via `stateIn(WhileSubscribed(5000))` - see `MainViewModel.kt`
+- UI collection: `collectAsStateWithLifecycle()` - see `MainActivity.kt` branching on `isLoggedIn`/`hasPet`
+- Repository implementation: Return domain models, never throw exceptions to UI layer
+- Error handling: Map to domain errors, convert to `UiState.Error` in ViewModel with user-safe messages
 
-Pointers
-- Policies: `docs/DEEPLINKS_AND_IDEMPOTENCY.md`. OpenAPI: `docs/openapi_pretty.json`. Navigation helpers: `core/navigation/DeepLinks.kt`.
-- Examples to follow: `app/MainViewModel.kt`, `app/MainActivity.kt`, `data/remote/interceptors/IdempotencyInterceptor.kt`.
+**New Feature Implementation Checklist**
+1) API: Add interface in `data/remote/api/*Api.kt` + provide in `NetworkModule.kt` if needed
+2) Repository: Add contract in `domain/repository/*`, implement `data/repository/*Impl`, bind in `RepositoryModule`
+3) ViewModel: Inject repository, expose single `uiState` via `stateIn(WhileSubscribed(5000))`, handle events
+4) UI: Collect with `collectAsStateWithLifecycle()`, send events to ViewModel, navigate via `Screen.*.route`
+
+**Critical Don'ts**
+- Don't start coroutines in repository/domain layers - only expose `suspend`/`Flow`
+- Don't leak mutable state to UI - always use StateFlow/immutable data
+- Don't log secrets/tokens. Inject keys only via `BuildConfig`/`manifestPlaceholders`
+- Don't attempt to edit corrupted files with duplicate imports - delete and recreate instead
+
+**Key Reference Files**
+- Navigation: `core/navigation/NavigationRoutes.kt`, `PetCareNavigation.kt`, `MainActivity.kt`
+- State patterns: `MainViewModel.kt` (WhileSubscribed), `MainActivity.kt` (lifecycle collection)
+- Network setup: `NetworkModule.kt`, `data/remote/interceptors/`, `TokenAuthenticator.kt`
+- Policies: `docs/DEEPLINKS_AND_IDEMPOTENCY.md`
