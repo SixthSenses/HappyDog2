@@ -7,10 +7,11 @@ import com.example.pet_project_frontend.core.common.AppResult
 import com.example.pet_project_frontend.core.common.ValidationError
 import com.example.pet_project_frontend.domain.model.Gender
 import com.example.pet_project_frontend.presentation.model.PetUiState
-import com.example.pet_project_frontend.data.local.preferences.TokenManager
 import com.example.pet_project_frontend.domain.usecase.breed.SearchBreedsUseCase
 import com.example.pet_project_frontend.domain.usecase.pet.RegisterPetUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -24,11 +25,11 @@ import java.time.Period
  * - [RegisterPetUseCase]: 서버에 반려동물 등록을 수행합니다.
  * - [SearchBreedsUseCase]: 품종 검색 쿼리를 기반으로 품종 목록을 조회합니다.
  */
+@OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class PetRegistrationViewModel @Inject constructor(
     private val registerPetUseCase: RegisterPetUseCase,
-    private val searchBreedsUseCase: SearchBreedsUseCase,
-    private val tokenManager: TokenManager
+    private val searchBreedsUseCase: SearchBreedsUseCase
 ) : ViewModel() {
     
     // UI State
@@ -48,8 +49,7 @@ class PetRegistrationViewModel @Inject constructor(
     private val _birthDate = MutableStateFlow<LocalDate?>(null)
     val birthDate: StateFlow<LocalDate?> = _birthDate.asStateFlow()
     
-    private val _weight = MutableStateFlow("")
-    val weight: StateFlow<String> = _weight.asStateFlow()
+    // Weight is not part of PetRegistrationSchema; removed from registration form
     
     private val _furColor = MutableStateFlow("")
     val furColor: StateFlow<String> = _furColor.asStateFlow()
@@ -137,13 +137,7 @@ class PetRegistrationViewModel @Inject constructor(
      * @param weight 체중 문자열(예: "4.2")
      * @return Unit
      */
-    fun updateWeight(weight: String) {
-        // 숫자와 소수점만 허용
-        if (weight.isEmpty() || weight.matches(Regex("^\\d*\\.?\\d*$"))) {
-            _weight.value = weight
-            clearError()
-        }
-    }
+    // No-op: weight removed
     
     /**
      * 털색 정보를 업데이트합니다.
@@ -232,7 +226,7 @@ class PetRegistrationViewModel @Inject constructor(
                 gender = _selectedGender.value,
                 breed = _selectedBreed.value!!.breedName,
                 birthDate = _birthDate.value!!,
-                currentWeight = _weight.value.toFloat(),
+                // weight removed from API schema
                 furColor = _furColor.value.takeIf { it.isNotBlank() },
                 healthConcerns = _healthConcerns.value
             )
@@ -240,8 +234,6 @@ class PetRegistrationViewModel @Inject constructor(
             when (result) {
                 is AppResult.Success -> {
                     val petUi = result.data.toUiState()
-                    // 등록 성공 시 선택된 반려동물 ID를 로컬에 저장
-                    tokenManager.saveSelectedPetId(petUi.id)
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         isSuccess = true,
@@ -291,7 +283,6 @@ class PetRegistrationViewModel @Inject constructor(
             com.example.pet_project_frontend.domain.model.Gender.FEMALE -> "암컷"
             com.example.pet_project_frontend.domain.model.Gender.UNKNOWN -> "미상"
         }
-        val weightText = "${"%.1f".format(weight)} kg"
         return PetUiState(
             id = id,
             name = name,
@@ -299,7 +290,7 @@ class PetRegistrationViewModel @Inject constructor(
             ageText = ageText,
             birthDateText = birthDate.toString(),
             genderText = genderText,
-            weightText = weightText,
+            weightText = null,
             furColorText = null,
             profileImageUrl = null
         )
@@ -317,9 +308,6 @@ class PetRegistrationViewModel @Inject constructor(
             _selectedBreed.value == null -> "품종을 선택해주세요"
             _birthDate.value == null -> "생년월일을 선택해주세요"
             _birthDate.value!!.isAfter(LocalDate.now()) -> "올바른 생년월일을 선택해주세요"
-            _weight.value.isBlank() -> "체중을 입력해주세요"
-            _weight.value.toFloatOrNull() == null -> "올바른 체중을 입력해주세요"
-            _weight.value.toFloat() < 0.1 || _weight.value.toFloat() > 200 -> "체중은 0.1kg ~ 200kg 사이로 입력해주세요"
             else -> null
         }
     }

@@ -99,7 +99,7 @@ class MainActivity : ComponentActivity() {
     setContent {
         AppTheme {
             val isLoggedIn by viewModel.isLoggedIn.collectAsStateWithLifecycle()
-            val selectedPetId by tokenManager.getSelectedPetIdFlow().collectAsStateWithLifecycle(initialValue = null)
+            val hasPet by viewModel.hasPet.collectAsStateWithLifecycle()
             val navController = rememberNavController()
             val navBackStackEntry by navController.currentBackStackEntryAsState()
             val currentRoute = navBackStackEntry?.destination?.route

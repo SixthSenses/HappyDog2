@@ -1,6 +1,7 @@
 package com.example.pet_project_frontend.data.mapper
 
 import com.example.pet_project_frontend.data.remote.dto.response.UserProfileResponse
+import com.example.pet_project_frontend.data.remote.dto.response.AuthUserInfo
 import com.example.pet_project_frontend.data.remote.dto.response.UserInfo as UserInfoDto
 import com.example.pet_project_frontend.domain.model.User
 import java.time.LocalDateTime
@@ -27,6 +28,21 @@ object UserMapper {
             email = dto.email,
             name = dto.nickname,
             profileImageUrl = dto.profileImageUrl,
+            phoneNumber = null,
+            createdAt = LocalDateTime.now(),
+            updatedAt = LocalDateTime.now(),
+            isEmailVerified = false,
+            notificationSettings = com.example.pet_project_frontend.domain.model.NotificationSettings()
+        )
+    }
+
+    // SocialLoginResponse.userInfo 는 AuthUserInfo 이므로 별도 변환 제공
+    fun fromAuthUserInfo(dto: AuthUserInfo): User {
+        return User(
+            id = dto.userId,
+            email = dto.email,
+            name = dto.nickname,
+            profileImageUrl = null,
             phoneNumber = null,
             createdAt = LocalDateTime.now(),
             updatedAt = LocalDateTime.now(),

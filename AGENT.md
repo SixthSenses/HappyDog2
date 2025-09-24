@@ -14,20 +14,20 @@ Project-Specific AI Working Guide (HappyDog2)
 
 3) UI & State (Jetpack Compose Best Practices)
 - ViewModel exposes a single `StateFlow`. Convert `Flow` to `StateFlow` using `stateIn(scope, SharingStarted.WhileSubscribed(5000), initial)`.
-- UI collects via `collectAsStateWithLifecycle()` to respect lifecycle. Example: `MainActivity.setContent` collects login and `selectedPetId` to branch navigation.
+- UI collects via `collectAsStateWithLifecycle()` to respect lifecycle. Example: `MainActivity.setContent`는 `isLoggedIn`과 `hasPet`를 수집해 네비게이션을 분기합니다.
 - Navigation uses sealed `Screen` routes. Deep-link constants live in `core/navigation/DeepLinks.kt`.
 - Recommended UI state model: `sealed interface UiState { object Loading; data class Success<T>(val data: T); data class Error(val code: String?, val message: String?) }`.
 
 4) Navigation Rules
-- Start at `Screen.PetCare`; if `selectedPetId` is empty at runtime, redirect to registration. Files: `MainActivity.kt`, `PetCareNavigation.kt`, `NavigationRoutes.kt`.
+- Start at `Screen.PetCare`; 단일 펫 정책에 따라 `hasPet == false`이면 등록 화면으로 리다이렉트합니다. Files: `MainActivity.kt`, `PetCareNavigation.kt`, `NavigationRoutes.kt`.
 - Bottom navigation: `core/navigation/BottomNavigation.kt` highlights based on `Screen.*.route`.
 - Deep links: Register `Routes.PetCare.Dashboard` path `pet_care/dashboard?petId={?}&date={?}&tab={?}` in `NavHost` using `DeepLinks.PET_CARE_DASHBOARD`.
 
 5) Backend Integration Protocol
 - Retrofit + OkHttp are standard. API interfaces in `app/data/remote/api/*Api.kt`; provided by `NetworkModule.kt`.
-- Auth tokens: `AuthInterceptor` injects Bearer; on 401, `TokenAuthenticator` refreshes using a `Retry-After-Refresh` loop guard header.
-- Protected APIs: On 403/404, `ProtectedErrorInterceptor` clears global `selected_pet_id` in DataStore; UI reacts by collecting flows.
-- Ownership: `TokenManager` (DataStore) stores tokens/selected pet; expose read/write as Flow/suspend.
+- Auth tokens: `AuthInterceptor` injects Bearer; on 401, `TokenAuthenticator` refreshes using a `Retry-After-Refresh` loop guard header. 재발급 요청 본문은 빈 JSON `{}` 입니다.
+- Protected APIs: 403/404는 도메인 에러로 전달하며 선택 펫 상태는 존재하지 않습니다(단일 펫 정책).
+- Ownership: `TokenManager` (DataStore)에는 Access/Refresh 토큰만 저장합니다.
 - Repository bindings: Bound in `RepositoryModule.kt` to domain interfaces under `app/domain/repository/*`.
 - OpenAPI source of truth: Match DTOs and endpoints to `docs/openapi_pretty.json`. Keep domain docs under `docs/api/*` in sync.
 - DTO policy: Keep Gson with `@SerializedName`. Create DTOs under `app/data/remote/dto`, and mappers under `app/data/mapper`.

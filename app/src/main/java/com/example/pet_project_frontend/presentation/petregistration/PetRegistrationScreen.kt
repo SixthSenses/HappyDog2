@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -38,7 +39,7 @@ fun PetRegistrationScreen(
     val selectedGender by viewModel.selectedGender.collectAsState()
     val selectedBreed by viewModel.selectedBreed.collectAsState()
     val birthDate by viewModel.birthDate.collectAsState()
-    val weight by viewModel.weight.collectAsState()
+    // weight removed from schema/UI
     val furColor by viewModel.furColor.collectAsState()
     val healthConcerns by viewModel.healthConcerns.collectAsState()
     val showBreedDialog by viewModel.showBreedDialog.collectAsState()
@@ -168,17 +169,7 @@ fun PetRegistrationScreen(
                     }
                 }
 
-                // 체중 입력
-                item {
-                    OutlinedTextField(
-                        value = weight,
-                        onValueChange = viewModel::updateWeight,
-                        label = { Text("체중 (kg) *") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        isError = uiState.error?.contains("체중") == true
-                    )
-                }
+                // weight removed
 
                 // 털 색상 (선택)
                 item {
@@ -412,25 +403,19 @@ fun BreedSelectionDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        modifier = Modifier.fillMaxHeight(0.8f)
-    ) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp)
-        ) {
+        modifier = Modifier.fillMaxHeight(0.8f),
+        title = {
+            Text(
+                text = "품종 선택",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp)
             ) {
-                Text(
-                    text = "품종 선택",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = viewModel::updateBreedSearchQuery,
@@ -447,7 +432,7 @@ fun BreedSelectionDialog(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f),
+                        .heightIn(max = 360.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     items(searchResults) { breed ->
@@ -475,16 +460,12 @@ fun BreedSelectionDialog(
                         }
                     }
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                TextButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.align(Alignment.End)
-                ) {
-                    Text("취소")
-                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("닫기")
             }
         }
-    }
+    )
 }

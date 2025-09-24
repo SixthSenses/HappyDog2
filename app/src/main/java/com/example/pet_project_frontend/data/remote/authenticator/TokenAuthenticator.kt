@@ -56,7 +56,10 @@ class TokenAuthenticator @Inject constructor(
                 
                 try {
                     val authApi = authRetrofit.create(AuthApi::class.java)
-                    val refreshResponse = authApi.refreshToken("Bearer $refreshToken")
+                    val refreshResponse = authApi.refreshToken(
+                        refreshToken = "Bearer $refreshToken",
+                        body = com.example.pet_project_frontend.data.remote.dto.request.EmptyRequest()
+                    )
                     
                     if (refreshResponse.isSuccessful) {
                         refreshResponse.body()?.let { tokenResponse ->

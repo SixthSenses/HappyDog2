@@ -48,7 +48,7 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun refreshToken(refreshToken: String): AppResult<TokenRefreshResponse> {
         Log.d(TAG, "Attempting to refresh token")
-        val result: AppResult<TokenRefreshResponse> = SafeApi.response { authApi.refreshToken("Bearer $refreshToken") }
+        val result: AppResult<TokenRefreshResponse> = SafeApi.response { authApi.refreshToken("Bearer $refreshToken", EmptyRequest()) }
         when (result) {
             is AppResult.Success -> {
                 Log.d(TAG, "Token refresh successful")
@@ -67,16 +67,26 @@ class AuthRepositoryImpl @Inject constructor(
             accessToken = accessToken,
             refreshToken = refreshToken
         )
-        val result: AppResult<Unit> = SafeApi.responseUnit { authApi.logout(request) }
-        when (result) {
+        val apiResult: AppResult<LogoutResponse> = SafeApi.response { authApi.logout(request) }
+        when (apiResult) {
             is AppResult.Success -> Log.d(TAG, "Logout successful")
-            is AppResult.Error -> Log.e(TAG, "Logout failed. Code: ${result.code}, Error: ${result.message}")
-            is AppResult.Exception -> Log.e(TAG, "Exception during logout", result.throwable)
+            is AppResult.Error -> Log.e(TAG, "Logout failed. Code: ${apiResult.code}, Error: ${apiResult.message}")
+            is AppResult.Exception -> Log.e(TAG, "Exception during logout", apiResult.throwable)
         }
         // 서버 성공/실패와 무관하게 로컬 정리 수행
         clearTokens()
         clearUserInfo()
-        return result
+        // 도메인 계층에는 DTO를 숨기고 Unit으로 결과 매핑
+        return when (apiResult) {
+            is AppResult.Success -> AppResult.Success(Unit)
+            is AppResult.Error -> AppResult.Error(
+                code = apiResult.code,
+                message = apiResult.message,
+                validation = apiResult.validation,
+                cause = apiResult.cause
+            )
+            is AppResult.Exception -> AppResult.Exception(apiResult.throwable)
+        }
     }
 
     override suspend fun saveTokens(accessToken: String, refreshToken: String) {
@@ -94,9 +104,7 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun clearTokens() {
         Log.d(TAG, "Clearing tokens")
-    tokenManager.clearTokens()
-    // 선택된 반려동물 ID도 함께 정리
-    tokenManager.clearSelectedPetId()
+        tokenManager.clearTokens()
     }
 
     override suspend fun saveUserInfo(userInfo: UserInfo) {
