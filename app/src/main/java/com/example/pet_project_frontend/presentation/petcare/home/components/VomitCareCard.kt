@@ -21,39 +21,51 @@ import com.example.pet_project_frontend.core.theme.MyPageColors
  */
 @Composable
 fun VomitCareCard(
-    onClick: () -> Unit = {},
+    onDetailClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier
-            .aspectRatio(1.2f) // 가로가 조금 더 긴 직사각형
-            .clickable { onClick() },
+        modifier = modifier.aspectRatio(1.2f),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MyPageColors.Grey100
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .padding(16.dp)
         ) {
+            // 상단 왼쪽: 아이콘과 텍스트
+            Row(
+                modifier = Modifier.align(Alignment.TopStart),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.care_vomit_icon), 
+                    contentDescription = "구토",
+                    modifier = Modifier.size(20.dp)
+                )
+                
+                Spacer(modifier = Modifier.width(8.dp))
+                
+                Text(
+                    text = "구토",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Normal,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            
+            // 상단 오른쪽: 화살표 버튼
             Image(
-                painter = painterResource(id = R.drawable.care_vomit_icon), 
-                contentDescription = "구토",
-                modifier = Modifier.size(32.dp)
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            Text(
-                text = "구토",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurface
+                painter = painterResource(id = R.drawable.chevron_right),
+                contentDescription = "상세보기",
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .size(10.dp)
+                    .clickable { onDetailClick() }
             )
         }
     }

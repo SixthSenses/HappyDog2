@@ -23,9 +23,13 @@ object MyPageColors {
     val Yellow100: Color = Color(0xFFFFEFBF)
     val Orange800: Color = Color(0xFFFB8800)
     val Orange600: Color = Color(0xFFED6700)
+    val Orange500: Color = Color(0xFFFE9800)
     val Green600: Color = Color(0xFF02A262)
     val Green500: Color = Color(0xFF03B26C)
+    val Green: Color = Color(0xFF03B26C) // 활동 프로그래스바용
+    val Orange: Color = Color(0xFFFB8800) // 사료 프로그래스바용
     val Grey100: Color = Color(0xFFF2F4F6)
+    val Grey200: Color = Color(0xFFE5E8EB) // +/- 버튼 배경용
     val Grey900: Color = Color(0xFF191F28)
     val Grey600: Color = Color(0xFF6B7684)
     val Grey500: Color = Color(0xFF8B95A1)
@@ -36,4 +40,7 @@ object MyPageColors {
     val GreyOpacity600: Color = Color(0x94132B00) // 58%
     val GreyOpacity200: Color = Color(0x1A1B3700) // 10%
     val GreyOpacity100: Color = Color(0x0D022047) // 5%
+    val Blue500: Color = Color(0xFF3182F6)
+    val White: Color = Color(0xFFFFFFFF)
+    val Black: Color = Color(0xFF000000)
 }
