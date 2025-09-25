@@ -22,6 +22,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.pet_project_frontend.presentation.translator.TranslatorScreen
 import com.example.pet_project_frontend.presentation.eye_health.EyeHealthScreen
 import com.example.pet_project_frontend.presentation.eye_health.EyeHealthHistoryScreen
+import com.example.pet_project_frontend.presentation.eye_health.ImageViewerScreen
+import com.example.pet_project_frontend.presentation.breed_guide.BreedGuideListScreen
 
 @Composable
 fun PetCareNavHost(
@@ -56,8 +58,12 @@ fun PetCareNavHost(
 		composable(Screen.PetCare.route) {
 			PetCareHomeScreen(
 				onNotificationClick = { /* TODO: 알림 화면으로 네비게이션 */ },
-				onHealthSurveyClick = { /* TODO: 건강 설문지 화면으로 네비게이션 */ },
-				onBreedGuideClick = { /* TODO: 견종 가이드 화면으로 네비게이션 */ },
+				onHealthSurveyClick = { 
+					navController.navigate(Screen.HealthSurvey.route)
+				},
+				onBreedGuideClick = { 
+					navController.navigate(Screen.BreedGuide.route)
+				},
 				onEyeCheckClick = { 
 					navController.navigate(Screen.EyeHealth.route)
 				},
@@ -107,7 +113,46 @@ fun PetCareNavHost(
 		// 안구 검사 기록 화면
 		composable(Screen.EyeHealthHistory.route) {
 			EyeHealthHistoryScreen(
-				onBackClick = { navController.popBackStack() }
+				onBackClick = { navController.popBackStack() },
+				onImageClick = { imageUrl ->
+					// URL 인코딩해서 이미지 뷰어로 이동
+					val encodedUrl = java.net.URLEncoder.encode(imageUrl, "UTF-8")
+					navController.navigate(Screen.ImageViewer.createRoute(encodedUrl))
+				}
+			)
+		}
+
+		// 이미지 뷰어 화면
+		composable(
+			route = Screen.ImageViewer.route,
+			arguments = listOf(
+				navArgument("imageUrl") { type = NavType.StringType }
+			)
+		) { backStackEntry ->
+			val encodedImageUrl = backStackEntry.arguments?.getString("imageUrl") ?: ""
+			val imageUrl = java.net.URLDecoder.decode(encodedImageUrl, "UTF-8")
+			
+			ImageViewerScreen(
+				imageUrl = imageUrl,
+				onCloseClick = { navController.popBackStack() }
+			)
+		}
+
+		// 건강 설문지 화면
+		composable(Screen.HealthSurvey.route) {
+			com.example.pet_project_frontend.presentation.health_survey.HealthSurveyScreen(
+				onBackClick = { navController.popBackStack() },
+				onFinish = { navController.popBackStack() }
+			)
+		}
+
+		// 견종 가이드북 화면
+		composable(Screen.BreedGuide.route) {
+			BreedGuideListScreen(
+				onBackClick = { navController.popBackStack() },
+				onBreedClick = { breedName ->
+					// TODO: 견종 상세 화면으로 네비게이션 (필요 시 구현)
+				}
 			)
 		}
 	}
