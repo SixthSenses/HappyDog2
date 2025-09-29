@@ -11,8 +11,6 @@ data class CreatePetRequest(
     val breed: String,
     @SerializedName("birthdate")
     val birthdate: String, // "YYYY-MM-DD"
-    @SerializedName("current_weight")
-    val currentWeight: Float,
     @SerializedName("fur_color")
     val furColor: String? = null,
     @SerializedName("health_concerns")

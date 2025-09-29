@@ -152,7 +152,7 @@ class MainActivity : ComponentActivity() {
                         selectedPetId.isNullOrBlank() -> Screen.PetRegistration.route
                         else -> Screen.PetCare.route
                     }
-                    // val effectiveStart = Screen.PetCare.route
+                    // val effectiveStart = Screen.PetRegistration.route
 
                     // selected_pet_id가 사라지면 런타임에도 등록 화면으로 유도
                     LaunchedEffect(selectedPetId, currentRoute, isLoggedIn) {
