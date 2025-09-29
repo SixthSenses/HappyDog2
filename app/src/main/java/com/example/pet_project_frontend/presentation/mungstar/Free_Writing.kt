@@ -3,6 +3,7 @@ package com.example.pet_project_frontend.presentation.mungstar
 import android.Manifest
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -31,14 +32,17 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 import com.example.pet_project_frontend.R
-import com.example.pet_project_frontend.data.mungstar_model.LocalPostManager
+import com.example.pet_project_frontend.data.mungstar_model.MungstarPostRepository
+import com.example.pet_project_frontend.data.mungstar_model.CreatePostRequest
+import com.example.pet_project_frontend.data.auth.TokenManager
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.delay
 
 @Composable
 fun FreeWriting(navController: NavController) {
@@ -46,11 +50,22 @@ fun FreeWriting(navController: NavController) {
     var isFocused by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var showCancelDialog by remember { mutableStateOf(false) }
     val keyboardController = LocalSoftwareKeyboardController.current
     val maxCharacters = 2000
     var uploadedImages by remember { mutableStateOf<List<Uri>>(emptyList()) }
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+    val postRepository = remember { MungstarPostRepository(context) }
+
+    // 뒤로가기 처리 함수
+    fun handleBackPressed() {
+        if (textContent.isNotEmpty() || uploadedImages.isNotEmpty()) {
+            showCancelDialog = true
+        } else {
+            navController.popBackStack()
+        }
+    }
 
     // 갤러리에서 이미지 선택
     val galleryLauncher = rememberLauncherForActivityResult(
@@ -91,9 +106,29 @@ fun FreeWriting(navController: NavController) {
         return FileProvider.getUriForFile(context, "${context.packageName}.provider", imageFile)
     }
 
-    // 게시물 작성 함수 (로컬 버전)
+    // 게시물 작성 함수 (API 버전)
     fun createPost() {
+        Log.e("SIMPLE_TEST", "createPost 함수 시작!")
+        Log.e("SIMPLE_TEST", "TokenManager 테스트 시작")
+
+        val TokenManager = TokenManager(context)
+        Log.e("SIMPLE_TEST", "TokenManager 생성 완료")
+
+        val token = TokenManager.getToken()
+        Log.e("SIMPLE_TEST", "getToken() 결과: $token")
+
+
+        Log.d("FreeWriting", "=== 게시물 작성 시작 ===")
+
+        // 디버깅용: 토큰 상태 확인
+        val tokenManager = TokenManager(context)
+        Log.d("FreeWriting", "토큰 존재: ${tokenManager.hasToken()}")
+        Log.d("FreeWriting", "토큰 값: ${tokenManager.getToken()}")
+        Log.d("FreeWriting", "텍스트 내용: '$textContent'")
+        Log.d("FreeWriting", "이미지 수: ${uploadedImages.size}")
+
         if (textContent.isBlank()) {
+            Log.w("FreeWriting", "텍스트가 비어있음")
             errorMessage = "텍스트를 입력해주세요."
             return
         }
@@ -101,21 +136,48 @@ fun FreeWriting(navController: NavController) {
         coroutineScope.launch {
             isLoading = true
             errorMessage = null
+            Log.d("FreeWriting", "코루틴 시작, 로딩 상태: true")
 
             try {
-                // 로딩 시뮬레이션
-                delay(1000)
+                // 이미지 업로드 후 파일 경로 받기
+                val filePaths = mutableListOf<String>()
+                Log.d("FreeWriting", "이미지 업로드 시작 - 총 ${uploadedImages.size}개")
 
-                // 로컬 게시물 매니저에 게시물 추가
-                LocalPostManager.addPost(textContent, uploadedImages)
+                // 이미지가 있는 경우 업로드
+                for (imageUri in uploadedImages) {
+                    try {
+                        Log.d("FreeWriting", "이미지 업로드 중: $imageUri")
+                        val filePath = postRepository.uploadImage(context, imageUri)
+                        filePaths.add(filePath)
+                        Log.d("FreeWriting", "이미지 업로드 성공: $filePath")
+                    } catch (e: Exception) {
+                        // 개별 이미지 업로드 실패 시 로그만 남기고 계속 진행
+                        Log.e("FreeWriting", "개별 이미지 업로드 실패", e)
+                    }
+                }
+
+                Log.d("FreeWriting", "최종 업로드된 파일 경로: $filePaths")
+
+                // 게시물 생성 요청
+                val createPostRequest = CreatePostRequest(
+                    text = textContent,
+                    filePaths = filePaths
+                )
+
+                Log.d("FreeWriting", "게시물 생성 요청 시작")
+                val response = postRepository.createPost(createPostRequest)
+                Log.d("FreeWriting", "게시물 생성 성공: ${response.postId}")
 
                 // 성공 후 뒤로가기
                 isLoading = false
+                Log.d("FreeWriting", "게시물 작성 완료, 화면 이동")
                 navController.popBackStack()
 
             } catch (e: Exception) {
                 isLoading = false
-                errorMessage = e.message ?: "알 수 없는 오류가 발생했습니다."
+                val errorMsg = e.message ?: "게시물 작성에 실패했습니다."
+                errorMessage = errorMsg
+                Log.e("FreeWriting", "게시물 작성 실패: $errorMsg", e)
             }
         }
     }
@@ -143,7 +205,7 @@ fun FreeWriting(navController: NavController) {
                     modifier = Modifier
                         .size(40.dp)
                         .offset(x = 4.dp, y = 12.dp)
-                        .clickable { navController.popBackStack() }
+                        .clickable { handleBackPressed() }
                 )
 
                 // Title 박스 (위아래 23px, 좌우 56px)
@@ -352,6 +414,103 @@ fun FreeWriting(navController: NavController) {
                         modifier = Modifier
                             .offset(x = 10.dp, y = (-5).dp)
                     )
+                }
+            }
+        }
+
+        // 취소 확인 다이얼로그
+        if (showCancelDialog) {
+            Dialog(
+                onDismissRequest = { showCancelDialog = false },
+                properties = DialogProperties(
+                    dismissOnBackPress = true,
+                    dismissOnClickOutside = true
+                )
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    // 외부 박스 (336*181, 모서리 26)
+                    Box(
+                        modifier = Modifier
+                            .size(336.dp, 181.dp)
+                            .background(
+                                color = Color.White,
+                                shape = RoundedCornerShape(26.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        // 내부 박스 (302*137)
+                        Box(
+                            modifier = Modifier.size(302.dp, 137.dp)
+                        ) {
+                            // Title1 (위에서 -10, 오른쪽으로 +6)
+                            Text(
+                                text = "게시물 작성을 취소할까요?",
+                                fontSize = 21.sp,
+                                color = Color(0xFF333D4B),
+                                fontWeight = FontWeight.Medium,
+                                modifier = Modifier.offset(x = 6.dp, y = (-10).dp)
+                            )
+
+                            // Title2 (Title1 아래로 4픽셀)
+                            Text(
+                                text = "지금까지 쓴 내용은 저장되지 않아요",
+                                fontSize = 16.sp,
+                                color = Color(0xFF6B7684),
+                                modifier = Modifier.offset(x = 6.dp, y = 19.dp)
+                            )
+
+                            // 버튼들 (Title2 아래로 21픽셀)
+                            Row(
+                                modifier = Modifier
+                                    .offset(x = 6.dp, y = 61.dp),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                // 닫기 버튼 (146*58, 모서리 14)
+                                Box(
+                                    modifier = Modifier
+                                        .size(146.dp, 58.dp)
+                                        .background(
+                                            color = Color(0xFFF3F4F6),
+                                            shape = RoundedCornerShape(14.dp)
+                                        )
+                                        .clickable { showCancelDialog = false },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "닫기",
+                                        fontSize = 18.sp,
+                                        color = Color(0xFF4E5968),
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+
+                                // 취소하기 버튼 (146*58, 모서리 14)
+                                Box(
+                                    modifier = Modifier
+                                        .size(146.dp, 58.dp)
+                                        .background(
+                                            color = Color(0xFFEC4453),
+                                            shape = RoundedCornerShape(14.dp)
+                                        )
+                                        .clickable {
+                                            showCancelDialog = false
+                                            navController.popBackStack()
+                                        },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "취소하기",
+                                        fontSize = 18.sp,
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

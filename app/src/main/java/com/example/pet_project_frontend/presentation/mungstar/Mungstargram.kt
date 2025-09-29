@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -26,20 +27,50 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
 import com.example.pet_project_frontend.R
-import com.example.pet_project_frontend.data.mungstar_model.PostResponse
-import com.example.pet_project_frontend.data.mungstar_model.LocalPostManager
+import com.example.pet_project_frontend.data.mungstar_model.CreatePostResponse
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import coil.compose.AsyncImage
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.pet_project_frontend.data.mungstar_model.MungstarPostRepository
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MungStarFeed(navController: NavController) {
     var showBottomSheet by remember { mutableStateOf(false) }
-    val posts by LocalPostManager.posts.collectAsStateWithLifecycle()
+    var posts by remember { mutableStateOf<List<CreatePostResponse>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    val context = LocalContext.current
+    val postRepository = remember { MungstarPostRepository(context) }
+    val coroutineScope = rememberCoroutineScope()
+
+    // 게시물 목록을 가져오는 함수 (TODO: API 구현 필요)
+    fun loadPosts() {
+        coroutineScope.launch {
+            isLoading = true
+            try {
+                // TODO: PostRepository에 getPosts() 메서드 추가 필요
+                // val response = postRepository.getPosts()
+                // posts = response
+
+                // 임시로 빈 리스트
+                posts = emptyList()
+                errorMessage = null
+            } catch (e: Exception) {
+                errorMessage = e.message
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
+    // 화면 진입 시 게시물 로드
+    LaunchedEffect(Unit) {
+        loadPosts()
+    }
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -93,36 +124,66 @@ fun MungStarFeed(navController: NavController) {
                     .weight(1f)
                     .padding(top = 10.dp)
             ) {
-                if (posts.isEmpty()) {
-                    // 게시물이 없을 때
-                    Column(
-                        modifier = Modifier.align(Alignment.Center),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "아직 게시물이 없습니다",
-                            fontSize = 16.sp,
-                            color = Color.Gray
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "첫 번째 게시물을 작성해보세요!",
-                            fontSize = 14.sp,
-                            color = Color.Gray
+                when {
+                    isLoading -> {
+                        CircularProgressIndicator(
+                            modifier = Modifier.align(Alignment.Center)
                         )
                     }
-                } else {
-                    // 게시물 리스트
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                        contentPadding = PaddingValues(16.dp)
-                    ) {
-                        items(posts) { post ->
-                            PostItem(
-                                post = post,
-                                onLikeClick = { LocalPostManager.toggleLike(post.post_id) }
+                    errorMessage != null -> {
+                        Column(
+                            modifier = Modifier.align(Alignment.Center),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "오류가 발생했습니다",
+                                fontSize = 16.sp,
+                                color = Color.Red
                             )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = errorMessage!!,
+                                fontSize = 14.sp,
+                                color = Color.Gray
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(onClick = { loadPosts() }) {
+                                Text("다시 시도")
+                            }
+                        }
+                    }
+                    posts.isEmpty() -> {
+                        Column(
+                            modifier = Modifier.align(Alignment.Center),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "아직 게시물이 없습니다",
+                                fontSize = 16.sp,
+                                color = Color.Gray
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "첫 번째 게시물을 작성해보세요!",
+                                fontSize = 14.sp,
+                                color = Color.Gray
+                            )
+                        }
+                    }
+                    else -> {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                            contentPadding = PaddingValues(16.dp)
+                        ) {
+                            items(posts) { post ->
+                                PostItem(
+                                    post = post,
+                                    onLikeClick = {
+                                        // TODO: 좋아요 API 호출
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -160,130 +221,137 @@ fun MungStarFeed(navController: NavController) {
 
 @Composable
 fun PostItem(
-    post: PostResponse,
+    post: CreatePostResponse,
     onLikeClick: () -> Unit
 ) {
+    // 게시물 피드 (412x458)
     Card(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .size(412.dp, 458.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(16.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
+        Box(
+            modifier = Modifier.fillMaxSize()
         ) {
-            // 작성자 정보
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = Modifier.fillMaxSize().padding(16.dp)
             ) {
-                // 프로필 이미지
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF333D4B)),
-                    contentAlignment = Alignment.Center
+                // 작성자 정보
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = post.author.nickname.firstOrNull()?.toString() ?: "?",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                }
+                    // 프로필 이미지
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF333D4B)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = post.author.nickname.firstOrNull()?.toString() ?: "?",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
 
-                Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
 
-                Column {
+                    Column {
+                        Text(
+                            text = post.author.nickname,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black
+                        )
+                        Text(
+                            text = post.pet.name,
+                            fontSize = 14.sp,
+                            color = Color.Gray
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.weight(1f))
+
                     Text(
-                        text = post.author.nickname,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black
-                    )
-                    Text(
-                        text = post.pet.name,
-                        fontSize = 14.sp,
+                        text = formatDate(post.createdAt),
+                        fontSize = 12.sp,
                         color = Color.Gray
                     )
                 }
 
-                Spacer(modifier = Modifier.weight(1f))
-
-                Text(
-                    text = formatDate(post.created_at),
-                    fontSize = 12.sp,
-                    color = Color.Gray
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // 게시물 텍스트
-            if (post.text.isNotBlank()) {
-                Text(
-                    text = post.text,
-                    fontSize = 16.sp,
-                    color = Color.Black,
-                    lineHeight = 22.sp
-                )
                 Spacer(modifier = Modifier.height(12.dp))
-            }
 
-            // 이미지들
-            if (post.image_urls.isNotEmpty()) {
-                when (post.image_urls.size) {
-                    1 -> {
-                        AsyncImage(
-                            model = post.image_urls[0],
-                            contentDescription = "게시물 이미지",
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(250.dp)
-                                .clip(RoundedCornerShape(12.dp)),
-                            contentScale = ContentScale.Crop
-                        )
-                    }
-                    else -> {
-                        var currentImageIndex by remember { mutableStateOf(0) }
+                // 게시물 텍스트
+                if (post.text.isNotBlank()) {
+                    Text(
+                        text = post.text,
+                        fontSize = 16.sp,
+                        color = Color.Black,
+                        lineHeight = 22.sp
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
 
-                        Column {
-                            // 현재 이미지 표시
+                // 이미지들
+                if (post.imageUrls.isNotEmpty()) {
+                    when (post.imageUrls.size) {
+                        1 -> {
                             AsyncImage(
-                                model = post.image_urls[currentImageIndex],
-                                contentDescription = "게시물 이미지 ${currentImageIndex + 1}",
+                                model = post.imageUrls[0],
+                                contentDescription = "게시물 이미지",
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(250.dp)
+                                    .weight(1f)
                                     .clip(RoundedCornerShape(12.dp)),
                                 contentScale = ContentScale.Crop
                             )
+                        }
+                        else -> {
+                            var currentImageIndex by remember { mutableStateOf(0) }
 
-                            // 이미지 슬라이더 (작은 이미지들)
-                            LazyRow(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 8.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            Column(
+                                modifier = Modifier.weight(1f)
                             ) {
-                                items(post.image_urls.size) { index ->
-                                    AsyncImage(
-                                        model = post.image_urls[index],
-                                        contentDescription = "썸네일 ${index + 1}",
-                                        modifier = Modifier
-                                            .size(50.dp)
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .clickable { currentImageIndex = index }
-                                            .then(
-                                                if (index == currentImageIndex)
-                                                    Modifier.padding(2.dp)
-                                                else
-                                                    Modifier
-                                            ),
-                                        contentScale = ContentScale.Crop
-                                    )
+                                // 현재 이미지 표시
+                                AsyncImage(
+                                    model = post.imageUrls[currentImageIndex],
+                                    contentDescription = "게시물 이미지 ${currentImageIndex + 1}",
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(12.dp)),
+                                    contentScale = ContentScale.Crop
+                                )
+
+                                // 이미지 슬라이더 (작은 이미지들)
+                                LazyRow(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 8.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    items(post.imageUrls.size) { index ->
+                                        AsyncImage(
+                                            model = post.imageUrls[index],
+                                            contentDescription = "썸네일 ${index + 1}",
+                                            modifier = Modifier
+                                                .size(50.dp)
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .clickable { currentImageIndex = index }
+                                                .then(
+                                                    if (index == currentImageIndex)
+                                                        Modifier.padding(2.dp)
+                                                    else
+                                                        Modifier
+                                                ),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -291,24 +359,43 @@ fun PostItem(
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // 좋아요, 댓글 수
+            // 좋아요, 댓글 아이콘 (왼쪽 하단에 위치)
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Row {
-                    Text(
-                        text = "❤️ ${post.like_count}",
-                        fontSize = 14.sp,
-                        color = if (post.is_liked) Color.Red else Color.Gray,
-                        modifier = Modifier.clickable { onLikeClick() }
+                // 좋아요 아이콘
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.clickable { onLikeClick() }
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.like),
+                        contentDescription = "좋아요",
+                        modifier = Modifier.size(24.dp)
                     )
-                    Spacer(modifier = Modifier.width(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "💬 ${post.comment_count}",
+                        text = post.likeCount.toString(),
+                        fontSize = 14.sp,
+                        color = if (post.isLiked) Color.Red else Color.Gray
+                    )
+                }
+
+                // 댓글 아이콘
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.comment),
+                        contentDescription = "댓글",
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = post.commentCount.toString(),
                         fontSize = 14.sp,
                         color = Color.Gray
                     )
