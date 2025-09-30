@@ -32,11 +32,13 @@ import java.time.Period
  * - [RegisterPetUseCase]: 서버에 반려동물 등록을 수행합니다.
  * - [SearchBreedsUseCase]: 품종 검색 쿼리를 기반으로 품종 목록을 조회합니다.
  */
+
+@OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class PetRegistrationViewModel @Inject constructor(
     private val registerPetUseCase: RegisterPetUseCase,
     private val breedRepository: BreedRepository,
-    private val tokenManager: TokenManager
+    private val searchBreedsUseCase: SearchBreedsUseCase
 ) : ViewModel() {
 
     // UI State (유지)
@@ -92,14 +94,6 @@ class PetRegistrationViewModel @Inject constructor(
     fun updateBirthDate(date: LocalDate?) {
         birthDate = date
         clearError()
-    }
-
-    fun updateWeight(weightInput: String) {
-        // 숫자와 소수점만 허용
-        if (weightInput.isEmpty() || weightInput.matches(Regex("^\\d*\\.?\\d*$"))) {
-            weight = weightInput
-            clearError()
-        }
     }
 
     /**
@@ -201,8 +195,6 @@ class PetRegistrationViewModel @Inject constructor(
             when (result) {
                 is AppResult.Success -> {
                     val petUi = result.data.toUiState()
-                    // 등록 성공 시 선택된 반려동물 ID를 로컬에 저장
-                    tokenManager.saveSelectedPetId(petUi.id)
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         isSuccess = true,
@@ -278,6 +270,7 @@ class PetRegistrationViewModel @Inject constructor(
             birthDate == null -> "생년월일을 입력해주세요"
             birthDate!!.isAfter(LocalDate.now()) -> "올바른 생년월일을 입력해주세요"
             furColor.isBlank() -> "털 색상을 선택해주세요"
+            healthConcerns.size == 0 -> "건강 관심사를 선택해주세요"
             else -> null
         }
     }

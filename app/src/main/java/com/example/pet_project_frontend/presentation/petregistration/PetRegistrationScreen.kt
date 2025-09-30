@@ -38,6 +38,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -181,6 +182,7 @@ fun CategorySelectField(
 @Composable
 fun CategoryMultiSelectField(
     label: String,
+    value: String,
     categories: List<String>,
     onValueChange: (Set<String>) -> Unit,
     placeholder: String = "",
@@ -503,6 +505,7 @@ fun PetRegistrationScreen(
     navController: NavController,
     viewModel: PetRegistrationViewModel = hiltViewModel()
 ) {
+    val focusManager = LocalFocusManager.current
     val uiState by viewModel.uiState.collectAsState()
 
     // 등록 성공 시 펫케어 화면으로 이동
@@ -520,6 +523,11 @@ fun PetRegistrationScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .pointerInput(Unit) {
+                    detectTapGestures(onTap = {
+                        focusManager.clearFocus() // 포커스 해제 -> 키패드 닫힘
+                    })
+                }
         ) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
@@ -684,11 +692,13 @@ fun PetRegistrationScreen(
                 // 건강 관심사 (선택)
                 item {
                     val isError = uiState.error?.contains("건강 관심사") == true
+                    val value = viewModel.healthConcerns.joinToString(separator = ", ")
                     val categories = listOf(
                         "눈", "뼈/관절", "피부/피모", "치아/구강", "노화", "비만", "변비", "심장", "영양", "신장/요로", "면역력", "구토"
                     )
                     CategoryMultiSelectField(
                         label = "건강 관심사",
+                        value = value,
                         categories = categories,
                         onValueChange = viewModel::updateHealthConcerns,
                         placeholder = "지금 가장 관심있는 내용을 알려주세요",
@@ -752,161 +762,6 @@ fun PetRegistrationScreen(
         }
     }
 }
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-fun HealthConcernsSection(
-    healthConcerns: List<String>,
-    onAdd: (String) -> Unit,
-    onRemove: (String) -> Unit
-) {
-    var inputText by remember { mutableStateOf("") }
-
-    Column {
-        Text(
-            text = "건강 관심사 (선택)",
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            OutlinedTextField(
-                value = inputText,
-                onValueChange = { inputText = it },
-                modifier = Modifier.weight(1f),
-                placeholder = { Text("예: 알러지, 관절염") },
-                singleLine = true
-            )
-
-            IconButton(
-                onClick = {
-                    if (inputText.isNotBlank()) {
-                        onAdd(inputText)
-                        inputText = ""
-                    }
-                }
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "추가")
-            }
-        }
-
-        if (healthConcerns.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(8.dp))
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                healthConcerns.forEach { concern ->
-                    InputChip(
-                        selected = false,
-                        onClick = { /* 선택 기능 없음 */ },
-                        label = { Text(concern) },
-                        trailingIcon = {
-                            IconButton(
-                                onClick = { onRemove(concern) },
-                                modifier = Modifier.size(18.dp)
-                            ) {
-                                Icon(Icons.Default.Close, contentDescription = "삭제")
-                            }
-                        }
-                    )
-                }
-            }
-        }
-    }
-}
-
-
-//@OptIn(ExperimentalMaterial3Api::class)
-//@Composable
-//fun BreedSelectionDialog(
-//    viewModel: PetRegistrationViewModel,
-//    onDismiss: () -> Unit
-//) {
-//    val searchQuery by viewModel.breedSearchQuery.collectAsState()
-//    val searchResults by viewModel.breedSearchResults.collectAsState()
-//
-//    BasicAlertDialog(
-//        onDismissRequest = onDismiss,
-//        modifier = Modifier.fillMaxHeight(0.8f),
-//        properties = DialogProperties(), content = {
-//            Card(
-//                modifier = Modifier.fillMaxWidth(),
-//                shape = RoundedCornerShape(16.dp)
-//            ) {
-//                Column(
-//                    modifier = Modifier
-//                        .fillMaxWidth()
-//                        .padding(16.dp)
-//                ) {
-//                    Text(
-//                        text = "품종 선택",
-//                        style = MaterialTheme.typography.headlineSmall,
-//                        fontWeight = FontWeight.Bold
-//                    )
-//
-//                    Spacer(modifier = Modifier.height(16.dp))
-//
-//                    OutlinedTextField(
-//                        value = searchQuery,
-//                        onValueChange = viewModel::updateBreedSearchQuery,
-//                        label = { Text("품종 검색") },
-//                        modifier = Modifier.fillMaxWidth(),
-//                        leadingIcon = {
-//                            Icon(Icons.Default.Search, contentDescription = "검색")
-//                        },
-//                        singleLine = true
-//                    )
-//
-//                    Spacer(modifier = Modifier.height(16.dp))
-//
-//                    LazyColumn(
-//                        modifier = Modifier
-//                            .fillMaxWidth()
-//                            .weight(1f),
-//                        verticalArrangement = Arrangement.spacedBy(4.dp)
-//                    ) {
-//                        items(searchResults) { breed ->
-//                            Card(
-//                                onClick = { viewModel.selectBreed(breed) },
-//                                modifier = Modifier.fillMaxWidth()
-//                            ) {
-//                                Row(
-//                                    modifier = Modifier
-//                                        .fillMaxWidth()
-//                                        .padding(16.dp),
-//                                    horizontalArrangement = Arrangement.SpaceBetween,
-//                                    verticalAlignment = Alignment.CenterVertically
-//                                ) {
-//                                    Text(
-//                                        text = breed.breedName,
-//                                        style = MaterialTheme.typography.bodyLarge
-//                                    )
-//                                    Text(
-//                                        text = "평균 수명: ${breed.lifeExpectancy}년",
-//                                        style = MaterialTheme.typography.bodySmall,
-//                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-//                                    )
-//                                }
-//                            }
-//                        }
-//                    }
-//
-//                    Spacer(modifier = Modifier.height(16.dp))
-//
-//                    TextButton(
-//                        onClick = onDismiss,
-//                        modifier = Modifier.align(Alignment.End)
-//                    ) {
-//                        Text("취소")
-//                    }
-//                }
-//            }
-//        })
-//}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
