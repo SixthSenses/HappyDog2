@@ -20,11 +20,13 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.pet_project_frontend.presentation.mungstar.MungStarFeed
 import com.example.pet_project_frontend.presentation.mungstar.FreeWriting
 import com.example.pet_project_frontend.presentation.mungstar.CartoonMaking
+import com.example.pet_project_frontend.presentation.translator.TranslatorScreen
 
 @Composable
 fun PetCareNavHost(
 	navController: NavHostController,
 	startDestination: String,
+	openNotice: (@Composable (closeNotice: () -> Unit) -> Unit) -> Unit,
 	modifier: Modifier = Modifier
 ) {
 	NavHost(
@@ -92,6 +94,10 @@ fun PetCareNavHost(
 
 		// 번역기 화면
 		composable(Screen.Translator.route) { PetCareMainScreen() }
+
+		// 커뮤니티/번역기는 임시로 펫케어 메인으로 연결하거나 별도 화면 구성 필요 시 교체
+		composable(Screen.Community.route) { PetCareMainScreen() }
+		composable(Screen.Translator.route) { TranslatorScreen(openNotice = openNotice) }
 
 		// 마이페이지 화면
 		composable(Screen.MyPage.route) { MyPageScreen() }

@@ -8,7 +8,6 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.Period
 import com.example.pet_project_frontend.domain.repository.PetRepository
-import com.example.pet_project_frontend.data.local.preferences.TokenManager
 import com.example.pet_project_frontend.domain.repository.UserRepository
 import com.example.pet_project_frontend.data.remote.upload.FileUploadManager
 import com.example.pet_project_frontend.data.remote.upload.UploadType
@@ -24,7 +23,6 @@ import javax.inject.Inject
 class MyPageViewModel @Inject constructor(
     private val petRepository: PetRepository,
     private val userRepository: UserRepository,
-    private val tokenManager: TokenManager,
     private val fileUploadManager: FileUploadManager
 ) : ViewModel() {
 
@@ -45,19 +43,8 @@ class MyPageViewModel @Inject constructor(
                 when (userResult) {
                     is AppResult.Success -> {
                         val user = userResult.data
-                        // 저장된 pet_id 조회
-                        val petId = tokenManager.getSelectedPetId()
-                        if (petId.isNullOrBlank()) {
-                            _uiState.update {
-                                it.copy(
-                                    isLoading = false,
-                                    error = "등록된 반려동물이 없습니다. 먼저 반려동물을 등록해주세요."
-                                )
-                            }
-                            return@launch
-                        }
-                        // 반려동물 정보 로드
-                        val petResult = petRepository.getPetProfile(petId)
+                        // 단일 펫 정책: 서버에서 내 반려동물 프로필 조회
+                        val petResult = petRepository.getMyPetProfile()
                         when (petResult) {
                             is AppResult.Success -> {
                                 val pet = petResult.data
@@ -87,14 +74,10 @@ class MyPageViewModel @Inject constructor(
                                 }
                             }
                             is AppResult.Error -> {
-                                // 권한 문제나 유효하지 않은 petId면 로컬 pet_id를 제거하고 안내
-                                if (petResult.code == 403 || petResult.code == 404) {
-                                    tokenManager.clearSelectedPetId()
-                                }
                                 _uiState.update {
                                     it.copy(
                                         isLoading = false,
-                                        error = "반려동물 정보를 불러오는데 실패했습니다: ${petResult.message}"
+                                        error = petResult.message ?: "반려동물 정보를 불러오는데 실패했습니다."
                                     )
                                 }
                             }

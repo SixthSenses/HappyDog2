@@ -69,7 +69,7 @@ fun MyPageScreen(
 
     // 에러 메시지 표시
     LaunchedEffect(uiState.error) {
-        uiState.error?.let { error ->
+        uiState.error?.let { _ ->
             // TODO: Snackbar나 Toast로 에러 메시지 표시
         }
     }
@@ -118,6 +118,7 @@ fun MyPageScreen(
                         ).joinToString(" • "),
                         profileImageUrl = uiState.profileImageUrl,
                         onProfileImageClick = {
+                            onProfileImageClick()
                             photoPicker.launch(
                                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                             )

@@ -19,7 +19,6 @@ object PetMapper {
                 "female", "암컷" -> com.example.pet_project_frontend.domain.model.Gender.FEMALE
                 else -> com.example.pet_project_frontend.domain.model.Gender.UNKNOWN
             },
-            weight = dto.currentWeight,
             ownerId = dto.userId,
             isVerified = dto.isVerified,
             nosePrintUrl = dto.nosePrintUrl,

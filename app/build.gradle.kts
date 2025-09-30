@@ -96,7 +96,8 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.8"
+        // Compose Compiler 1.5.14 is compatible with Kotlin 1.9.24
+        kotlinCompilerExtensionVersion = "1.5.14"
     }
 
     packaging {
@@ -113,6 +114,8 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.3")
     implementation("com.google.android.material:material:1.12.0")
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.view)
 
     // Compose
     val composeBom = platform("androidx.compose:compose-bom:2024.06.00")
@@ -174,6 +177,15 @@ dependencies {
 
     // Splash Screen
     implementation("androidx.core:core-splashscreen:1.0.1")
+
+    implementation("androidx.camera:camera-core:1.4.2")
+    implementation("androidx.camera:camera-camera2:1.4.2")
+    implementation("androidx.camera:camera-lifecycle:1.4.2")
+    implementation("androidx.camera:camera-view:1.4.2")
+    implementation(libs.tensorflow.lite)
+    implementation(libs.tensorflow.lite.gpu)
+    implementation(libs.tensorflow.lite.support)
+    implementation(libs.tensorflow.lite.select.tf.ops)
 
     // Testing
     testImplementation("junit:junit:4.13.2")

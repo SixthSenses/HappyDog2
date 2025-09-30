@@ -11,10 +11,11 @@ data class CreatePetRequest(
     val breed: String,
     @SerializedName("birthdate")
     val birthdate: String, // "YYYY-MM-DD"
-    @SerializedName("current_weight")
-    val currentWeight: Float,
     @SerializedName("fur_color")
     val furColor: String? = null,
     @SerializedName("health_concerns")
-    val healthConcerns: List<String>? = null
+    val healthConcerns: List<String>? = null,
+    // Optional field per OpenAPI PetRegistrationSchema
+    @SerializedName("profile_image_url")
+    val profileImageUrl: String? = null
 )
