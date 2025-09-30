@@ -1,0 +1,4 @@
+package com.example.pet_project_frontend.presentation.mypage.common
+
+object UiColors {
+}
