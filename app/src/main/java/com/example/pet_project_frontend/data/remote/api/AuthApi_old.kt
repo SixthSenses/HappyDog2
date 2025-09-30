@@ -11,16 +11,13 @@ import retrofit2.http.Body
 import retrofit2.http.Header
 import retrofit2.http.POST
 
-interface AuthApi {
-    // POST /api/auth/social – SocialLoginSchema → AuthTokensResponseSchema
+interface AuthApi_old {
     @POST("api/auth/social")
     suspend fun socialLogin(@Body socialLoginRequest: SocialLoginRequest): Response<SocialLoginResponse>
 
-    // POST /api/auth/logout – LogoutRequestSchema → AuthLogoutResponseSchema
     @POST("api/auth/logout")
     suspend fun logout(@Body logoutRequest: LogoutRequest): Response<LogoutResponse>
 
-    // POST /api/auth/token/refresh – EmptyRequestSchema → AuthTokensRefreshResponseSchema
     @POST("api/auth/token/refresh")
     suspend fun refreshToken(
         @Header("Authorization") refreshToken: String,

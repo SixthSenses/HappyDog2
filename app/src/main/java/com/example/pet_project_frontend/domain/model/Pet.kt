@@ -9,7 +9,6 @@ data class Pet(
     val breed: String,
     val birthDate: LocalDate,
     val gender: Gender,
-    val weight: Float,
     val ownerId: String,
     val isVerified: Boolean = false,
     val nosePrintUrl: String? = null,

@@ -20,7 +20,6 @@ class TokenManager @Inject constructor(
     companion object {
         private val ACCESS_TOKEN_KEY = stringPreferencesKey("access_token")
         private val REFRESH_TOKEN_KEY = stringPreferencesKey("refresh_token")
-    private val SELECTED_PET_ID_KEY = stringPreferencesKey("selected_pet_id")
     }
 
     /**
@@ -110,35 +109,5 @@ class TokenManager @Inject constructor(
         }
     }
 
-    /**
-     * 선택된 반려동물 ID 저장
-     */
-    suspend fun saveSelectedPetId(petId: String) {
-        dataStore.edit { preferences ->
-            preferences[SELECTED_PET_ID_KEY] = petId
-        }
-    }
-
-    /**
-     * 선택된 반려동물 ID 조회 (동기)
-     */
-    suspend fun getSelectedPetId(): String? {
-        return dataStore.data.first()[SELECTED_PET_ID_KEY]
-    }
-
-    /**
-     * 선택된 반려동물 ID Flow 조회
-     */
-    fun getSelectedPetIdFlow(): Flow<String?> {
-        return dataStore.data.map { preferences -> preferences[SELECTED_PET_ID_KEY] }
-    }
-
-    /**
-     * 선택된 반려동물 ID 삭제
-     */
-    suspend fun clearSelectedPetId() {
-        dataStore.edit { preferences ->
-            preferences.remove(SELECTED_PET_ID_KEY)
-        }
-    }
+    // selected_pet_id는 단일 펫 정책으로 제거되었습니다.
 }
