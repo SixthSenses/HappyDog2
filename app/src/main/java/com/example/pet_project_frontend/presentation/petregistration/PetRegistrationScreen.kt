@@ -54,6 +54,7 @@ import androidx.navigation.NavController
 import com.example.pet_project_frontend.R
 import com.example.pet_project_frontend.core.navigation.Screen // [수정됨] Screen import
 import com.example.pet_project_frontend.domain.model.Gender
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
@@ -66,6 +67,7 @@ import kotlin.math.roundToInt
 @Composable
 fun CategorySelectField(
     label: String,
+    value: String,
     categories: List<String>,
     onValueChange: (String) -> Unit,
     placeholder: String = "",
@@ -74,7 +76,6 @@ fun CategorySelectField(
     errorMessage: String? = null,
     modifier: Modifier = Modifier
 ) {
-    var selectedCategory by remember { mutableStateOf("") }
     var showDialog by remember { mutableStateOf(false) }
 
     Column(
@@ -97,7 +98,7 @@ fun CategorySelectField(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             TextField(
-                value = selectedCategory,
+                value = value,
                 onValueChange = { },
                 placeholder = { if (placeholder.isNotEmpty()) Text(placeholder) },
                 singleLine = true,
@@ -165,9 +166,8 @@ fun CategorySelectField(
         ResizableSelectionDialog(
             title = dialogTitle,
             items = categories,
-            selectedItem = selectedCategory,
+            selectedItem = value,
             onItemSelected = { category ->
-                selectedCategory = category
                 onValueChange(category)
                 showDialog = false
             },
@@ -558,11 +558,13 @@ fun PetRegistrationScreen(
                 // 성별 선택
                 item {
                     val isError = uiState.error?.contains("성별") == true
+                    val value = if (viewModel.selectedGender == Gender.MALE) "수컷" else if (viewModel.selectedGender == Gender.FEMALE) "암컷" else ""
                     val categories = listOf(
                         "수컷", "암컷"
                     )
                     CategorySelectField(
                         label = "성별",
+                        value = value,
                         categories = categories,
                         onValueChange = viewModel::updateGender,
                         placeholder = "반려견의 성별을 알려주세요",
@@ -575,6 +577,8 @@ fun PetRegistrationScreen(
                 // 품종 선택
                 item {
                     val isError = uiState.error?.contains("견종") == true
+                    val selectedBreed = viewModel.selectedBreed
+                    var breedName by remember { mutableStateOf(selectedBreed?.breedName ?: "") }
                     val categories = listOf(
                         "가나안 독", "그레이트 데인", "그레이트 피레니즈", "그레이하운드", "그린란드견", "골든 리트리버", "고든 세터", "글렌 오브 이말 테리어", "그리폰 브뤼셀루아", "그리폰 벨주", "꼬똥 드 뚤레아",
                         "뉴기니 싱잉 독", "뉴펀들랜드", "노르웨이 엘크하운드", "노르웨이 룬데훈드", "노바 스코시아 덕 톨링 리트리버", "노리치 테리어", "노르폴크 테리어",
@@ -591,15 +595,25 @@ fun PetRegistrationScreen(
                         "푸들", "포메라니안", "퍼그", "페키니즈", "프렌치 불독", "풍산개", "포인터", "파라오 하운드", "핏 불 테리어", "파슨 러셀 테리어", "펨브로크 웰시 코기", "포르투갈 워터 독", "푸미",
                         "허스키", "헝가리안 비즐라", "하바니즈", "하운드", "하바네제", "하리어"
                     )
+                    val coroutineScope = rememberCoroutineScope()
                     CategorySelectField(
                         label = "견종",
+                        value = breedName,
                         categories = categories,
-                        onValueChange = viewModel::selectBreed,
+                        onValueChange = { newName ->
+                            breedName = newName // 입력값은 즉시 반영
+                            coroutineScope.launch {
+                                viewModel.selectBreed(newName) // API 호출
+                            }
+                        },
                         placeholder = "반려견의 견종을 알려주세요",
                         dialogTitle = "견종을 선택해주세요",
                         isError = isError,
                         errorMessage = uiState.error
                     )
+                    LaunchedEffect(selectedBreed) {
+                        breedName = selectedBreed?.breedName ?: ""
+                    }
                 }
 
                 // 생년월일 선택
@@ -647,27 +661,16 @@ fun PetRegistrationScreen(
                     )
                 }
 
-                item {
-                    val isError = uiState.error?.contains("체중") == true
-                    LabeledTextField(
-                        label = "체중",
-                        value = viewModel.weight,
-                        onValueChange = viewModel::updateWeight,
-                        placeholder = "반려견의 체중을 알려주세요",
-                        isError = isError,
-                        isNumberType = true,
-                        errorMessage = uiState.error
-                    )
-                }
-
                 // 털 색상 (선택)
                 item {
                     val isError = uiState.error?.contains("털 색상") == true
+                    val value = viewModel.furColor
                     val categories = listOf(
                         "흰색", "금색", "황색", "회색", "검은색", "흰색 + 금색", "흰색 + 황색", "흰색 + 회색", "흰색 + 검은색", "검은색 + 금색"
                     )
                     CategorySelectField(
                         label = "털 색상",
+                        value = value,
                         categories = categories,
                         onValueChange = viewModel::updateFurColor,
                         placeholder = "반려견의 털 색상을 알려주세요",

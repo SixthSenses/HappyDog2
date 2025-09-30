@@ -13,6 +13,7 @@ import com.example.pet_project_frontend.domain.model.Gender
 import com.example.pet_project_frontend.presentation.model.PetUiState
 import com.example.pet_project_frontend.data.local.preferences.TokenManager
 import com.example.pet_project_frontend.data.remote.dto.response.HeightWeightInfo
+import com.example.pet_project_frontend.domain.repository.BreedRepository
 import com.example.pet_project_frontend.domain.usecase.breed.SearchBreedsUseCase
 import com.example.pet_project_frontend.domain.usecase.pet.RegisterPetUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -32,7 +33,7 @@ import java.time.Period
 @HiltViewModel
 class PetRegistrationViewModel @Inject constructor(
     private val registerPetUseCase: RegisterPetUseCase,
-    private val searchBreedsUseCase: SearchBreedsUseCase,
+    private val breedRepository: BreedRepository,
     private val tokenManager: TokenManager
 ) : ViewModel() {
 
@@ -65,24 +66,6 @@ class PetRegistrationViewModel @Inject constructor(
      *
      * @return Unit
      */
-    init {
-        // 품종 검색 자동 실행: Compose state -> Flow 브리지로 snapshotFlow 사용
-        viewModelScope.launch {
-            snapshotFlow { breedSearchQuery }
-                .debounce(300)
-                .distinctUntilChanged()
-                .flatMapLatest { query ->
-                    searchBreedsUseCase(query)
-                }
-                .catch { e ->
-                    // 에러 시 결과를 비워두거나 로깅 처리 (필요시 상세 처리)
-                    breedSearchResults = emptyList()
-                }
-                .collect { breeds ->
-                    breedSearchResults = breeds
-                }
-        }
-    }
 
     fun updatePetName(name: String) {
         petName = name
@@ -95,18 +78,14 @@ class PetRegistrationViewModel @Inject constructor(
         clearError()
     }
 
-    fun selectBreed(breedName: String) {
-        val breedResponse = BreedResponse(
-            breedName = breedName,
-            lifeExpectancy = 10.0f,
-            heightCm = HeightWeightInfo(male = 35.0f, female = 35.0f),
-            weightKg = HeightWeightInfo(male = 10.0f, female = 10.0f),
-            createdAt = null,
-            updatedAt = null
-        )
-        selectedBreed = breedResponse
-        clearError()
+    suspend fun selectBreed(breedName: String) {
+        val result = breedRepository.searchBreeds(breedName, 1)
+        result.onSuccess { breedResponse ->
+            selectedBreed = breedResponse.breeds[0]
+            clearError()
+        }
     }
+
 
     fun updateBirthDate(date: LocalDate?) {
         birthDate = date
@@ -279,7 +258,6 @@ class PetRegistrationViewModel @Inject constructor(
             ageText = ageText,
             birthDateText = birthDate.toString(),
             genderText = genderText,
-            weightText = weightText,
             furColorText = null,
             profileImageUrl = null
         )
@@ -298,9 +276,6 @@ class PetRegistrationViewModel @Inject constructor(
             selectedBreed == null -> "견종을 선택해주세요"
             birthDate == null -> "생년월일을 입력해주세요"
             birthDate!!.isAfter(LocalDate.now()) -> "올바른 생년월일을 입력해주세요"
-            weight.isBlank() -> "체중을 입력해주세요"
-            weight.toFloatOrNull() == null -> "올바른 체중을 입력해주세요"
-            weight.toFloat() < 0.1 || weight.toFloat() > 200 -> "체중은 0.1kg ~ 200kg 사이로 입력해주세요"
             furColor.isBlank() -> "털 색상을 선택해주세요"
             else -> null
         }
