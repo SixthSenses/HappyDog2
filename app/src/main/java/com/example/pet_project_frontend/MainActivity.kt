@@ -21,7 +21,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -32,14 +31,13 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.pet_project_frontend.core.designsystem.AppTheme
 import com.example.pet_project_frontend.core.navigation.BottomNavigation
 import com.example.pet_project_frontend.core.navigation.PetCareNavHost
 import com.example.pet_project_frontend.core.navigation.Screen
-import com.example.pet_project_frontend.core.designsystem.AppTheme
 import com.example.pet_project_frontend.data.local.preferences.TokenManager
-import com.kakao.vectormap.KakaoMapSdk
-import com.kakao.vectormap.*
 import com.kakao.sdk.common.util.Utility
+import com.kakao.vectormap.KakaoMapSdk
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -55,18 +53,18 @@ class MainActivity : ComponentActivity() {
 
     private val viewModel: MainViewModel by viewModels()
 
-
     @Inject
     lateinit var tokenManager: TokenManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         val isLoading = mutableStateOf(true)
 
-        installSplashScreen().setKeepOnScreenCondition {
-            isLoading.value
-        }
+        // Splash 유지 조건
+        installSplashScreen().setKeepOnScreenCondition { isLoading.value }
 
+        // 로그인 여부 초기 체크
         lifecycleScope.launch {
             lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.isLoggedIn.first()
@@ -74,124 +72,138 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // Initialize Kakao Map SDK only when app key is available to avoid runtime crash
-        val resolvedKey = when {
-            !nativeAppKey.isNullOrBlank() -> nativeAppKey
-            else -> {
-                // Fallback: read from AndroidManifest meta-data if provided
-                val appInfo = packageManager.getApplicationInfo(packageName, android.content.pm.PackageManager.GET_META_DATA)
-                appInfo.metaData?.getString("com.kakao.vectormap.APP_KEY", "") ?: ""
-            }
+        // Kakao Map SDK 초기화 (키 확인 및 keyHash 로깅)
+        val resolvedKey = if (nativeAppKey.isNotBlank()) {
+            nativeAppKey
+        } else {
+            val appInfo = packageManager.getApplicationInfo(
+                packageName,
+                android.content.pm.PackageManager.GET_META_DATA
+            )
+            appInfo.metaData?.getString("com.kakao.vectormap.APP_KEY", "") ?: ""
         }
-
-        // Log length only, avoid printing secret; also print Kakao key-hash for Android app registration
         android.util.Log.i("KakaoKey", "resolvedKey length=${resolvedKey.length}")
         runCatching { Utility.getKeyHash(this) }
             .onSuccess { keyHash -> android.util.Log.i("KakaoKey", "keyHash=$keyHash") }
             .onFailure { e -> android.util.Log.w("KakaoKey", "Failed to get keyHash: ${e.message}") }
 
         if (resolvedKey.isBlank()) {
-            android.util.Log.e("MainActivity", "Kakao APP KEY is missing. Please set KAKAO_NATIVE_APP_KEY in local.properties or Gradle properties.")
+            android.util.Log.e(
+                "MainActivity",
+                "Kakao APP KEY is missing. Please set KAKAO_NATIVE_APP_KEY in local.properties or Gradle properties."
+            )
         } else {
             KakaoMapSdk.init(this, resolvedKey)
         }
 
-    setContent {
-        AppTheme {
-            val isLoggedIn by viewModel.isLoggedIn.collectAsStateWithLifecycle()
-            val hasPet by viewModel.hasPet.collectAsStateWithLifecycle()
-            val navController = rememberNavController()
-            val navBackStackEntry by navController.currentBackStackEntryAsState()
-            val currentRoute = navBackStackEntry?.destination?.route
+        setContent {
+            AppTheme {
+                // isLoggedIn는 ViewModel에서, 펫 존재 여부와 선택된 펫 ID는 각각 ViewModel 및 TokenManager에서 수집
+                val isLoggedIn by viewModel.isLoggedIn.collectAsStateWithLifecycle()
+                val hasPet by viewModel.hasPet.collectAsStateWithLifecycle()
+                val selectedPetId by tokenManager.getSelectedPetIdFlow()
+                    .collectAsStateWithLifecycle(initialValue = null)
+                val navController = rememberNavController()
+                val navBackStackEntry by navController.currentBackStackEntryAsState()
+                val currentRoute = navBackStackEntry?.destination?.route
 
-            val bottomBarRoutes = remember {
-                listOf(
-                    Screen.PetCare.route,
-                    Screen.Map.route,
-                    Screen.Community.route,
-                    Screen.Translator.route,
-                    Screen.MyPage.route
-                )
-            }
-            val showBottomBar = currentRoute in bottomBarRoutes
-            var selectedNotice by remember { mutableStateOf<(@Composable () -> Unit)?>(null) }
-            val openNotice: (@Composable (closeNotice: () -> Unit) -> Unit) -> Unit = { composable ->
-                selectedNotice = {
-                    composable({ selectedNotice = null })
+                // 바텀바를 보여줄 라우트 목록 (기존 코드 유지)
+                val bottomBarRoutes = remember {
+                    listOf(
+                        Screen.PetCare.route,
+                        Screen.Map.route,
+                        Screen.Community.route,
+                        Screen.Translator.route,
+                        Screen.MyPage.route
+                    )
                 }
-            }
-            Scaffold(
-                bottomBar = {
-                    if (showBottomBar) {
-                        BottomNavigation(
-                            currentRoute = currentRoute ?: "",
-                            onNavigate = { route ->
-                                navController.navigate(route) {
-                                    popUpTo(navController.graph.startDestinationId) {
-                                        saveState = true
+                val showBottomBar = currentRoute in bottomBarRoutes
+
+                // 공지/안내 바텀시트 초기 설정 (기존 코드 유지)
+                var selectedNotice: (@Composable () -> Unit)? = null
+                val openNotice: (@Composable (closeNotice: () -> Unit) -> Unit) -> Unit = { composable ->
+                    selectedNotice = {
+                        composable { selectedNotice = null }
+                    }
+                }
+
+                Scaffold(
+                    bottomBar = {
+                        if (showBottomBar) {
+                            BottomNavigation(
+                                currentRoute = currentRoute ?: "",
+                                onNavigate = { route ->
+                                    navController.navigate(route) {
+                                        popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                        launchSingleTop = true
+                                        restoreState = true
                                     }
+                                }
+                            )
+                        }
+                    }
+                ) { innerPadding ->
+                    if (isLoading.value) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    } else {
+                        // 시작 목적지 분기: 로그인, 펫 보유, 선택된 펫 ID 여부를 모두 고려
+                        val effectiveStart = when {
+                            !isLoggedIn -> Screen.Login.route
+                            !hasPet || selectedPetId.isNullOrBlank() -> Screen.PetRegistration.route
+                            else -> Screen.PetCare.route
+                        }
+
+                        // 런타임에도 펫이 없거나 선택된 펫이 없으면 등록 화면으로 유도
+                        LaunchedEffect(isLoggedIn, hasPet, selectedPetId, currentRoute) {
+                            if (isLoggedIn &&
+                                ((!hasPet) || selectedPetId.isNullOrBlank()) &&
+                                currentRoute != Screen.Login.route &&
+                                currentRoute != Screen.PetRegistration.route
+                            ) {
+                                navController.navigate(Screen.PetRegistration.route) {
+                                    popUpTo(navController.graph.startDestinationId) { saveState = false }
                                     launchSingleTop = true
-                                    restoreState = true
+                                    restoreState = false
                                 }
                             }
+                        }
+
+                        PetCareNavHost(
+                            navController = navController,
+                            startDestination = effectiveStart,
+                            openNotice = openNotice,
+                            modifier = Modifier.padding(innerPadding)
                         )
                     }
                 }
-            ) { innerPadding ->
-                if (isLoading.value) {
+
+                // 반투명 배경 애니메이션 (Stashed changes의 배경 처리)
+                AnimatedVisibility(
+                    visible = selectedNotice != null,
+                    enter = fadeIn(animationSpec = tween(300)),
+                    exit = fadeOut(animationSpec = tween(300))
+                ) {
                     Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                } else {
-                    // startDestination은 로그인 + 펫 존재 여부에 따라 분기합니다.
-                    val effectiveStart = when {
-                        !isLoggedIn -> Screen.Login.route
-                        !hasPet -> Screen.PetRegistration.route
-                        else -> Screen.PetCare.route
-                    }
-
-                    // 런타임에도 펫이 없으면 등록 화면으로 유도
-                    LaunchedEffect(hasPet, currentRoute, isLoggedIn) {
-                        if (isLoggedIn && !hasPet && currentRoute != Screen.Login.route && currentRoute != Screen.PetRegistration.route) {
-                            navController.navigate(Screen.PetRegistration.route) {
-                                popUpTo(navController.graph.startDestinationId) { saveState = false }
-                                launchSingleTop = true
-                                restoreState = false
-                            }
-                        }
-                    }
-
-                    PetCareNavHost(
-                        navController = navController,
-                        startDestination = effectiveStart,
-                        openNotice = openNotice,
-                        modifier = Modifier.padding(innerPadding)
+                        Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.32f))
                     )
                 }
-            }
-            AnimatedVisibility(
-                visible = selectedNotice != null,
-                enter = fadeIn(animationSpec = tween(300)),
-                exit = fadeOut(animationSpec = tween(300))
-            ) {
-                // 배경용 Box를 따로 둬서 페이드인/아웃 처리
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.32f))
-                )
-            }
 
-            AnimatedVisibility(
-                visible = selectedNotice != null,
-                enter = slideInVertically(initialOffsetY = { fullHeight -> fullHeight }),
-                exit = slideOutVertically(targetOffsetY = { fullHeight -> fullHeight })
-            ) {
-                selectedNotice?.invoke()
+                // 공지 슬라이드 인/아웃 애니메이션 (기존 코드 유지)
+                AnimatedVisibility(
+                    visible = selectedNotice != null,
+                    enter = slideInVertically(initialOffsetY = { it }),
+                    exit = slideOutVertically(targetOffsetY = { it })
+                ) {
+                    selectedNotice?.invoke()
+                }
             }
         }
     }
-}}
+}

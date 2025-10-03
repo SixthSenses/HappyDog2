@@ -1,18 +1,10 @@
-package com.example.pet_project_frontend.presentation.mypage.main
+﻿package com.example.pet_project_frontend.presentation.mypage.main
 
-import android.content.ContentResolver
 import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -22,27 +14,25 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.pet_project_frontend.core.theme.MyPageColors
-import com.example.pet_project_frontend.presentation.mypage.main.components.AppVersionSection
-import com.example.pet_project_frontend.presentation.mypage.main.components.LegalSection
 import com.example.pet_project_frontend.presentation.mypage.main.components.ProfileHeader
 import com.example.pet_project_frontend.presentation.mypage.main.components.ProfileInfoSection
 import com.example.pet_project_frontend.presentation.mypage.main.components.SettingsSection
+import com.example.pet_project_frontend.presentation.mypage.main.components.LegalSection
 import com.example.pet_project_frontend.presentation.mypage.main.components.WithdrawalSection
-import java.io.File
-import java.io.FileOutputStream
-import java.io.InputStream
+import com.example.pet_project_frontend.presentation.mypage.main.components.AppVersionSection
+import com.example.pet_project_frontend.presentation.mypage.main.components.MediaPickerSheet
+import com.example.pet_project_frontend.presentation.mypage.main.components.PhotoCropScreen
 
 @Composable
 fun MyPageScreen(
-    onNameClick: () -> Unit = {},
-    onBirthdateClick: () -> Unit = {},
-    onGenderClick: () -> Unit = {},
-    onBreedClick: () -> Unit = {},
+    onNameClick: (String) -> Unit = { _ -> },
+    onBirthdateClick: (String) -> Unit = { _ -> },
+    onGenderClick: (String) -> Unit = {},
+    onBreedClick: (String) -> Unit = {},
     onNotificationClick: () -> Unit = {},
     onVerificationClick: () -> Unit = {},
     onTermsClick: () -> Unit = {},
@@ -52,141 +42,130 @@ fun MyPageScreen(
     viewModel: MyPageViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val context = LocalContext.current
-
-    // Photo picker launcher
-    val photoPicker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia()
-    ) { uri: Uri? ->
-        if (uri != null) {
-            val localPath = copyUriToCache(context.contentResolver, uri, context.cacheDir)
-            if (localPath != null) {
-                viewModel.uploadAndApplyProfileImage(localPath)
-            }
-        }
-    }
     val scrollState = rememberScrollState()
 
-    // 에러 메시지 표시
+    // 에러 메시지 표시 효과 (Snackbar나 Toast로 실제 구현 시 변경)
     LaunchedEffect(uiState.error) {
-        uiState.error?.let { _ ->
-            // TODO: Snackbar나 Toast로 에러 메시지 표시
+        uiState.error?.let { errorMsg ->
+            // TODO: 에러 메시지를 Snackbar나 Toast 등으로 표시 (앱의 에러 처리 정책에 따름)
         }
     }
 
-    Box(
+    // 사진 선택/크롭 상태 관리
+    var showPhotoPicker by remember { mutableStateOf(false) }
+    var cropSourceUri by remember { mutableStateOf<Uri?>(null) }
+    var showCrop by remember { mutableStateOf(false) }
+
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MyPageColors.Background)
+            .verticalScroll(scrollState)
+            .padding(horizontal = 16.dp)
     ) {
         when {
             uiState.isLoading -> {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center)
-                )
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
             }
             uiState.error != null -> {
-                val errorMessage = uiState.error
-                Column(
-                    modifier = Modifier.align(Alignment.Center),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = errorMessage ?: "알 수 없는 오류가 발생했습니다.",
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(onClick = { viewModel.loadUserData() }) {
-                        Text("다시 시도")
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = uiState.error ?: "알 수 없는 오류가 발생했습니다.",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(onClick = { viewModel.loadUserData() }) {
+                            Text("다시 시도")
+                        }
                     }
                 }
             }
             else -> {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(scrollState)
-                        .padding(top = 8.dp, bottom = 24.dp)
-                ) {
-                    // 상단 프로필 헤더
-                    ProfileHeader(
-                        name = uiState.petName.ifBlank { "프로필" },
-                        description = listOfNotNull(
-                            uiState.breed.takeIf { it.isNotBlank() },
-                            uiState.age.takeIf { it.isNotBlank() }
-                        ).joinToString(" • "),
-                        profileImageUrl = uiState.profileImageUrl,
-                        onProfileImageClick = {
-                            onProfileImageClick()
-                            photoPicker.launch(
-                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                            )
-                        }
-                    )
+                // 상단 프로필 헤더
+                ProfileHeader(
+                    name = if (uiState.petName.isBlank()) "프로필" else uiState.petName,
+                    description = if (uiState.breed.isNotBlank() && uiState.age.isNotBlank()) {
+                        "${uiState.breed} • ${uiState.age}"
+                    } else {
+                        listOf(uiState.breed, uiState.age).filter { it.isNotBlank() }.joinToString(" • ")
+                    },
+                    profileImageUrl = uiState.profileImageUrl,
+                    onProfileImageClick = { showPhotoPicker = true }
+                )
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-                    // 반려동물 프로필/설정 섹션
-                    ProfileInfoSection(
-                        name = uiState.petName,
-                        birthDate = uiState.birthDate,
-                        gender = uiState.gender,
-                        breed = uiState.breed,
-                        onNameClick = onNameClick,
-                        onBirthdateClick = onBirthdateClick,
-                        onGenderClick = onGenderClick,
-                        onBreedClick = onBreedClick
-                    )
+                // 프로필 정보 섹션
+                ProfileInfoSection(
+                    name = uiState.petName,
+                    birthDate = uiState.birthDate,
+                    gender = uiState.gender,
+                    breed = uiState.breed,
+                    onNameClick = { onNameClick(uiState.petName) },
+                    onBirthdateClick = { onBirthdateClick(uiState.birthDate) },
+                    onGenderClick = { onGenderClick(uiState.gender) },
+                    onBreedClick = { onBreedClick(uiState.breed) }
+                )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-                    SettingsSection(
-                        onNotificationClick = onNotificationClick,
-                        onVerificationClick = onVerificationClick
-                    )
+                // 설정 섹션
+                SettingsSection(
+                    onNotificationClick = onNotificationClick,
+                    onVerificationClick = onVerificationClick
+                )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-                    LegalSection(
-                        onTermsClick = onTermsClick,
-                        onPrivacyClick = onPrivacyClick
-                    )
+                // 법적 정보 섹션
+                LegalSection(
+                    onTermsClick = onTermsClick,
+                    onPrivacyClick = onPrivacyClick
+                )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-                    WithdrawalSection(onClick = onWithdrawClick)
+                // 탈퇴 섹션
+                WithdrawalSection(onClick = onWithdrawClick)
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(32.dp))
 
-                    AppVersionSection()
-                }
+                // 앱 버전 정보 섹션
+                AppVersionSection()
 
-                if (uiState.isUploading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(bottom = 24.dp)
-                    )
-                }
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }
-}
 
-private fun copyUriToCache(cr: ContentResolver, uri: Uri, cacheDir: File): String? {
-    return try {
-        val name = "picked_${System.currentTimeMillis()}.jpg"
-        val outFile = File(cacheDir, name)
-        cr.openInputStream(uri)?.use { input ->
-            FileOutputStream(outFile).use { output ->
-                input.copyTo(output)
-            }
+    // 미디어 픽커 시트 (사진 선택)
+    MediaPickerSheet(
+        visible = showPhotoPicker,
+        onDismissRequest = { showPhotoPicker = false },
+        onPicked = { uri ->
+            cropSourceUri = uri
+            showPhotoPicker = false
+            showCrop = true
         }
-        outFile.absolutePath
-    } catch (_: Throwable) {
-        null
+    )
+
+    // 사진 크롭 화면 (uCrop 실행 래퍼)
+    if (showCrop && cropSourceUri != null) {
+        PhotoCropScreen(
+            source = cropSourceUri!!,
+            onCropped = { croppedUri ->
+                viewModel.updateProfileImage(croppedUri.toString())
+                showCrop = false
+                cropSourceUri = null
+            },
+            onCancel = {
+                showCrop = false
+                cropSourceUri = null
+            }
+        )
     }
 }
-
-
