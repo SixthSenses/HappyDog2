@@ -51,4 +51,11 @@ sealed class Screen(val route: String) {
     object UserProfile : Screen("user_profile/{userId}") {
         fun createRoute(userId: String) = "user_profile/$userId"
     }
+
+    // 커뮤니티 관련 라우트
+    object PostDetail : Screen("post_detail/{postId}") {
+        fun createRoute(postId: String) = "post_detail/$postId"
+    }
+
+    object CreatePost : Screen("create_post")
 }

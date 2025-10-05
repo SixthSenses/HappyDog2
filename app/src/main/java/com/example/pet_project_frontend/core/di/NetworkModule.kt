@@ -162,4 +162,10 @@ object NetworkModule {
     fun provideEyeHealthApi(retrofit: Retrofit): EyeHealthApi {
         return retrofit.create(EyeHealthApi::class.java)
     }
+
+    @Provides
+    @Singleton
+    fun provideCommunityApi(retrofit: Retrofit): CommunityApi {
+        return retrofit.create(CommunityApi::class.java)
+    }
 }

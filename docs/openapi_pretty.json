@@ -36,6 +36,11 @@
             "$ref": "#/components/responses/INTERNAL_ERROR"
           }
         },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "tags": [
           "auth"
         ]
@@ -82,6 +87,11 @@
             }
           }
         },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "tags": [
           "auth"
         ]
@@ -116,6 +126,11 @@
             "$ref": "#/components/responses/INTERNAL_ERROR"
           }
         },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "tags": [
           "auth"
         ]
@@ -162,6 +177,11 @@
             }
           }
         },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "tags": [
           "auth"
         ]
@@ -208,6 +228,11 @@
             }
           }
         },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "tags": [
           "auth"
         ]
@@ -254,6 +279,11 @@
             }
           }
         },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "tags": [
           "uploads"
         ]
@@ -300,6 +330,11 @@
             }
           }
         },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "tags": [
           "uploads"
         ]
@@ -1228,6 +1263,11 @@
             }
           }
         },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "tags": [
           "cartoon-jobs"
         ]
@@ -1275,6 +1315,11 @@
             "description": "Path parameter 'job_id' (converter: string)"
           }
         ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "tags": [
           "cartoon-jobs"
         ]
@@ -1320,6 +1365,11 @@
             "description": "Path parameter 'job_id' (converter: string)"
           }
         ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "tags": [
           "cartoon-jobs"
         ]
@@ -1356,6 +1406,11 @@
             "$ref": "#/components/responses/INTERNAL_ERROR"
           }
         },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "tags": [
           "cartoon-jobs"
         ]
@@ -1392,6 +1447,65 @@
             "$ref": "#/components/responses/INTERNAL_ERROR"
           }
         },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "breeds"
+        ]
+      }
+    },
+    "/api/breeds/guide/{breed_name}": {
+      "get": {
+        "summary": "특정 품종 백과사전 정보 조회",
+        "description": "ResponseSchema[200]: BreedGuideSchema\n    ResponseSchema[404]: ErrorResponseSchema",
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BreedGuideSchema"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/VALIDATION_ERROR"
+          },
+          "401": {
+            "$ref": "#/components/responses/UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/FORBIDDEN"
+          },
+          "404": {
+            "$ref": "#/components/responses/NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseSchema"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/INTERNAL_ERROR"
+          }
+        },
+        "parameters": [
+          {
+            "name": "breed_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Path parameter 'breed_name' (converter: string)"
+          }
+        ],
         "security": [
           {
             "BearerAuth": []
@@ -1892,6 +2006,47 @@
         ]
       }
     },
+    "/api/pets/eye-analyses": {
+      "get": {
+        "summary": "안구 검사 이력 조회 (본인 전용)",
+        "description": "인증된 사용자 본인의 검사 이력을 최신순으로 반환합니다. 선택적으로 특정 `pet_id`로 필터링할 수 있습니다.\n\n    RequestSchema(query): EyeAnalysisHistoryQuerySchema\n    ResponseSchema[200]: EyeAnalysisHistoryListResponseSchema",
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EyeAnalysisHistoryListResponseSchema"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/VALIDATION_ERROR"
+          },
+          "401": {
+            "$ref": "#/components/responses/UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/FORBIDDEN"
+          },
+          "404": {
+            "$ref": "#/components/responses/NOT_FOUND"
+          },
+          "500": {
+            "$ref": "#/components/responses/INTERNAL_ERROR"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "pets"
+        ]
+      }
+    },
     "/api/pet-care/{pet_id}/settings": {
       "get": {
         "summary": "펫케어 설정 조회",
@@ -2254,6 +2409,110 @@
         ]
       }
     },
+    "/api/pet-care/{pet_id}/records/daily/summary": {
+      "get": {
+        "summary": "특정 날짜 요약 + 목표 진행률 조회",
+        "description": "UI의 오늘/특정일 달성률, 개수, 간단 요약을 반환합니다.\n\n    ResponseSchema[200]: DailySummaryWithGoalsResponseSchema",
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DailySummaryWithGoalsResponseSchema"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/VALIDATION_ERROR"
+          },
+          "401": {
+            "$ref": "#/components/responses/UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/FORBIDDEN"
+          },
+          "404": {
+            "$ref": "#/components/responses/NOT_FOUND"
+          },
+          "500": {
+            "$ref": "#/components/responses/INTERNAL_ERROR"
+          }
+        },
+        "parameters": [
+          {
+            "name": "pet_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Path parameter 'pet_id' (converter: string)"
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "pet-care"
+        ]
+      }
+    },
+    "/api/pet-care/{pet_id}/records/summary/range": {
+      "get": {
+        "summary": "기간 요약 + 트렌드 + 목표 추적 조회",
+        "description": "월간 분석 카드/문구를 구성하는 데이터에 대응합니다.\n\n    ResponseSchema[200]: RangeSummaryWithTrendsResponseSchema",
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RangeSummaryWithTrendsResponseSchema"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/VALIDATION_ERROR"
+          },
+          "401": {
+            "$ref": "#/components/responses/UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/FORBIDDEN"
+          },
+          "404": {
+            "$ref": "#/components/responses/NOT_FOUND"
+          },
+          "500": {
+            "$ref": "#/components/responses/INTERNAL_ERROR"
+          }
+        },
+        "parameters": [
+          {
+            "name": "pet_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Path parameter 'pet_id' (converter: string)"
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "pet-care"
+        ]
+      }
+    },
     "/api/notifications": {
       "get": {
         "summary": "알림 목록 조회",
@@ -2470,17 +2729,17 @@
           "access_token": {
             "type": "string"
           },
-          "user_id": {
+          "refresh_token": {
             "type": "string"
           },
-          "user_info": {
-            "$ref": "#/components/schemas/AuthUserInfoSchema"
+          "user_id": {
+            "type": "string"
           },
           "is_new_user": {
             "type": "boolean"
           },
-          "refresh_token": {
-            "type": "string"
+          "user_info": {
+            "$ref": "#/components/schemas/AuthUserInfoSchema"
           }
         },
         "required": [
@@ -2514,16 +2773,16 @@
       "AuthorizationUrlResponseSchema": {
         "type": "object",
         "properties": {
+          "authorization_url": {
+            "type": "string",
+            "format": "uri"
+          },
           "redirect_uri": {
             "type": "string",
             "format": "uri"
           },
           "state": {
             "type": "string"
-          },
-          "authorization_url": {
-            "type": "string",
-            "format": "uri"
           }
         },
         "required": [
@@ -2550,10 +2809,10 @@
       "SocialLoginSchema": {
         "type": "object",
         "properties": {
-          "auth_code": {
+          "provider": {
             "type": "string"
           },
-          "provider": {
+          "auth_code": {
             "type": "string"
           }
         },
@@ -2561,6 +2820,23 @@
           "auth_code",
           "provider"
         ]
+      },
+      "BreedBasicInfoSchema": {
+        "type": "object",
+        "properties": {
+          "weight": {
+            "type": "string"
+          },
+          "height": {
+            "type": "string"
+          },
+          "life_span": {
+            "type": "string"
+          },
+          "origin": {
+            "type": "string"
+          }
+        }
       },
       "BreedExistsResponseSchema": {
         "type": "object",
@@ -2575,6 +2851,38 @@
         "required": [
           "breed_name",
           "exists"
+        ]
+      },
+      "BreedGuideSchema": {
+        "type": "object",
+        "properties": {
+          "breed_name": {
+            "type": "string"
+          },
+          "english_name": {
+            "type": "string"
+          },
+          "basic_info": {
+            "$ref": "#/components/schemas/BreedBasicInfoSchema"
+          },
+          "personality": {
+            "$ref": "#/components/schemas/BreedPersonalitySchema"
+          },
+          "common_diseases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "care_points": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "breed_name"
         ]
       },
       "BreedListSchema": {
@@ -2597,24 +2905,27 @@
           "total_count"
         ]
       },
+      "BreedPersonalitySchema": {
+        "type": "object",
+        "properties": {
+          "strengths": {
+            "type": "string"
+          },
+          "weaknesses": {
+            "type": "string"
+          },
+          "traits": {
+            "type": "string"
+          }
+        }
+      },
       "BreedSchema": {
         "type": "object",
         "properties": {
-          "updated_at": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time"
-          },
           "breed_name": {
             "type": "string",
             "minLength": 1,
             "maxLength": 50
-          },
-          "weight_kg": {
-            "$ref": "#/components/schemas/HeightWeightSchema"
           },
           "life_expectancy": {
             "type": "number",
@@ -2624,6 +2935,17 @@
           },
           "height_cm": {
             "$ref": "#/components/schemas/HeightWeightSchema"
+          },
+          "weight_kg": {
+            "$ref": "#/components/schemas/HeightWeightSchema"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
           }
         },
         "required": [
@@ -2682,32 +3004,27 @@
         "properties": {
           "breed_name": {
             "type": "string"
-          },
-          "life_expectancy": {
-            "type": "number",
-            "format": "float"
           }
         },
         "required": [
-          "breed_name",
-          "life_expectancy"
+          "breed_name"
         ]
       },
       "ErrorResponseSchema": {
         "type": "object",
         "properties": {
+          "error_code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
           "details": {
             "type": "object",
             "additionalProperties": {
               "type": "string"
             },
             "nullable": true
-          },
-          "error_code": {
-            "type": "string"
-          },
-          "message": {
-            "type": "string"
           }
         },
         "required": [
@@ -2718,13 +3035,13 @@
       "HeightWeightSchema": {
         "type": "object",
         "properties": {
-          "female": {
+          "male": {
             "type": "number",
             "format": "float",
             "nullable": true,
             "minimum": 0
           },
-          "male": {
+          "female": {
             "type": "number",
             "format": "float",
             "nullable": true,
@@ -2739,11 +3056,6 @@
       "CartoonJobCreateSchema": {
         "type": "object",
         "properties": {
-          "user_text": {
-            "type": "string",
-            "nullable": true,
-            "maxLength": 500
-          },
           "file_paths": {
             "type": "array",
             "items": {
@@ -2752,6 +3064,11 @@
             },
             "minItems": 1,
             "maxItems": 1
+          },
+          "user_text": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 500
           }
         },
         "required": [
@@ -2761,16 +3078,6 @@
       "CartoonJobHealthResponseSchema": {
         "type": "object",
         "properties": {
-          "integration_health": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            }
-          },
-          "max_workers": {
-            "type": "integer",
-            "format": "int32"
-          },
           "active_jobs": {
             "type": "integer",
             "format": "int32"
@@ -2778,6 +3085,16 @@
           "queue_size": {
             "type": "integer",
             "format": "int32"
+          },
+          "max_workers": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "integration_health": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
           }
         },
         "required": [
@@ -2790,16 +3107,27 @@
       "CartoonJobResponseSchema": {
         "type": "object",
         "properties": {
+          "job_id": {
+            "type": "string"
+          },
           "user_id": {
             "type": "string"
           },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time"
+          "status": {
+            "type": "string"
           },
           "original_image_url": {
             "type": "string",
             "format": "uri"
+          },
+          "user_text": {
+            "type": "string",
+            "nullable": true
+          },
+          "result_image_url": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true
           },
           "error_message": {
             "type": "string",
@@ -2809,20 +3137,9 @@
             "type": "string",
             "format": "date-time"
           },
-          "status": {
-            "type": "string"
-          },
-          "user_text": {
+          "updated_at": {
             "type": "string",
-            "nullable": true
-          },
-          "job_id": {
-            "type": "string"
-          },
-          "result_image_url": {
-            "type": "string",
-            "format": "uri",
-            "nullable": true
+            "format": "date-time"
           }
         },
         "required": [
@@ -2865,13 +3182,13 @@
       "CommentLikeToggleResponseSchema": {
         "type": "object",
         "properties": {
+          "message": {
+            "type": "string"
+          },
           "liked": {
             "type": "boolean"
           },
           "comment_id": {
-            "type": "string"
-          },
-          "message": {
             "type": "string"
           }
         },
@@ -2884,15 +3201,15 @@
       "CommentListResponseSchema": {
         "type": "object",
         "properties": {
-          "next_cursor": {
-            "type": "string",
-            "nullable": true
-          },
           "comments": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/CommentResponseSchema"
             }
+          },
+          "next_cursor": {
+            "type": "string",
+            "nullable": true
           }
         },
         "required": [
@@ -2902,14 +3219,24 @@
       "CommentResponseSchema": {
         "type": "object",
         "properties": {
+          "comment_id": {
+            "type": "string"
+          },
+          "post_id": {
+            "type": "string"
+          },
           "author": {
             "$ref": "#/components/schemas/AuthorSchema"
+          },
+          "pet": {
+            "$ref": "#/components/schemas/PetInfoSchema"
           },
           "text": {
             "type": "string"
           },
-          "comment_id": {
-            "type": "string"
+          "like_count": {
+            "type": "integer",
+            "format": "int32"
           },
           "created_at": {
             "type": "string",
@@ -2917,16 +3244,6 @@
           },
           "is_liked": {
             "type": "boolean"
-          },
-          "like_count": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "post_id": {
-            "type": "string"
-          },
-          "pet": {
-            "$ref": "#/components/schemas/PetInfoSchema"
           }
         },
         "required": [
@@ -2942,23 +3259,23 @@
       "PetInfoSchema": {
         "type": "object",
         "properties": {
+          "pet_id": {
+            "type": "string"
+          },
           "name": {
+            "type": "string"
+          },
+          "breed": {
             "type": "string"
           },
           "birthdate": {
             "type": "string",
             "format": "date-time"
           },
-          "pet_id": {
-            "type": "string"
-          },
           "profile_image_url": {
             "type": "string",
             "format": "uri",
             "nullable": true
-          },
-          "breed": {
-            "type": "string"
           }
         },
         "required": [
@@ -2975,14 +3292,14 @@
       "HealthStatusResponseSchema": {
         "type": "object",
         "properties": {
+          "status": {
+            "type": "string"
+          },
           "counters": {
             "type": "object",
             "additionalProperties": {
               "type": "string"
             }
-          },
-          "status": {
-            "type": "string"
           }
         },
         "required": [
@@ -3015,23 +3332,23 @@
           "id": {
             "type": "string"
           },
-          "deeplink": {
-            "type": "string"
-          },
-          "created_at": {
-            "type": "string"
-          },
-          "message": {
-            "type": "string"
-          },
-          "read": {
-            "type": "boolean"
-          },
           "type": {
             "type": "string"
           },
           "title": {
             "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "deeplink": {
+            "type": "string"
+          },
+          "read": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -3053,17 +3370,17 @@
             "minimum": 1,
             "maximum": 100
           },
+          "cursor": {
+            "type": "string",
+            "nullable": true,
+            "minLength": 1
+          },
           "format": {
             "type": "string",
             "enum": [
               "mobile",
               "web"
             ]
-          },
-          "cursor": {
-            "type": "string",
-            "nullable": true,
-            "minLength": 1
           }
         }
       },
@@ -3112,22 +3429,117 @@
           "file_path"
         ]
       },
+      "EyeAnalysisHistoryItemSchema": {
+        "type": "object",
+        "properties": {
+          "analysis_id": {
+            "type": "string"
+          },
+          "pet_id": {
+            "type": "string"
+          },
+          "disease_name": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "probability_percent": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "image_url": {
+            "type": "string",
+            "nullable": true
+          },
+          "predictions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EyeDiseasePredictionSchema"
+            }
+          },
+          "is_normal": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "analysis_id",
+          "created_at",
+          "disease_name",
+          "pet_id",
+          "probability_percent"
+        ]
+      },
+      "EyeAnalysisHistoryListResponseSchema": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EyeAnalysisHistoryItemSchema"
+            }
+          },
+          "next_cursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "EyeAnalysisHistoryQuerySchema": {
+        "type": "object",
+        "properties": {
+          "pet_id": {
+            "type": "string",
+            "nullable": true
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1,
+            "maximum": 50
+          },
+          "cursor": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
       "EyeAnalysisResponseSchema": {
         "type": "object",
         "properties": {
           "analysis_id": {
             "type": "string"
           },
+          "disease_name": {
+            "type": "string"
+          },
           "probability": {
             "type": "number",
             "format": "float"
+          },
+          "probability_percent": {
+            "type": "integer",
+            "format": "int32"
           },
           "image_url": {
             "type": "string",
             "nullable": true
           },
-          "disease_name": {
-            "type": "string"
+          "predictions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            }
+          },
+          "is_normal": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -3136,16 +3548,44 @@
           "probability"
         ]
       },
+      "EyeDiseasePredictionSchema": {
+        "type": "object",
+        "properties": {
+          "disease_name": {
+            "type": "string"
+          },
+          "probability": {
+            "type": "number",
+            "format": "float"
+          },
+          "probability_percent": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "required": [
+          "disease_name",
+          "probability",
+          "probability_percent"
+        ]
+      },
       "NosePrintRegistrationResponseSchema": {
         "type": "object",
         "properties": {
-          "analysis_id": {
-            "type": "string",
-            "nullable": true
+          "success": {
+            "type": "boolean"
           },
           "confidence": {
             "type": "number",
             "format": "float",
+            "nullable": true
+          },
+          "features": {
+            "type": "object",
+            "nullable": true
+          },
+          "analysis_id": {
+            "type": "string",
             "nullable": true
           },
           "metadata": {
@@ -3154,13 +3594,6 @@
               "type": "string"
             },
             "nullable": true
-          },
-          "features": {
-            "type": "object",
-            "nullable": true
-          },
-          "success": {
-            "type": "boolean"
           },
           "status": {
             "type": "string",
@@ -3174,40 +3607,14 @@
       "PetProfileResponseSchema": {
         "type": "object",
         "properties": {
-          "user_id": {
-            "type": "string"
-          },
-          "is_verified": {
-            "type": "boolean"
-          },
-          "name": {
-            "type": "string"
-          },
-          "nose_print_url": {
-            "type": "string",
-            "format": "uri",
-            "nullable": true
-          },
-          "fur_color": {
-            "type": "string",
-            "nullable": true
-          },
-          "birthdate": {
-            "type": "string",
-            "format": "date"
-          },
           "pet_id": {
             "type": "string"
           },
-          "health_concerns": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
+          "user_id": {
+            "type": "string"
           },
-          "profile_image_url": {
-            "type": "string",
-            "nullable": true
+          "name": {
+            "type": "string"
           },
           "gender": {
             "type": "string",
@@ -3218,6 +3625,32 @@
           },
           "breed": {
             "type": "string"
+          },
+          "birthdate": {
+            "type": "string",
+            "format": "date"
+          },
+          "fur_color": {
+            "type": "string",
+            "nullable": true
+          },
+          "health_concerns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "is_verified": {
+            "type": "boolean"
+          },
+          "profile_image_url": {
+            "type": "string",
+            "nullable": true
+          },
+          "nose_print_url": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true
           },
           "faiss_id": {
             "type": "integer",
@@ -3234,25 +3667,6 @@
             "minLength": 1,
             "maxLength": 20
           },
-          "fur_color": {
-            "type": "string",
-            "nullable": true
-          },
-          "birthdate": {
-            "type": "string",
-            "format": "date"
-          },
-          "health_concerns": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "nullable": true
-          },
-          "profile_image_url": {
-            "type": "string",
-            "nullable": true
-          },
           "gender": {
             "type": "string",
             "enum": [
@@ -3264,6 +3678,25 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 30
+          },
+          "birthdate": {
+            "type": "string",
+            "format": "date"
+          },
+          "fur_color": {
+            "type": "string",
+            "nullable": true
+          },
+          "health_concerns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "profile_image_url": {
+            "type": "string",
+            "nullable": true
           }
         },
         "required": [
@@ -3276,6 +3709,11 @@
       "PetUpdateSchema": {
         "type": "object",
         "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20
+          },
           "fur_color": {
             "type": "string"
           },
@@ -3284,11 +3722,6 @@
             "items": {
               "type": "string"
             }
-          },
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 20
           },
           "profile_image_url": {
             "type": "string",
@@ -3299,32 +3732,22 @@
       "PetViewBasedResponseSchema": {
         "type": "object",
         "properties": {
-          "is_verified": {
-            "type": "boolean"
-          },
-          "post_count": {
-            "type": "integer",
-            "format": "int32",
-            "nullable": true
+          "pet_id": {
+            "type": "string"
           },
           "name": {
             "type": "string"
           },
+          "profile_image_url": {
+            "type": "string",
+            "nullable": true
+          },
+          "is_verified": {
+            "type": "boolean"
+          },
           "birthdate": {
             "type": "string",
             "format": "date",
-            "nullable": true
-          },
-          "pet_id": {
-            "type": "string"
-          },
-          "age_months": {
-            "type": "integer",
-            "format": "int32",
-            "nullable": true
-          },
-          "profile_image_url": {
-            "type": "string",
             "nullable": true
           },
           "gender": {
@@ -3338,6 +3761,16 @@
           "breed": {
             "type": "string",
             "nullable": true
+          },
+          "age_months": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "post_count": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
           }
         },
         "required": [
@@ -3348,9 +3781,16 @@
       "CareRecordCreateSchema": {
         "type": "object",
         "properties": {
-          "memo": {
+          "record_type": {
             "type": "string",
-            "nullable": true
+            "enum": [
+              "activity",
+              "bcs",
+              "meal_count",
+              "stool",
+              "vomit",
+              "weight"
+            ]
           },
           "timestamp": {
             "type": "integer",
@@ -3358,6 +3798,35 @@
           },
           "data": {
             "type": "object"
+          },
+          "memo": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "data",
+          "record_type",
+          "timestamp"
+        ]
+      },
+      "CareRecordUpdateSchema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object"
+          },
+          "memo": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "DailyRecordsQuerySchema": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string"
           },
           "record_type": {
             "type": "string",
@@ -3372,22 +3841,8 @@
           }
         },
         "required": [
-          "data",
-          "record_type",
-          "timestamp"
+          "date"
         ]
-      },
-      "CareRecordUpdateSchema": {
-        "type": "object",
-        "properties": {
-          "memo": {
-            "type": "string",
-            "nullable": true
-          },
-          "data": {
-            "type": "object"
-          }
-        }
       },
       "DailyRecordsResponseSchema": {
         "type": "object",
@@ -3410,38 +3865,84 @@
           }
         }
       },
+      "DailySummaryWithGoalsResponseSchema": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string"
+          },
+          "records": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecordResponseSchema"
+            }
+          },
+          "record_counts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "meta": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "goal_progress": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        }
+      },
+      "DeleteRecordResponseSchema": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "deleted_id": {
+            "type": "string"
+          }
+        }
+      },
       "PetCareSettingsSchema": {
         "type": "object",
         "properties": {
-          "updated_at": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "target_daily_meal_count": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 1,
-            "maximum": 10
-          },
-          "daily_meal_count": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 1,
-            "maximum": 10
-          },
-          "target_weight": {
+          "goalWeight": {
             "type": "number",
             "format": "float",
             "minimum": 0.1,
             "maximum": 200.0
           },
-          "target_daily_activity_minutes": {
+          "goalMealCount": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1,
+            "maximum": 10
+          },
+          "goalActivityMinutes": {
             "type": "integer",
             "format": "int32",
             "minimum": 0,
             "maximum": 1440
           },
-          "daily_activity_increment": {
+          "goalActivitySessions": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0,
+            "maximum": 48
+          },
+          "activitySessionMinutes": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0,
+            "maximum": 600
+          },
+          "activityIncrementMinutes": {
             "type": "integer",
             "format": "int32",
             "minimum": 1,
@@ -3449,45 +3950,93 @@
           },
           "pet_id": {
             "type": "string"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RangeQuerySchema": {
+        "type": "object",
+        "properties": {
+          "start_date": {
+            "type": "string"
+          },
+          "end_date": {
+            "type": "string"
           }
         },
         "required": [
-          "daily_activity_increment",
-          "daily_meal_count",
-          "target_daily_activity_minutes",
-          "target_daily_meal_count",
-          "target_weight"
+          "end_date",
+          "start_date"
         ]
+      },
+      "RangeSummaryWithTrendsResponseSchema": {
+        "type": "object",
+        "properties": {
+          "start_date": {
+            "type": "string"
+          },
+          "end_date": {
+            "type": "string"
+          },
+          "records_by_date": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "meta": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "trends": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "goal_tracking": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        }
       },
       "RecordResponseSchema": {
         "type": "object",
         "properties": {
-          "timestamp_ms": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "searchDate": {
-            "type": "string"
-          },
-          "memo": {
-            "type": "string",
-            "nullable": true
-          },
-          "record_type": {
-            "type": "string"
-          },
           "log_id": {
             "type": "string"
           },
           "pet_id": {
             "type": "string"
           },
-          "data": {
-            "type": "object"
+          "record_type": {
+            "type": "string"
           },
           "timestamp": {
             "type": "integer",
             "format": "int32"
+          },
+          "timestamp_ms": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "data": {
+            "type": "object"
+          },
+          "memo": {
+            "type": "string",
+            "nullable": true
+          },
+          "searchDate": {
+            "type": "string"
           }
         }
       },
@@ -3526,19 +4075,14 @@
       "PostResponseSchema": {
         "type": "object",
         "properties": {
+          "post_id": {
+            "type": "string"
+          },
           "author": {
             "$ref": "#/components/schemas/AuthorSchema"
           },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "text": {
-            "type": "string"
-          },
-          "comment_count": {
-            "type": "integer",
-            "format": "int32"
+          "pet": {
+            "$ref": "#/components/schemas/PetInfoSchema"
           },
           "image_urls": {
             "type": "array",
@@ -3547,22 +4091,27 @@
               "format": "uri"
             }
           },
-          "created_at": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "is_liked": {
-            "type": "boolean"
+          "text": {
+            "type": "string"
           },
           "like_count": {
             "type": "integer",
             "format": "int32"
           },
-          "post_id": {
-            "type": "string"
+          "comment_count": {
+            "type": "integer",
+            "format": "int32"
           },
-          "pet": {
-            "$ref": "#/components/schemas/PetInfoSchema"
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "is_liked": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -3633,11 +4182,6 @@
       "UploadUrlRequestSchema": {
         "type": "object",
         "properties": {
-          "filename": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 200
-          },
           "upload_type": {
             "type": "string",
             "enum": [
@@ -3647,6 +4191,11 @@
               "pet_profile",
               "post_image"
             ]
+          },
+          "filename": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
           },
           "content_type": {
             "type": "string",
@@ -3667,12 +4216,12 @@
             "type": "string",
             "format": "uri"
           },
+          "file_path": {
+            "type": "string"
+          },
           "expires_at": {
             "type": "string",
             "format": "date-time"
-          },
-          "file_path": {
-            "type": "string"
           }
         },
         "required": [
@@ -3706,30 +4255,30 @@
       "NotificationPreferencesResponseSchema": {
         "type": "object",
         "properties": {
+          "mode": {
+            "type": "string",
+            "nullable": true
+          },
           "types": {
             "type": "object",
             "additionalProperties": {
               "type": "string"
             }
-          },
-          "mode": {
-            "type": "string",
-            "nullable": true
           }
         }
       },
       "NotificationPreferencesSchema": {
         "type": "object",
         "properties": {
+          "mode": {
+            "type": "string",
+            "nullable": true
+          },
           "types": {
             "type": "object",
             "additionalProperties": {
               "type": "string"
             }
-          },
-          "mode": {
-            "type": "string",
-            "nullable": true
           }
         }
       },
@@ -3746,12 +4295,12 @@
             "type": "string",
             "format": "email"
           },
+          "has_pet": {
+            "type": "boolean"
+          },
           "pet_id": {
             "type": "string",
             "nullable": true
-          },
-          "has_pet": {
-            "type": "boolean"
           }
         },
         "required": [
@@ -3766,12 +4315,12 @@
           "user_id": {
             "type": "string"
           },
+          "nickname": {
+            "type": "string"
+          },
           "post_count": {
             "type": "integer",
             "format": "int32"
-          },
-          "nickname": {
-            "type": "string"
           }
         },
         "required": [
@@ -3783,13 +4332,13 @@
       "UserSummaryPetSchema": {
         "type": "object",
         "properties": {
-          "is_verified": {
-            "type": "boolean"
+          "pet_id": {
+            "type": "string"
           },
           "name": {
             "type": "string"
           },
-          "pet_id": {
+          "breed": {
             "type": "string"
           },
           "profile_image_url": {
@@ -3797,8 +4346,8 @@
             "format": "uri",
             "nullable": true
           },
-          "breed": {
-            "type": "string"
+          "is_verified": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -3813,15 +4362,15 @@
           "user": {
             "$ref": "#/components/schemas/UserSummaryUserSchema"
           },
+          "pet": {
+            "$ref": "#/components/schemas/UserSummaryPetSchema",
+            "nullable": true
+          },
           "pet_care_settings": {
             "type": "object",
             "additionalProperties": {
               "type": "string"
             },
-            "nullable": true
-          },
-          "pet": {
-            "$ref": "#/components/schemas/UserSummaryPetSchema",
             "nullable": true
           }
         },
@@ -3835,12 +4384,12 @@
           "user_id": {
             "type": "string"
           },
+          "nickname": {
+            "type": "string"
+          },
           "post_count": {
             "type": "integer",
             "format": "int32"
-          },
-          "nickname": {
-            "type": "string"
           }
         },
         "required": [
@@ -4160,6 +4709,16 @@
       }
     }
   },
+  "servers": [
+    {
+      "url": "http://localhost:5000/api",
+      "description": "Development"
+    },
+    {
+      "url": "https://api.happydog.com/api",
+      "description": "Production"
+    }
+  ],
   "tags": [
     {
       "name": "auth"

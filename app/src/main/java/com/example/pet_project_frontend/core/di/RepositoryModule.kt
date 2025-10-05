@@ -4,6 +4,7 @@ package com.example.pet_project_frontend.core.di
 
 import com.example.pet_project_frontend.data.repository.AuthRepositoryImpl
 import com.example.pet_project_frontend.data.repository.BreedRepositoryImpl
+import com.example.pet_project_frontend.data.repository.CommunityRepositoryImpl
 import com.example.pet_project_frontend.data.repository.EyeHealthRepositoryImpl
 import com.example.pet_project_frontend.data.repository.MapRepositoryImpl
 import com.example.pet_project_frontend.data.repository.PetCareRepositoryImpl
@@ -12,6 +13,7 @@ import com.example.pet_project_frontend.data.repository.PostRepositoryImpl
 import com.example.pet_project_frontend.data.repository.UserRepositoryImpl
 import com.example.pet_project_frontend.domain.repository.AuthRepository
 import com.example.pet_project_frontend.domain.repository.BreedRepository
+import com.example.pet_project_frontend.domain.repository.CommunityRepository
 import com.example.pet_project_frontend.domain.repository.EyeHealthRepository
 import com.example.pet_project_frontend.domain.repository.MapRepository
 import com.example.pet_project_frontend.domain.repository.PetCareRepository
@@ -75,4 +77,10 @@ abstract class RepositoryModule {
     abstract fun bindEyeHealthRepository(
         eyeHealthRepositoryImpl: EyeHealthRepositoryImpl
     ): EyeHealthRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindCommunityRepository(
+        communityRepositoryImpl: CommunityRepositoryImpl
+    ): CommunityRepository
 }
