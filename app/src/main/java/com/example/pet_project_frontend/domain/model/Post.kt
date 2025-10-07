@@ -36,11 +36,12 @@ data class Author(
 
 /**
  * 펫 정보
+ * Note: OpenAPI에서는 birthdate가 Required이지만, 방어적으로 nullable 처리
  */
 data class PetInfo(
     val petId: String,
     val name: String,
     val breed: String,
-    val birthdate: LocalDateTime,
+    val birthdate: LocalDateTime?, // OpenAPI: Required, 하지만 실제로 null 올 수 있음 (방어적)
     val profileImageUrl: String?
 )

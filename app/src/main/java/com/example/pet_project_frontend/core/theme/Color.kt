@@ -44,10 +44,13 @@ object MyPageColors {
     val GreyOpacity600: Color = Color(0x94132B00) // 58%
     val GreyOpacity200: Color = Color(0x1A1B3700) // 10%
     val GreyOpacity100: Color = Color(0x0D022047) // 5%
+    val Blue50: Color = Color(0xFFE3F2FD) // Light blue for backgrounds
     val Blue500: Color = Color(0xFF3182F6)
+    val Orange100: Color = Color(0xFFFFE0B2) // Light orange for warnings
+    val Red50: Color = Color(0xFFFFEEEE)
+    val Red100: Color = Color(0xFFFFCDD2) // Light red for errors
+    val Red700: Color = Color(0xFFD22030)
     val White: Color = Color(0xFFFFFFFF)
     val Black: Color = Color(0xFF000000)
-    val Red50: Color = Color(0xFFFFEEEE)
-    val Red700: Color = Color(0xFFD22030)
 
 }

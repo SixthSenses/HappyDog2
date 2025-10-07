@@ -23,7 +23,7 @@ data class PetInfoDto(
     @SerializedName("breed")
     val breed: String,
     @SerializedName("birthdate")
-    val birthdate: String, // ISO 8601 format
+    val birthdate: String?, // ISO 8601 format (nullable)
     @SerializedName("profile_image_url")
     val profileImageUrl: String?
 )
@@ -32,6 +32,7 @@ data class PetInfoDto(
 
 /**
  * 댓글 응답
+ * Note: OpenAPI 스키마에서는 pet이 Required이지만, 방어적으로 nullable 처리
  */
 data class CommentResponse(
     @SerializedName("comment_id")
@@ -41,7 +42,7 @@ data class CommentResponse(
     @SerializedName("author")
     val author: AuthorDto,
     @SerializedName("pet")
-    val pet: PetInfoDto,
+    val pet: PetInfoDto, // OpenAPI: Required, 실제로는 항상 존재
     @SerializedName("text")
     val text: String,
     @SerializedName("like_count")

@@ -31,7 +31,8 @@ interface CommunityRepository {
      */
     suspend fun createPost(
         text: String,
-        filePaths: List<String>
+        filePaths: List<String>,
+        idempotencyKey: String? = null
     ): AppResult<Post>
     
     /**

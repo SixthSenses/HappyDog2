@@ -32,7 +32,7 @@ object CommunityMapper {
             petId = petId,
             name = name,
             breed = breed,
-            birthdate = ZonedDateTime.parse(birthdate).toLocalDateTime(),
+            birthdate = birthdate?.let { ZonedDateTime.parse(it).toLocalDateTime() },
             profileImageUrl = profileImageUrl
         )
     }
@@ -64,7 +64,7 @@ object CommunityMapper {
             commentId = commentId,
             postId = postId,
             author = author.toDomain(),
-            pet = pet.toDomain(),
+            pet = pet.toDomain(), // OpenAPI 스키마: Required (nullable 제거)
             text = text,
             likeCount = likeCount,
             createdAt = ZonedDateTime.parse(createdAt).toLocalDateTime(),

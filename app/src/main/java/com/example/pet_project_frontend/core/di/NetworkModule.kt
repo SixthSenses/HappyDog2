@@ -168,4 +168,10 @@ object NetworkModule {
     fun provideCommunityApi(retrofit: Retrofit): CommunityApi {
         return retrofit.create(CommunityApi::class.java)
     }
+
+    @Provides
+    @Singleton
+    fun provideCartoonJobApi(retrofit: Retrofit): CartoonJobApi {
+        return retrofit.create(CartoonJobApi::class.java)
+    }
 }

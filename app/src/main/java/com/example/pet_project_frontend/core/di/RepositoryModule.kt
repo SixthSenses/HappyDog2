@@ -83,4 +83,10 @@ abstract class RepositoryModule {
     abstract fun bindCommunityRepository(
         communityRepositoryImpl: CommunityRepositoryImpl
     ): CommunityRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindCartoonJobRepository(
+        cartoonJobRepositoryImpl: com.example.pet_project_frontend.data.repository.CartoonJobRepositoryImpl
+    ): com.example.pet_project_frontend.domain.repository.CartoonJobRepository
 }

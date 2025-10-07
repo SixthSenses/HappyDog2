@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -104,9 +105,11 @@ fun CalendarComponent(
                 modifier = Modifier.size(32.dp)
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.calendar_arrow_left),
+                    painter = painterResource(id = R.drawable.chevron_right),
                     contentDescription = "이전 달",
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier
+                        .size(24.dp)
+                        .graphicsLayer(rotationZ = 180f) // 180도 회전으로 왼쪽 화살표
                 )
             }
             
@@ -136,7 +139,7 @@ fun CalendarComponent(
                 modifier = Modifier.size(32.dp)
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.calendar_arrow_right),
+                    painter = painterResource(id = R.drawable.chevron_right),
                     contentDescription = "다음 달",
                     modifier = Modifier.size(24.dp)
                 )

@@ -23,7 +23,10 @@ import com.example.pet_project_frontend.presentation.translator.TranslatorScreen
 import com.example.pet_project_frontend.presentation.eye_health.EyeHealthScreen
 import com.example.pet_project_frontend.presentation.eye_health.EyeHealthHistoryScreen
 import com.example.pet_project_frontend.presentation.eye_health.ImageViewerScreen
-import com.example.pet_project_frontend.presentation.breed_guide.BreedGuideListScreen
+import com.example.pet_project_frontend.presentation.community.CommunityScreen
+import com.example.pet_project_frontend.presentation.community.PostDetailScreen
+import com.example.pet_project_frontend.presentation.community.CreatePostScreen
+// import com.example.pet_project_frontend.presentation.breed_guide.BreedGuideListScreen // TODO: BreedGuideListScreen 구현 필요
 
 @Composable
 fun PetCareNavHost(
@@ -95,8 +98,43 @@ fun PetCareNavHost(
 		// 지도 화면
 		composable(Screen.Map.route) { MapScreen() }
 
-		// 커뮤니티/번역기는 임시로 펫케어 메인으로 연결하거나 별도 화면 구성 필요 시 교체
-		composable(Screen.Community.route) { PetCareMainScreen() }
+		// 커뮤니티 화면
+		composable(Screen.Community.route) {
+			CommunityScreen(
+				onNavigateToPostDetail = { postId ->
+					navController.navigate(Screen.PostDetail.createRoute(postId))
+				},
+				onNavigateToCreatePost = {
+					navController.navigate(Screen.CreatePost.route)
+				},
+				onNavigateToUserProfile = { userId ->
+					// TODO: 사용자 프로필 화면 구현 시 추가
+				}
+			)
+		}
+
+		// 게시글 상세 화면
+		composable(Screen.PostDetail.route) {
+			PostDetailScreen(
+				onNavigateBack = { navController.popBackStack() },
+				onNavigateToUserProfile = { userId ->
+					// TODO: 사용자 프로필 화면 구현 시 추가
+				}
+			)
+		}
+
+		// 게시글 작성 화면
+		composable(Screen.CreatePost.route) {
+			CreatePostScreen(
+				onNavigateBack = { navController.popBackStack() },
+				onPostCreated = {
+					navController.popBackStack()
+					// Community 화면으로 돌아가면서 자동 새로고침될 것
+				}
+			)
+		}
+
+		// 번역기 화면
 		composable(Screen.Translator.route) { TranslatorScreen(openNotice = openNotice) }
 
 		// 마이페이지 화면
@@ -146,14 +184,14 @@ fun PetCareNavHost(
 			)
 		}
 
-		// 견종 가이드북 화면
-		composable(Screen.BreedGuide.route) {
-			BreedGuideListScreen(
-				onBackClick = { navController.popBackStack() },
-				onBreedClick = { breedName ->
-					// TODO: 견종 상세 화면으로 네비게이션 (필요 시 구현)
-				}
-			)
-		}
+		// 견종 가이드북 화면 - TODO: BreedGuideListScreen 구현 필요
+		// composable(Screen.BreedGuide.route) {
+		// 	BreedGuideListScreen(
+		// 		onBackClick = { navController.popBackStack() },
+		// 		onBreedClick = { breedName ->
+		// 			// TODO: 견종 상세 화면으로 네비게이션 (필요 시 구현)
+		// 		}
+		// 	)
+		// }
 	}
 }

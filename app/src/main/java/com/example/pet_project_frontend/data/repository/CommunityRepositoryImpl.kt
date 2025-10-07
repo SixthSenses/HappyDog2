@@ -41,8 +41,9 @@ class CommunityRepositoryImpl @Inject constructor(
         }
     }
     
-    override suspend fun createPost(text: String, filePaths: List<String>): AppResult<Post> {
-        return when (val result = SafeApi.response { communityApi.createPost(PostCreateRequest(text, filePaths)) }) {
+    override suspend fun createPost(text: String, filePaths: List<String>, idempotencyKey: String?): AppResult<Post> {
+        val key = idempotencyKey ?: java.util.UUID.randomUUID().toString()
+        return when (val result = SafeApi.response { communityApi.createPost(PostCreateRequest(text, filePaths), key) }) {
             is AppResult.Success -> AppResult.Success(result.data.toDomain())
             is AppResult.Error -> result
             is AppResult.Exception -> result
