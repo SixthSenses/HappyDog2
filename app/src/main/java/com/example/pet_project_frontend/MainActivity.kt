@@ -146,17 +146,17 @@ class MainActivity : ComponentActivity() {
                         CircularProgressIndicator()
                     }
                 } else {
-                    // startDestination은 로그인 + 선택된 반려동물 유무에 따라 분기합니다.
-                    val effectiveStart = when {
-                        !isLoggedIn -> Screen.Login.route
-                        selectedPetId.isNullOrBlank() -> Screen.PetRegistration.route
-                        else -> Screen.PetCare.route
-                    }
-                    // val effectiveStart = Screen.PetCare.route
+                    // startDestination은 로그인 + 펫 존재 여부에 따라 분기합니다.
+//                    val effectiveStart = when {
+//                        !isLoggedIn -> Screen.Login.route
+//                        !hasPet -> Screen.PetRegistration.route
+//                        else -> Screen.PetCare.route
+//                    }
+                    val effectiveStart = Screen.PetRegistration.route
 
-                    // selected_pet_id가 사라지면 런타임에도 등록 화면으로 유도
-                    LaunchedEffect(selectedPetId, currentRoute, isLoggedIn) {
-                        if (isLoggedIn && selectedPetId.isNullOrBlank() && currentRoute != Screen.Login.route && currentRoute != Screen.PetRegistration.route) {
+                    // 런타임에도 펫이 없으면 등록 화면으로 유도
+                    LaunchedEffect(hasPet, currentRoute, isLoggedIn) {
+                        if (isLoggedIn && !hasPet && currentRoute != Screen.Login.route && currentRoute != Screen.PetRegistration.route) {
                             navController.navigate(Screen.PetRegistration.route) {
                                 popUpTo(navController.graph.startDestinationId) { saveState = false }
                                 launchSingleTop = true
