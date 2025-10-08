@@ -30,6 +30,20 @@ class CartoonJobRepositoryImpl @Inject constructor(
     private val okHttpClient: OkHttpClient
 ) : CartoonJobRepository {
     
+    companion object {
+        // Firebase Storage bucket (google-services.json의 storage_bucket 값)
+        private const val STORAGE_BUCKET = "happydog-test.firebasestorage.app"
+        
+        /**
+         * filePath를 Storage 공개 URL로 변환
+         * @param filePath Storage 경로 (예: "cartoon_sources/.../file.jpg")
+         * @return 전체 공개 URL (예: "https://storage.googleapis.com/bucket/path")
+         */
+        private fun toStorageUrl(filePath: String): String {
+            return "https://storage.googleapis.com/$STORAGE_BUCKET/$filePath"
+        }
+    }
+    
     override suspend fun uploadFile(
         file: File,
         uploadType: UploadType,
@@ -63,7 +77,9 @@ class CartoonJobRepositoryImpl @Inject constructor(
                         val response = okHttpClient.newCall(request).execute()
                         
                         if (response.isSuccessful) {
-                            AppResult.Success(filePath)
+                            // filePath를 전체 Storage URL로 변환하여 반환
+                            val publicUrl = toStorageUrl(filePath)
+                            AppResult.Success(publicUrl)
                         } else {
                             AppResult.Error(
                                 code = response.code,

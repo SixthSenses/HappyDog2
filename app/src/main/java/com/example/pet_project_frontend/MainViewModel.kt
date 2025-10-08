@@ -4,15 +4,21 @@ package com.example.pet_project_frontend
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.pet_project_frontend.domain.model.PetStatus
 import com.example.pet_project_frontend.domain.repository.UserRepository
 import com.example.pet_project_frontend.domain.repository.PetRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val userRepository: UserRepository,
@@ -27,15 +33,42 @@ class MainViewModel @Inject constructor(
         }
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000), // 5초간 화면이 꺼져있으면 데이터 수집 중단
+            started = SharingStarted.Eagerly, // 즉시 시작하여 로그인 상태 변화 감지
             initialValue = false // 앱 시작 시 초기값은 로그아웃 상태
         )
 
-    // 단일 펫 정책 기반: 서버의 내 펫 프로필 조회 가능 여부로 판정
-    val hasPet: StateFlow<Boolean> = petRepository.hasPet()
+    /**
+     * 반려동물 상태 (Loading/HasPet/NoPet)
+     * 로그인 상태가 변경되면 자동으로 서버에서 펫 상태를 확인합니다.
+     */
+    val petStatus: StateFlow<PetStatus> = isLoggedIn
+        .flatMapLatest { loggedIn ->
+            if (loggedIn) {
+                android.util.Log.d("MainViewModel", "User logged in, refreshing pet status from server")
+                // 🔥 핵심: 로그인 상태일 때 자동으로 서버에서 펫 상태 확인
+                viewModelScope.launch {
+                    petRepository.refreshPetStatusManually()
+                }
+                petRepository.getPetStatus()
+            } else {
+                android.util.Log.d("MainViewModel", "User not logged in, setting status to NoPet")
+                flowOf(PetStatus.NoPet)
+            }
+        }
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = false
+            started = SharingStarted.Eagerly, // 앱 시작 시 즉시 확인
+            initialValue = PetStatus.Loading
         )
+    
+    /**
+     * 로그인 후 펫 상태를 서버에서 새로고침
+     * LoginScreen에서 로그인 성공 후 호출
+     * suspend 함수로 변경하여 완료를 기다릴 수 있도록 함
+     */
+    suspend fun refreshPetStatus() {
+        android.util.Log.d("MainViewModel", "Manually refreshing pet status after login")
+        petRepository.refreshPetStatusManually()
+        android.util.Log.d("MainViewModel", "Pet status refresh completed")
+    }
 }

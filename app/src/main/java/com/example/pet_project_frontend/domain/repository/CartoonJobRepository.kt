@@ -17,17 +17,17 @@ interface CartoonJobRepository {
      * @param file 업로드할 파일
      * @param uploadType 업로드 타입
      * @param contentType MIME 타입 (예: "image/jpeg")
-     * @return 업로드 결과 (filePath 포함)
+     * @return 업로드된 파일의 전체 공개 URL (예: "https://storage.googleapis.com/bucket/path")
      */
     suspend fun uploadFile(
         file: File,
         uploadType: UploadType,
         contentType: String
-    ): AppResult<String> // filePath 반환
+    ): AppResult<String> // 전체 Storage URL 반환
     
     /**
      * 만화 변환 작업 생성
-     * @param filePath 변환할 이미지의 Storage 경로
+     * @param filePath 변환할 이미지의 전체 Storage URL (예: "https://storage.googleapis.com/...")
      * @param userText 사용자 입력 텍스트 (선택 사항, 최대 500자)
      * @param idempotencyKey 멱등성 키 (null이면 자동 생성)
      * @return 생성된 작업 정보

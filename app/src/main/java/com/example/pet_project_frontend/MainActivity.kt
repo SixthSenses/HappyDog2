@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -37,6 +38,7 @@ import com.example.pet_project_frontend.core.navigation.PetCareNavHost
 import com.example.pet_project_frontend.core.navigation.Screen
 import com.example.pet_project_frontend.core.designsystem.AppTheme
 import com.example.pet_project_frontend.data.local.preferences.TokenManager
+import com.example.pet_project_frontend.domain.model.PetStatus
 import com.kakao.vectormap.KakaoMapSdk
 import com.kakao.vectormap.*
 import com.kakao.sdk.common.util.Utility
@@ -99,7 +101,7 @@ class MainActivity : ComponentActivity() {
     setContent {
         AppTheme {
             val isLoggedIn by viewModel.isLoggedIn.collectAsStateWithLifecycle()
-            val hasPet by viewModel.hasPet.collectAsStateWithLifecycle()
+            val petStatus by viewModel.petStatus.collectAsStateWithLifecycle()
             val navController = rememberNavController()
             val navBackStackEntry by navController.currentBackStackEntryAsState()
             val currentRoute = navBackStackEntry?.destination?.route
@@ -138,7 +140,8 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             ) { innerPadding ->
-                if (isLoading.value) {
+                // 스플래시 화면 로딩 또는 펫 상태 확인 중
+                if (isLoading.value || (isLoggedIn && petStatus == PetStatus.Loading)) {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
@@ -149,13 +152,17 @@ class MainActivity : ComponentActivity() {
                     // startDestination은 로그인 + 펫 존재 여부에 따라 분기합니다.
                     val effectiveStart = when {
                         !isLoggedIn -> Screen.Login.route
-                        !hasPet -> Screen.PetRegistration.route
-                        else -> Screen.PetCare.route
+                        petStatus == PetStatus.NoPet -> Screen.PetRegistration.route
+                        petStatus == PetStatus.HasPet -> Screen.PetCare.route
+                        else -> Screen.Login.route // 안전장치
                     }
 
                     // 런타임에도 펫이 없으면 등록 화면으로 유도
-                    LaunchedEffect(hasPet, currentRoute, isLoggedIn) {
-                        if (isLoggedIn && !hasPet && currentRoute != Screen.Login.route && currentRoute != Screen.PetRegistration.route) {
+                    LaunchedEffect(petStatus, currentRoute, isLoggedIn) {
+                        if (isLoggedIn && 
+                            petStatus == PetStatus.NoPet && 
+                            currentRoute != Screen.Login.route && 
+                            currentRoute != Screen.PetRegistration.route) {
                             navController.navigate(Screen.PetRegistration.route) {
                                 popUpTo(navController.graph.startDestinationId) { saveState = false }
                                 launchSingleTop = true
@@ -168,6 +175,7 @@ class MainActivity : ComponentActivity() {
                         navController = navController,
                         startDestination = effectiveStart,
                         openNotice = openNotice,
+                        onRefreshPetStatus = suspend { viewModel.refreshPetStatus() },
                         modifier = Modifier.padding(innerPadding)
                     )
                 }

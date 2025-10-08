@@ -13,6 +13,13 @@ class AuthInterceptor @Inject constructor(
     override fun intercept(chain: Interceptor.Chain): Response {
         val originalRequest = chain.request()
         
+        // Firebase Storage URL은 제외 (자체 인증 시스템 사용)
+        val url = originalRequest.url.toString()
+        if (url.contains("storage.googleapis.com") || 
+            url.contains("firebasestorage.googleapis.com")) {
+            return chain.proceed(originalRequest)
+        }
+        
         // Authorization 헤더가 이미 있으면 그대로 진행
         if (originalRequest.header("Authorization") != null) {
             return chain.proceed(originalRequest)

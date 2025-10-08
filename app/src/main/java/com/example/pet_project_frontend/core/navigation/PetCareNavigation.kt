@@ -2,6 +2,7 @@ package com.example.pet_project_frontend.core.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -12,6 +13,7 @@ import androidx.navigation.navDeepLink
 import com.example.pet_project_frontend.core.navigation.DeepLinks
 import com.example.pet_project_frontend.core.navigation.Routes
 import com.example.pet_project_frontend.presentation.auth.LoginScreen
+import kotlinx.coroutines.launch
 import com.example.pet_project_frontend.presentation.map.MapScreen
 import com.example.pet_project_frontend.presentation.mypage.main.MyPageScreen
 import com.example.pet_project_frontend.presentation.petcare.PetCareMainScreen
@@ -33,6 +35,7 @@ fun PetCareNavHost(
 	navController: NavHostController,
 	startDestination: String,
 	openNotice: (@Composable (closeNotice: () -> Unit) -> Unit) -> Unit,
+	onRefreshPetStatus: suspend () -> Unit,
 	modifier: Modifier = Modifier
 ) {
 	NavHost(
@@ -42,11 +45,26 @@ fun PetCareNavHost(
 	) {
 		// 로그인 화면
 		composable(Screen.Login.route) {
+			val coroutineScope = androidx.compose.runtime.rememberCoroutineScope()
 			LoginScreen(
 				onLoginResult = { isNewUser ->
-					val target = if ( isNewUser ) Screen.PetRegistration.route else Screen.PetCare.route
-					navController.navigate(target) {
-						popUpTo(Screen.Login.route) { inclusive = true }
+					// 로그인 성공 후 펫 상태 새로고침을 기다린 후 화면 전환
+					coroutineScope.launch {
+						// 🔥 핵심: 펫 상태를 서버에서 확인하고 완료될 때까지 대기
+						onRefreshPetStatus()
+						
+						// isNewUser인 경우 무조건 등록 화면으로
+						// 기존 사용자는 PetCare로 이동 (MainActivity의 petStatus가 이미 업데이트됨)
+						val target = if (isNewUser) {
+							Screen.PetRegistration.route
+						} else {
+							Screen.PetCare.route
+						}
+						
+						navController.navigate(target) {
+							popUpTo(Screen.Login.route) { inclusive = true }
+							launchSingleTop = true
+						}
 					}
 				}
 			)
