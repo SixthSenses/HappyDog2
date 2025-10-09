@@ -152,7 +152,6 @@ class MainActivity : ComponentActivity() {
                         !hasPet -> Screen.PetRegistration.route
                         else -> Screen.PetCare.route
                     }
-                    // val effectiveStart = Screen.Login.route
 
                     // 런타임에도 펫이 없으면 등록 화면으로 유도
                     LaunchedEffect(hasPet, currentRoute, isLoggedIn) {
@@ -167,6 +166,7 @@ class MainActivity : ComponentActivity() {
 
                     PetCareNavHost(
                         navController = navController,
+
                         startDestination = effectiveStart,
                         openNotice = openNotice,
                         modifier = Modifier.padding(innerPadding)
