@@ -3,6 +3,7 @@ package com.example.pet_project_frontend.presentation.mungstar
 import android.Manifest
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -31,25 +32,63 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.pet_project_frontend.R
+import com.example.pet_project_frontend.core.theme.PretendardFont
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 
 @Composable
-fun FreeWriting(navController: NavController) {
-    var textContent by remember { mutableStateOf("") }
-    var uploadedImages by remember { mutableStateOf<List<Uri>>(emptyList()) }
+fun FreeWriting(
+    navController: NavController,
+    viewModel: FreeWritingViewModel = hiltViewModel(),
+    postId: String? = null,
+    initialText: String? = null,
+    initialImageUrls: List<String>? = null
+) {
+    var textContent by remember { mutableStateOf(initialText ?: "") }
     var showCancelDialog by remember { mutableStateOf(false) }
     var isFocused by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val maxCharacters = 2000
 
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    
+    // 수정 모드 초기화
+    val isEditMode = postId != null
+    LaunchedEffect(postId, initialText, initialImageUrls) {
+        if (postId != null && initialText != null) {
+            viewModel.initEditMode(postId, initialText, initialImageUrls ?: emptyList())
+            textContent = initialText
+        }
+    }
+
+    // 성공 처리
+    LaunchedEffect(uiState.isSuccess) {
+        if (uiState.isSuccess) {
+            Toast.makeText(
+                context,
+                if (isEditMode) "게시물이 수정되었습니다" else "게시물이 등록되었습니다",
+                Toast.LENGTH_SHORT
+            ).show()
+            navController.popBackStack()
+        }
+    }
+
+    // 에러 처리
+    LaunchedEffect(uiState.error) {
+        uiState.error?.let { error ->
+            Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+        }
+    }
+
     // 뒤로가기 처리 함수
     fun handleBackPressed() {
-        if (textContent.isNotEmpty() || uploadedImages.isNotEmpty()) {
+        if (textContent.isNotEmpty() || uiState.uploadedImages.isNotEmpty()) {
             showCancelDialog = true
         } else {
             navController.popBackStack()
@@ -60,8 +99,9 @@ fun FreeWriting(navController: NavController) {
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetMultipleContents()
     ) { uris ->
-        val newImages = uris.take(4 - uploadedImages.size)
-        uploadedImages = uploadedImages + newImages
+        val remainingSlots = 4 - uiState.uploadedImages.size
+        val newImages = uris.take(remainingSlots)
+        viewModel.addImages(newImages)
     }
 
     // 카메라 권한 요청
@@ -76,8 +116,8 @@ fun FreeWriting(navController: NavController) {
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
     ) { success ->
-        if (success && photoUri != null && uploadedImages.size < 4) {
-            uploadedImages = uploadedImages + photoUri!!
+        if (success && photoUri != null && uiState.uploadedImages.size < 4) {
+            viewModel.addImages(listOf(photoUri!!))
         }
     }
 
@@ -128,9 +168,10 @@ fun FreeWriting(navController: NavController) {
                 ) {
                     Text(
                         text = "새로운 게시물",
+                        fontFamily = PretendardFont,
+                        fontWeight = FontWeight(400),
                         fontSize = 18.sp,
-                        color = Color.Black,
-                        fontWeight = FontWeight.Medium
+                        color = Color.Black
                     )
                 }
             }
@@ -153,6 +194,8 @@ fun FreeWriting(navController: NavController) {
                         if (textContent.isEmpty()) {
                             Text(
                                 text = "새로운 소식이 있나요?",
+                                fontFamily = PretendardFont,
+                                fontWeight = FontWeight(400),
                                 fontSize = 18.sp,
                                 color = Color(0xFF8B95A1),
                                 modifier = Modifier.offset(y = 3.dp)
@@ -183,13 +226,48 @@ fun FreeWriting(navController: NavController) {
 
                     Spacer(modifier = Modifier.height(20.dp))
 
-                    // 업로드된 이미지들 (가로 스크롤)
-                    if (uploadedImages.isNotEmpty()) {
+                    // 수정 모드: 기존 이미지 표시
+                    if (isEditMode && uiState.existingImageUrls.isNotEmpty()) {
                         LazyRow(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            items(uploadedImages) { imageUri ->
+                            items(uiState.existingImageUrls) { imageUrl ->
+                                Box(
+                                    modifier = Modifier.size(250.dp)
+                                ) {
+                                    AsyncImage(
+                                        model = imageUrl,
+                                        contentDescription = "기존 이미지",
+                                        modifier = Modifier
+                                            .size(250.dp)
+                                            .background(
+                                                Color.Gray.copy(alpha = 0.1f),
+                                                RoundedCornerShape(8.dp)
+                                            )
+                                    )
+                                }
+                            }
+                        }
+                        
+                        // 이미지 변경 불가 안내
+                        Text(
+                            text = "※ 수정 시 이미지는 변경할 수 없습니다",
+                            fontFamily = PretendardFont,
+                            fontWeight = FontWeight(400),
+                            fontSize = 12.sp,
+                            color = Color(0xFF6B7684),
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    }
+                    
+                    // 작성 모드: 업로드된 이미지들 (가로 스크롤)
+                    if (!isEditMode && uiState.uploadedImages.isNotEmpty()) {
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            items(uiState.uploadedImages) { imageUri ->
                                 Box(
                                     modifier = Modifier.size(250.dp)
                                 ) {
@@ -213,7 +291,7 @@ fun FreeWriting(navController: NavController) {
                                             .size(24.dp)
                                             .offset(x = 215.dp, y = (-12).dp)
                                             .clickable {
-                                                uploadedImages = uploadedImages.filter { it != imageUri }
+                                                viewModel.removeImage(imageUri)
                                             }
                                     )
                                 }
@@ -230,44 +308,46 @@ fun FreeWriting(navController: NavController) {
                     .height(62.dp)
                     .background(Color.White)
             ) {
-                // image.png (갤러리)
-                Image(
-                    painter = painterResource(id = R.drawable.image),
-                    contentDescription = "갤러리",
-                    modifier = Modifier
-                        .size(24.dp)
-                        .offset(x = 22.dp, y = 19.dp)
-                        .clickable {
-                            if (uploadedImages.size < 4) {
-                                galleryLauncher.launch("image/*")
+                // image.png (갤러리) - 수정 모드에서는 비활성화
+                if (!isEditMode) {
+                    Image(
+                        painter = painterResource(id = R.drawable.image),
+                        contentDescription = "갤러리",
+                        modifier = Modifier
+                            .size(24.dp)
+                            .offset(x = 22.dp, y = 19.dp)
+                            .clickable {
+                                if (uiState.uploadedImages.size < 4) {
+                                    galleryLauncher.launch("image/*")
+                                }
                             }
-                        }
-                )
+                    )
 
-                // photo_camera.png (카메라)
-                Image(
-                    painter = painterResource(id = R.drawable.photo_camera),
-                    contentDescription = "카메라",
-                    modifier = Modifier
-                        .size(24.dp)
-                        .offset(x = (22 + 24 + 18).dp, y = 19.dp)
-                        .clickable {
-                            if (uploadedImages.size < 4) {
-                                when (PackageManager.PERMISSION_GRANTED) {
-                                    ContextCompat.checkSelfPermission(
-                                        context,
-                                        Manifest.permission.CAMERA
-                                    ) -> {
-                                        photoUri = createImageFile()
-                                        cameraLauncher.launch(photoUri!!)
-                                    }
-                                    else -> {
-                                        cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                    // photo_camera.png (카메라) - 수정 모드에서는 비활성화
+                    Image(
+                        painter = painterResource(id = R.drawable.photo_camera),
+                        contentDescription = "카메라",
+                        modifier = Modifier
+                            .size(24.dp)
+                            .offset(x = (22 + 24 + 18).dp, y = 19.dp)
+                            .clickable {
+                                if (uiState.uploadedImages.size < 4) {
+                                    when (PackageManager.PERMISSION_GRANTED) {
+                                        ContextCompat.checkSelfPermission(
+                                            context,
+                                            Manifest.permission.CAMERA
+                                        ) -> {
+                                            photoUri = createImageFile()
+                                            cameraLauncher.launch(photoUri!!)
+                                        }
+                                        else -> {
+                                            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                                        }
                                     }
                                 }
                             }
-                        }
-                )
+                    )
+                }
 
                 // 게시하기 버튼 (클릭해도 아무 동작 안함)
                 Box(
@@ -275,29 +355,44 @@ fun FreeWriting(navController: NavController) {
                         .size(91.dp, 32.dp)
                         .offset(x = 318.dp, y = 15.dp)
                         .background(
-                            color = if (textContent.isNotEmpty())
+                            color = if (textContent.isNotEmpty() && !uiState.isLoading)
                                 Color(0xFF3182F6)
                             else
                                 Color(0x403182F6),
                             shape = RoundedCornerShape(18.dp)
                         )
-                        .clickable(enabled = textContent.isNotEmpty()) {
-                            // TODO: 게시하기 기능 구현 예정
+                        .clickable(enabled = textContent.isNotEmpty() && !uiState.isLoading) {
+                            if (isEditMode) {
+                                viewModel.updatePost(textContent)
+                            } else {
+                                viewModel.createPost(textContent)
+                            }
                         },
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = "게시하기",
-                        color = Color.White,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium
-                    )
+                    if (uiState.isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text(
+                            text = if (isEditMode) "수정하기" else "게시하기",
+                            fontFamily = PretendardFont,
+                            fontWeight = FontWeight(400),
+                            color = Color.White,
+                            fontSize = 14.sp
+                        )
+                    }
                 }
 
                 // 글자수 카운트
                 if (textContent.isNotEmpty()) {
                     Text(
                         text = "${textContent.length}/$maxCharacters",
+                        fontFamily = PretendardFont,
+                        fontWeight = FontWeight(400),
                         fontSize = 16.sp,
                         color = Color(0xFF8B95A1),
                         modifier = Modifier
@@ -336,16 +431,19 @@ fun FreeWriting(navController: NavController) {
                         ) {
                             // Title1
                             Text(
-                                text = "게시물 작성을 취소할까요?",
+                                text = if (isEditMode) "게시물 수정을 취소할까요?" else "게시물 작성을 취소할까요?",
+                                fontFamily = PretendardFont,
+                                fontWeight = FontWeight(400),
                                 fontSize = 21.sp,
                                 color = Color(0xFF333D4B),
-                                fontWeight = FontWeight.Medium,
                                 modifier = Modifier.offset(x = 6.dp, y = (-10).dp)
                             )
 
                             // Title2
                             Text(
-                                text = "지금까지 쓴 내용은 저장되지 않아요",
+                                text = if (isEditMode) "변경한 내용은 저장되지 않아요." else "지금까지 쓴 내용은 저장되지 않아요.",
+                                fontFamily = PretendardFont,
+                                fontWeight = FontWeight(400),
                                 fontSize = 16.sp,
                                 color = Color(0xFF6B7684),
                                 modifier = Modifier.offset(x = 6.dp, y = 19.dp)
@@ -370,13 +468,14 @@ fun FreeWriting(navController: NavController) {
                                 ) {
                                     Text(
                                         text = "닫기",
+                                        fontFamily = PretendardFont,
+                                        fontWeight = FontWeight(400),
                                         fontSize = 18.sp,
-                                        color = Color(0xFF4E5968),
-                                        fontWeight = FontWeight.Medium
+                                        color = Color(0xFF4E5968)
                                     )
                                 }
 
-                                // 취소하기 버튼
+                                // 나가기 버튼
                                 Box(
                                     modifier = Modifier
                                         .size(146.dp, 58.dp)
@@ -391,10 +490,11 @@ fun FreeWriting(navController: NavController) {
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
-                                        text = "취소하기",
+                                        text = "나가기",
+                                        fontFamily = PretendardFont,
+                                        fontWeight = FontWeight(400),
                                         fontSize = 18.sp,
-                                        color = Color.White,
-                                        fontWeight = FontWeight.Medium
+                                        color = Color.White
                                     )
                                 }
                             }

@@ -20,6 +20,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.pet_project_frontend.presentation.mungstar.MungStarFeed
 import com.example.pet_project_frontend.presentation.mungstar.FreeWriting
 import com.example.pet_project_frontend.presentation.mungstar.CartoonMaking
+import com.example.pet_project_frontend.presentation.mungstar.PostDetailScreen
 import com.example.pet_project_frontend.presentation.translator.TranslatorScreen
 
 @Composable
@@ -82,9 +83,54 @@ fun PetCareNavHost(
 			MungStarFeed(navController = navController)
 		}
 
-		// 자유글 작성 화면
-		composable("free_writing") { backStackEntry ->
-			FreeWriting(navController = navController)
+		// 게시글 상세 화면
+		composable(
+			route = "post_detail/{postId}",
+			arguments = listOf(
+				navArgument("postId") {
+					type = NavType.StringType
+				}
+			)
+		) { backStackEntry ->
+			val postId = backStackEntry.arguments?.getString("postId") ?: return@composable
+			PostDetailScreen(
+				postId = postId,
+				navController = navController
+			)
+		}
+
+		// 자유글 작성/수정 화면
+		composable(
+			route = "free_writing?postId={postId}&initialText={initialText}&imageUrls={imageUrls}",
+			arguments = listOf(
+				navArgument("postId") { 
+					type = NavType.StringType
+					nullable = true
+					defaultValue = null
+				},
+				navArgument("initialText") {
+					type = NavType.StringType
+					nullable = true
+					defaultValue = null
+				},
+				navArgument("imageUrls") {
+					type = NavType.StringType
+					nullable = true
+					defaultValue = null
+				}
+			)
+		) { backStackEntry ->
+			val postId = backStackEntry.arguments?.getString("postId")
+			val initialText = backStackEntry.arguments?.getString("initialText")
+			val imageUrlsString = backStackEntry.arguments?.getString("imageUrls")
+			val imageUrls = imageUrlsString?.split(",")?.filter { it.isNotBlank() }
+			
+			FreeWriting(
+				navController = navController,
+				postId = postId,
+				initialText = initialText,
+				imageUrls = imageUrls
+			)
 		}
 
 		// 만화 제작 화면
@@ -93,10 +139,6 @@ fun PetCareNavHost(
 		}
 
 		// 번역기 화면
-		composable(Screen.Translator.route) { PetCareMainScreen() }
-
-		// 커뮤니티/번역기는 임시로 펫케어 메인으로 연결하거나 별도 화면 구성 필요 시 교체
-		composable(Screen.Community.route) { PetCareMainScreen() }
 		composable(Screen.Translator.route) { TranslatorScreen(openNotice = openNotice) }
 
 		// 마이페이지 화면

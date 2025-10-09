@@ -172,6 +172,10 @@ dependencies {
     // Image Loading
     implementation("io.coil-kt:coil-compose:2.5.0")
 
+    // Accompanist (Pager for image carousel)
+    implementation("com.google.accompanist:accompanist-pager:0.32.0")
+    implementation("com.google.accompanist:accompanist-pager-indicators:0.32.0")
+
     // Date/Time Support for older Android versions
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 

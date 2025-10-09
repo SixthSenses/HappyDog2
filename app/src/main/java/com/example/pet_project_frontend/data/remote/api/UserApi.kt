@@ -7,8 +7,8 @@ import retrofit2.Response
 import retrofit2.http.*
 
 interface UserApi {
-    @GET("api/users/{userId}")
-    suspend fun getUserProfile(@Path("userId") userId: String): Response<UserProfileResponse>
+    @GET("api/users/me")
+    suspend fun getUserProfile(): Response<UserProfileResponse>
     
     @PATCH("api/users/me/profile-image")
     suspend fun updateProfileImage(@Body request: UpdateProfileImageRequest): Response<UserProfileResponse>

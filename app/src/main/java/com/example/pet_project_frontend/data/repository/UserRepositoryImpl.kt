@@ -31,13 +31,12 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun getUserInfo(): AppResult<User> {
         val saved = authRepository.getUserInfo()
-        val userId = saved?.userId
-        if (userId == null) {
+        if (saved == null) {
             Log.w(TAG, "No logged-in user. Cannot fetch profile.")
             return AppResult.Error(code = 401, message = "로그인이 필요합니다.")
         }
-        Log.d(TAG, "Fetching user info from API: $userId")
-        return SafeApi.response { userApi.getUserProfile(userId) }
+        Log.d(TAG, "Fetching current user info from API")
+        return SafeApi.response { userApi.getUserProfile() }
             .let { res ->
                 when (res) {
                     is AppResult.Success -> {

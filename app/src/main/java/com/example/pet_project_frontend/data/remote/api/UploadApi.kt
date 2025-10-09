@@ -1,18 +1,22 @@
 package com.example.pet_project_frontend.data.remote.api
 
-import com.example.pet_project_frontend.data.remote.dto.request.GetUploadUrlRequest
-import com.example.pet_project_frontend.data.remote.dto.request.UpdateProfileImageRequest
-import com.example.pet_project_frontend.data.remote.dto.response.UploadUrlResponse
-import com.example.pet_project_frontend.data.remote.dto.response.UserProfileResponse
+import com.example.pet_project_frontend.data.remote.dto.*
+import okhttp3.RequestBody
 import retrofit2.Response
-import retrofit2.http.Body
-import retrofit2.http.PATCH
-import retrofit2.http.POST
+import retrofit2.http.*
 
 interface UploadApi {
+    // 업로드 URL 생성
     @POST("api/uploads/url")
-    suspend fun getUploadUrl(@Body request: GetUploadUrlRequest): Response<UploadUrlResponse>
+    suspend fun getUploadUrl(
+        @Body request: UploadUrlRequestDto
+    ): Response<UploadUrlResponseDto>
     
-    @PATCH("api/users/me/profile-image")
-    suspend fun updateProfileImage(@Body request: UpdateProfileImageRequest): Response<UserProfileResponse>
+    // Pre-signed URL로 파일 업로드 (S3 직접)
+    @PUT
+    suspend fun uploadFile(
+        @Url url: String,
+        @Header("Content-Type") contentType: String,
+        @Body file: RequestBody
+    ): Response<Unit>
 }
