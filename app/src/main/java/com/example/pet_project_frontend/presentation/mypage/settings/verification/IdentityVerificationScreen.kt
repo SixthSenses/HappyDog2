@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+
 package com.example.pet_project_frontend.presentation.mypage.settings.verification
 
 import androidx.compose.foundation.Image
@@ -12,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -21,69 +24,82 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.pet_project_frontend.R
+import com.example.pet_project_frontend.core.components.TopBar
 import com.example.pet_project_frontend.presentation.mypage.settings.verification.components.VerificationFeatureItem
 
 @Composable
 fun VerificationMainScreen(
+    onBack: () -> Unit = {},
     onVerifyClick: () -> Unit = {}
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-            .padding(horizontal = 16.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.Top
-    ) {
-        Text(
-            text = "멍스타그램에서\n이제 견주님을 증명해요.",
-            color = Color(0xFF191F28),
-            fontSize = 26.sp,
-            fontWeight = FontWeight.SemiBold,
-            lineHeight = 36.sp,
-            letterSpacing = (-0.65).sp,
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(28.dp))
-
-        Image(
-            painter = painterResource(id = R.drawable.verification),
-            contentDescription = "신원 인증 안내 이미지",
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        VerificationFeatureItem(
-            iconRes = R.drawable.noseprint,
-            title = "반려견의 비문이 필요해요",
-            subtitle = "간단히 촬영하면 빠르게 진행돼요."
-        )
-
-        Spacer(modifier = Modifier.height(30.dp))
-
-        VerificationFeatureItem(
-            iconRes = R.drawable.license,
-            title = "견주 인증 배지를 받을 거예요",
-            subtitle = "멍스타그램 프로필에서 확인할 수 있어요."
-        )
-
-        Spacer(modifier = Modifier.height(106.dp))
-
-        Button(
-            onClick = onVerifyClick,
+    Scaffold(
+        topBar = {
+            TopBar(
+                title = "본인 인증",
+                onNavigateBack = onBack
+            )
+        },
+        containerColor = Color.White
+    ) { paddingValues ->
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(60.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF191F28)),
-            contentPadding = PaddingValues(vertical = 20.dp)
+                .fillMaxSize()
+                .background(Color.White)
+                .padding(paddingValues)
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.Top
         ) {
             Text(
-                text = "신원 인증하고 배지 받기",
-                color = Color.White,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.SemiBold
+                text = "멍스타그램에서\n실제 견주임을 증명하세요",
+                        color = Color(0xFF191F28),
+                fontSize = 26.sp,
+                fontWeight = FontWeight.SemiBold,
+                lineHeight = 36.sp,
+                letterSpacing = (-0.65).sp,
+                modifier = Modifier.fillMaxWidth()
             )
+
+            Spacer(modifier = Modifier.height(28.dp))
+
+            Image(
+                painter = painterResource(id = R.drawable.verification),
+                contentDescription = "본인 인증 안내 이미지",
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            VerificationFeatureItem(
+                iconRes = R.drawable.noseprint,
+                title = "반려견의 비문이 필요해요",
+                subtitle = "간단히 촬영하면 빠르게 진행돼요."
+            )
+
+            Spacer(modifier = Modifier.height(30.dp))
+
+            VerificationFeatureItem(
+                iconRes = R.drawable.license,
+                title = "견주 인증 배지를 받을 거예요",
+                subtitle = "멍스타그램 프로필에서 인증 뱃지가 보여요"
+            )
+
+            Spacer(modifier = Modifier.height(106.dp))
+
+            Button(
+                onClick = onVerifyClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3182F6)),
+                contentPadding = PaddingValues(vertical = 20.dp)
+            ) {
+                Text(
+                    text = "신원 인증하고 배지 받기",
+                    color = Color.White,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
         }
     }
 }

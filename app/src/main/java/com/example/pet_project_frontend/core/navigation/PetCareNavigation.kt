@@ -158,16 +158,16 @@ fun PetCareNavHost(
                     nullable = true
                 }
             )
-        ) {
-            val parentEntry = remember(navController) { navController.getBackStackEntry(Screen.MyPage.route) }
+        ) { backStackEntry ->
+            val parentEntry = remember(backStackEntry) { navController.getBackStackEntry(Screen.MyPage.route) }
             val myPageViewModel: MyPageViewModel = hiltViewModel(parentEntry)
 
             GenderSelectScreen(
                 onBack = { navController.popBackStack() },
                 onSaved = { selected ->
                     val label = when (selected) {
-                        GenderUi.MALE -> "?⑥븘"
-                        GenderUi.FEMALE -> "?ъ븘"
+                        GenderUi.MALE -> "수컷"
+                        GenderUi.FEMALE -> "암컷"
                     }
                     myPageViewModel.updateGender(label)
                     navController.popBackStack()
@@ -184,8 +184,8 @@ fun PetCareNavHost(
                     nullable = true
                 }
             )
-        ) {
-            val parentEntry = remember(navController) { navController.getBackStackEntry(Screen.MyPage.route) }
+        ) { backStackEntry ->
+            val parentEntry = remember(backStackEntry) { navController.getBackStackEntry(Screen.MyPage.route) }
             val myPageViewModel: MyPageViewModel = hiltViewModel(parentEntry)
 
             BreedSelectScreen(
@@ -219,6 +219,7 @@ fun PetCareNavHost(
                 verificationViewModel.resetVerificationResult()
             }
             VerificationMainScreen(
+                onBack = { navController.popBackStack() },
                 onVerifyClick = {
                     navController.navigate(Screen.VerificationGuide.route)
                 }
@@ -226,14 +227,14 @@ fun PetCareNavHost(
         }
 
         composable(Screen.VerificationGuide.route) { backStackEntry ->
-            val verificationParent = remember(navController) { navController.getBackStackEntry(Screen.VerificationIntro.route) }
+            val verificationParent = remember(backStackEntry) { navController.getBackStackEntry(Screen.VerificationIntro.route) }
             val verificationViewModel: IdentityVerificationViewModel = hiltViewModel(verificationParent)
 
-            val myPageEntry = remember(navController) { navController.getBackStackEntry(Screen.MyPage.route) }
+            val myPageEntry = remember(backStackEntry) { navController.getBackStackEntry(Screen.MyPage.route) }
             val myPageViewModel: MyPageViewModel = hiltViewModel(myPageEntry)
             val myPageState by myPageViewModel.uiState.collectAsStateWithLifecycle()
 
-            val guideEntry = remember(navController) { navController.getBackStackEntry(Screen.VerificationGuide.route) }
+            val guideEntry = backStackEntry
             val errorFlow = guideEntry.savedStateHandle.getStateFlow<String?>("verification_error", null)
             val errorValue by errorFlow.collectAsState()
             val errorDialog = when (errorValue) {
@@ -279,7 +280,7 @@ fun PetCareNavHost(
                 navController.popBackStack()
                 return@composable
             }
-            val verificationParent = remember(navController) { navController.getBackStackEntry(Screen.VerificationIntro.route) }
+            val verificationParent = remember(backStackEntry) { navController.getBackStackEntry(Screen.VerificationIntro.route) }
             val verificationViewModel: IdentityVerificationViewModel = hiltViewModel(verificationParent)
 
             VerificationLoadingScreen(
@@ -324,10 +325,10 @@ fun PetCareNavHost(
             )
         }
 
-        composable(Screen.VerificationSuccess.route) {
-            val verificationParent = remember(navController) { navController.getBackStackEntry(Screen.VerificationIntro.route) }
+        composable(Screen.VerificationSuccess.route) { backStackEntry ->
+            val verificationParent = remember(backStackEntry) { navController.getBackStackEntry(Screen.VerificationIntro.route) }
             val verificationViewModel: IdentityVerificationViewModel = hiltViewModel(verificationParent)
-            val myPageEntry = remember(navController) { navController.getBackStackEntry(Screen.MyPage.route) }
+            val myPageEntry = remember(backStackEntry) { navController.getBackStackEntry(Screen.MyPage.route) }
             val myPageViewModel: MyPageViewModel = hiltViewModel(myPageEntry)
 
             LaunchedEffect(Unit) {

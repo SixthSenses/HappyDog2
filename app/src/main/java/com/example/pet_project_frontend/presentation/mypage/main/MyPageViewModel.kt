@@ -92,9 +92,9 @@ class MyPageViewModel @Inject constructor(
         }
 
         val genderText = when (pet.gender) {
-            Gender.MALE -> "Male"
-            Gender.FEMALE -> "Female"
-            Gender.UNKNOWN -> "Unknown"
+            Gender.MALE -> "수컷"
+            Gender.FEMALE -> "암컷"
+            Gender.UNKNOWN -> "미상"
         }
 
         val birthDateText = pet.birthDate.format(DateTimeFormatter.ofPattern("yyyy.MM.dd"))
