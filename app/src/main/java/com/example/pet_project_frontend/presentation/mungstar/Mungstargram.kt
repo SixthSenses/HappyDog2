@@ -30,10 +30,6 @@ import coil.compose.AsyncImage
 import com.example.pet_project_frontend.R
 import com.example.pet_project_frontend.core.theme.PretendardFont
 import com.example.pet_project_frontend.domain.model.Post
-import com.google.accompanist.pager.ExperimentalPagerApi
-import com.google.accompanist.pager.HorizontalPager
-import com.google.accompanist.pager.HorizontalPagerIndicator
-import com.google.accompanist.pager.rememberPagerState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -121,6 +117,16 @@ fun MungStarFeed(
                 )
             }
 
+            // 앱바 아래 8픽셀 간격
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // 앱바 아래 구분선
+            HorizontalDivider(
+                modifier = Modifier.fillMaxWidth(),
+                thickness = 1.dp,
+                color = Color(0xFFB1B8C0)
+            )
+
             // 피드 목록
             if (uiState.isLoading && uiState.posts.isEmpty()) {
                 Box(
@@ -165,7 +171,6 @@ fun MungStarFeed(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
-                        .padding(top = 10.dp)
                 ) {
                 items(uiState.posts) { post ->
                     PostItem(
@@ -174,7 +179,12 @@ fun MungStarFeed(
                         onPostClick = { navController.navigate("post_detail/${post.postId}") },
                         onAuthorClick = { navController.navigate("user_posts/${post.author.userId}") }
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
+                    // 게시물 간 구분선
+                    HorizontalDivider(
+                        modifier = Modifier.fillMaxWidth(),
+                        thickness = 1.dp,
+                        color = Color(0xFFB1B8C0)
+                    )
                 }
                 
                 if (uiState.isLoading) {
@@ -259,7 +269,6 @@ fun MungStarFeed(
     }
 }
 
-@OptIn(ExperimentalPagerApi::class)
 @Composable
 fun PostItem(
     post: Post,
@@ -271,7 +280,7 @@ fun PostItem(
         modifier = Modifier
             .fillMaxWidth()
             .background(Color.White)
-            .padding(horizontal = 16.dp)
+            .padding(26.dp)
     ) {
         // 작성자 정보
         Row(
@@ -322,11 +331,11 @@ fun PostItem(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // 반려견 이름
+                    // 반려견 이름 (닉네임 - weight 500)
                     Text(
                         text = post.pet?.name ?: post.author.displayName,
                         fontFamily = PretendardFont,
-                        fontWeight = FontWeight(400),
+                        fontWeight = FontWeight(500),
                         fontSize = 16.sp,
                         color = Color(0xFF6B7684)
                     )
@@ -369,42 +378,37 @@ fun PostItem(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // 이미지 (텍스트 아래 10px 간격, 여러 장일 경우 페이저, 클릭 시 상세 화면)
+        // 이미지 (텍스트 아래 10px 간격, 그리드 형태로 표시, 클릭 시 상세 화면)
         if (post.mediaUrls.isNotEmpty()) {
-            val pagerState = rememberPagerState(initialPage = 0)
-
-            Box(modifier = Modifier.clickable(onClick = onPostClick)) {
-                HorizontalPager(
-                    count = post.mediaUrls.size,
-                    state = pagerState,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(300.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                ) { page ->
-                    AsyncImage(
-                        model = post.mediaUrls[page],
-                        contentDescription = "Post image",
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color(0xFFF5F5F5)),
-                        contentScale = ContentScale.Crop
-                    )
-                }
-
-                // 페이지 인디케이터 (이미지가 2장 이상일 때만)
-                if (post.mediaUrls.size > 1) {
-                    HorizontalPagerIndicator(
-                        pagerState = pagerState,
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(bottom = 8.dp),
-                        activeColor = Color.White,
-                        inactiveColor = Color.White.copy(alpha = 0.5f),
-                        indicatorWidth = 8.dp,
-                        indicatorHeight = 8.dp,
-                        spacing = 4.dp
-                    )
+            // 이미지를 2개씩 행으로 나눔
+            val rows = post.mediaUrls.chunked(2)
+            
+            Column(
+                modifier = Modifier.clickable(onClick = onPostClick),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                rows.forEach { rowImages ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        rowImages.forEach { imageUrl ->
+                            AsyncImage(
+                                model = imageUrl,
+                                contentDescription = "Post image",
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .aspectRatio(1f)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Color(0xFFF5F5F5)),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                        // 홀수 개일 경우 빈 공간 채우기
+                        if (rowImages.size == 1) {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
+                    }
                 }
             }
 
@@ -482,12 +486,21 @@ fun CustomBottomSheet(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.BottomCenter
         ) {
+            // 검은색 배경 (32% 불투명도)
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.32f))
+                    .clickable(onClick = onDismiss)
+            )
+            
             Card(
                 modifier = Modifier
-                    .size(392.dp, 173.dp)
-                    .offset(y = (-36).dp)
+                    .width(472.dp)  // 432 + 40 = 472
+                    .wrapContentHeight()
+                    .padding(bottom = 20.dp)
                     .pointerInput(Unit) {
-                        detectDragGestures { change, dragAmount ->
+                        detectDragGestures { _, dragAmount ->
                             dragOffset += dragAmount.y
                             if (dragOffset > 100f) {
                                 onDismiss()
@@ -498,36 +511,44 @@ fun CustomBottomSheet(
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
             ) {
-                Box(
-                    modifier = Modifier.fillMaxSize()
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 0.dp)
                 ) {
+                    // 닫기 바 (Divider)
                     Box(
                         modifier = Modifier
-                            .width(40.dp)
+                            .width(50.dp)
                             .height(4.dp)
                             .background(
-                                Color.Gray,
+                                Color(0xFFD1D5DB),
                                 shape = RoundedCornerShape(2.dp)
                             )
-                            .align(Alignment.TopCenter)
+                            .align(Alignment.CenterHorizontally)
                             .offset(y = 12.dp)
-                            .clickable { onDismiss() }
                     )
 
+                    Spacer(modifier = Modifier.height(40.dp))
+
+                    // 어떤 주제인가요? 텍스트
                     Text(
                         text = "어떤 주제인가요?",
                         fontFamily = PretendardFont,
-                        fontWeight = FontWeight(400),
-                        modifier = Modifier
-                            .offset(x = 27.dp, y = 42.dp),
+                        fontWeight = FontWeight(600),
                         fontSize = 21.sp,
-                        color = Color.Black
+                        color = Color.Black,
+                        modifier = Modifier.padding(start = 20.dp)
                     )
 
+                    Spacer(modifier = Modifier.height(15.dp))
+
+                    // 자유글 컨테이너
                     Box(
                         modifier = Modifier
-                            .size(376.dp, 48.dp)
-                            .offset(x = 8.dp, y = (42 + 20).dp)
+                            .fillMaxWidth()
+                            .height(48.dp)
+                            .padding(horizontal = 8.dp)
                             .background(
                                 color = if (selectedContainer == 1) Color(0xFFF3F4F6) else Color.Transparent,
                                 shape = RoundedCornerShape(12.dp)
@@ -550,24 +571,28 @@ fun CustomBottomSheet(
                             Text(
                                 text = "💬",
                                 fontFamily = PretendardFont,
-                                fontWeight = FontWeight(400),
+                                fontWeight = FontWeight(500),
                                 fontSize = 20.sp
                             )
                             Spacer(modifier = Modifier.width(15.dp))
                             Text(
                                 text = "자유글",
                                 fontFamily = PretendardFont,
-                                fontWeight = FontWeight(400),
+                                fontWeight = FontWeight(500),
                                 fontSize = 18.sp,
                                 color = Color.Black
                             )
                         }
                     }
 
+                    Spacer(modifier = Modifier.height(15.dp))
+
+                    // 만화로 일상기록하기 컨테이너
                     Box(
                         modifier = Modifier
-                            .size(376.dp, 48.dp)
-                            .offset(x = 8.dp, y = (42 + 20 + 48 + 15).dp)
+                            .fillMaxWidth()
+                            .height(48.dp)
+                            .padding(horizontal = 8.dp)
                             .background(
                                 color = if (selectedContainer == 2) Color(0xFFF3F4F6) else Color.Transparent,
                                 shape = RoundedCornerShape(12.dp)
@@ -590,19 +615,21 @@ fun CustomBottomSheet(
                             Text(
                                 text = "🎨",
                                 fontFamily = PretendardFont,
-                                fontWeight = FontWeight(400),
+                                fontWeight = FontWeight(500),
                                 fontSize = 20.sp
                             )
                             Spacer(modifier = Modifier.width(15.dp))
                             Text(
                                 text = "만화로 일상기록하기",
                                 fontFamily = PretendardFont,
-                                fontWeight = FontWeight(400),
+                                fontWeight = FontWeight(500),
                                 fontSize = 18.sp,
                                 color = Color.Black
                             )
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(20.dp))
                 }
             }
         }

@@ -33,12 +33,6 @@ import com.example.pet_project_frontend.core.theme.PretendardFont
 import com.example.pet_project_frontend.util.TimeUtil
 import com.example.pet_project_frontend.domain.model.Comment
 import com.example.pet_project_frontend.domain.model.Post
-import com.google.accompanist.pager.ExperimentalPagerApi
-import com.google.accompanist.pager.HorizontalPager
-import com.google.accompanist.pager.HorizontalPagerIndicator
-import com.google.accompanist.pager.rememberPagerState
-
-@OptIn(ExperimentalPagerApi::class)
 @Composable
 fun PostDetailScreen(
     postId: String,
@@ -82,7 +76,7 @@ fun PostDetailScreen(
                     modifier = Modifier
                         .size(24.dp)
                         .align(Alignment.CenterStart)
-                        .padding(start = 16.dp)
+                        .offset(x = 16.dp)
                         .clickable { navController.popBackStack() }
                 )
                 
@@ -188,12 +182,9 @@ fun PostDetailScreen(
             MoreMenu(
                 onEditClick = {
                     viewModel.hideMoreMenu()
-                    // 수정 화면으로 이동 (postId, text, imageUrls 전달)
+                    // 수정 화면으로 이동 (postId만 전달, Free_Writing에서 자동으로 불러옴)
                     uiState.post?.let { post ->
-                        val imageUrlsParam = post.mediaUrls.joinToString(",")
-                        navController.navigate(
-                            "free_writing?postId=${post.postId}&initialText=${post.text}&imageUrls=$imageUrlsParam"
-                        )
+                        navController.navigate("free_writing?postId=${post.postId}")
                     }
                 },
                 onDeleteClick = {
@@ -218,7 +209,6 @@ fun PostDetailScreen(
     }
 }
 
-@OptIn(ExperimentalPagerApi::class)
 @Composable
 fun PostDetailItem(
     post: Post,
@@ -262,11 +252,11 @@ fun PostDetailItem(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // 반려견 이름 (#6B7684, 16px)
+                    // 반려견 이름 (닉네임 - weight 500, #6B7684, 16px)
                     Text(
                         text = post.pet?.name ?: post.author.displayName,
                         fontFamily = PretendardFont,
-                        fontWeight = FontWeight(400),
+                        fontWeight = FontWeight(500),
                         fontSize = 16.sp,
                         color = Color(0xFF6B7684)
                     )
@@ -303,37 +293,39 @@ fun PostDetailItem(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp)
         )
         
-        // 이미지 (텍스트 아래 10px 간격, 여러 장일 경우 Pager)
+        // 이미지 (텍스트 아래 10px 간격, 그리드 형태로 표시)
         if (post.mediaUrls.isNotEmpty()) {
             Spacer(modifier = Modifier.height(10.dp))
             
-            val pagerState = rememberPagerState()
+            // 이미지를 2개씩 행으로 나눔
+            val rows = post.mediaUrls.chunked(2)
             
-            Box {
-                HorizontalPager(
-                    count = post.mediaUrls.size,
-                    state = pagerState,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1f)
-                ) { page ->
-                    AsyncImage(
-                        model = post.mediaUrls[page],
-                        contentDescription = "게시글 이미지",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                }
-                
-                if (post.mediaUrls.size > 1) {
-                    HorizontalPagerIndicator(
-                        pagerState = pagerState,
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(16.dp),
-                        activeColor = Color.White,
-                        inactiveColor = Color.White.copy(alpha = 0.5f)
-                    )
+            Column(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                rows.forEach { rowImages ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        rowImages.forEach { imageUrl ->
+                            AsyncImage(
+                                model = imageUrl,
+                                contentDescription = "게시글 이미지",
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .aspectRatio(1f)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Color(0xFFF5F5F5)),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                        // 홀수 개일 경우 빈 공간 채우기
+                        if (rowImages.size == 1) {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
+                    }
                 }
             }
         }
@@ -388,9 +380,9 @@ fun PostDetailItem(
                 color = Color(0xFFB1B8C0)
             )
             
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(200.dp))
             
-            // 더보기 아이콘 (24X24) - like/comment와 같은 높이
+            // 더보기 아이콘 (24X24) - like/comment와 200px 떨어진 위치
             Image(
                 painter = painterResource(id = R.drawable.more),
                 contentDescription = "더보기",
@@ -400,7 +392,7 @@ fun PostDetailItem(
             )
         }
         
-        Divider(color = Color(0xFFE5E5EA), thickness = 8.dp)
+        HorizontalDivider(color = Color(0xFFB1B8C0), thickness = 8.dp)
     }
 }
 
@@ -505,12 +497,11 @@ fun CommentInputBar(
     // 412X76 크기의 댓글 입력 바
     Row(
         modifier = Modifier
-            .width(412.dp)
+            .fillMaxWidth()
             .height(76.dp)
             .background(Color.White)
             .padding(horizontal = 16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+        verticalAlignment = Alignment.CenterVertically
     ) {
         // 프로필 사진 (40X40 원)
         Box(
@@ -531,12 +522,12 @@ fun CommentInputBar(
         
         Spacer(modifier = Modifier.width(8.dp))
         
-        // 댓글 입력 박스 (326X42, 모서리 16, #F2F4F6)
+        // 댓글 입력 박스 (유연한 너비, 42 높이, 모서리 16, #F2F4F6)
         BasicTextField(
             value = text,
             onValueChange = onTextChange,
             modifier = Modifier
-                .width(326.dp)
+                .weight(1f)
                 .height(42.dp)
                 .background(Color(0xFFF2F4F6), RoundedCornerShape(16.dp))
                 .padding(horizontal = 12.dp, vertical = 12.dp),
@@ -556,13 +547,16 @@ fun CommentInputBar(
             }
         )
         
-        Spacer(modifier = Modifier.width(50.dp)) // 50픽셀 간격
+        Spacer(modifier = Modifier.width(8.dp))
         
-        // 전송 버튼 (43X30, 모서리 12, #D1D6DB, send.png 20X20)
+        // 전송 버튼 (43X30, 모서리 12, 텍스트 있으면 #3182F6 없으면 #D1D6DB, send.png 20X20)
         Box(
             modifier = Modifier
                 .size(43.dp, 30.dp)
-                .background(Color(0xFFD1D6DB), RoundedCornerShape(12.dp))
+                .background(
+                    if (text.isNotBlank()) Color(0xFF3182F6) else Color(0xFFD1D6DB),
+                    RoundedCornerShape(12.dp)
+                )
                 .clickable(enabled = text.isNotBlank(), onClick = onSendClick),
             contentAlignment = Alignment.Center
         ) {
@@ -581,6 +575,8 @@ fun MoreMenu(
     onDeleteClick: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    var selectedItem by remember { mutableStateOf<Int?>(null) }
+    
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -605,21 +601,32 @@ fun MoreMenu(
                 )
         ) {
             Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.SpaceEvenly
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(vertical = 2.dp),
+                verticalArrangement = Arrangement.SpaceEvenly,
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // 수정 컨테이너 (170×23, 모서리 8)
+                // 수정 컨테이너 (197×41, 모서리 8, 클릭 시 #F3F4F6)
                 Box(
                     modifier = Modifier
-                        .width(170.dp)
-                        .height(23.dp)
-                        .align(Alignment.CenterHorizontally)
-                        .background(Color.Transparent, RoundedCornerShape(8.dp))
-                        .clickable(onClick = onEditClick)
+                        .width(197.dp)
+                        .height(41.dp)
+                        .background(
+                            color = if (selectedItem == 1) Color(0xFFF3F4F6) else Color.Transparent,
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        .clickable {
+                            selectedItem = 1
+                            onEditClick()
+                        }
                 ) {
                     Row(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalAlignment = Alignment.CenterVertically
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         // 수정 텍스트 (왼쪽)
                         Text(
@@ -627,8 +634,6 @@ fun MoreMenu(
                             fontSize = 18.sp,
                             color = Color(0xFF4E5968)
                         )
-                        
-                        Spacer(modifier = Modifier.width(100.dp))
                         
                         // edit.png (오른쪽)
                         Image(
@@ -639,18 +644,26 @@ fun MoreMenu(
                     }
                 }
                 
-                // 삭제 컨테이너 (170×23, 모서리 8)
+                // 삭제 컨테이너 (197×41, 모서리 8, 클릭 시 #F3F4F6)
                 Box(
                     modifier = Modifier
-                        .width(170.dp)
-                        .height(23.dp)
-                        .align(Alignment.CenterHorizontally)
-                        .background(Color.Transparent, RoundedCornerShape(8.dp))
-                        .clickable(onClick = onDeleteClick)
+                        .width(197.dp)
+                        .height(41.dp)
+                        .background(
+                            color = if (selectedItem == 2) Color(0xFFF3F4F6) else Color.Transparent,
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        .clickable {
+                            selectedItem = 2
+                            onDeleteClick()
+                        }
                 ) {
                     Row(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalAlignment = Alignment.CenterVertically
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         // 삭제 텍스트 (왼쪽)
                         Text(
@@ -658,8 +671,6 @@ fun MoreMenu(
                             fontSize = 18.sp,
                             color = Color(0xFF4E5968)
                         )
-                        
-                        Spacer(modifier = Modifier.width(100.dp))
                         
                         // delete.png (오른쪽)
                         Image(
@@ -681,15 +692,27 @@ fun DeleteConfirmDialog(
     onDismiss: () -> Unit
 ) {
     Dialog(onDismissRequest = onDismiss) {
-        Column(
-            modifier = Modifier
-                .width(302.dp)
-                .height(147.dp)
-                .background(Color.White, RoundedCornerShape(26.dp))
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
         ) {
+            // 검은색 배경 (32% 불투명도)
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.32f))
+                    .clickable(onClick = onDismiss)
+            )
+            
+            Column(
+                modifier = Modifier
+                    .width(336.dp)
+                    .height(181.dp)
+                    .background(Color.White, RoundedCornerShape(26.dp))
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
             // 메시지
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
@@ -761,6 +784,7 @@ fun DeleteConfirmDialog(
                 }
             }
         }
+        }
     }
 }
 
@@ -770,15 +794,27 @@ fun EditCancelDialog(
     onDismiss: () -> Unit
 ) {
     Dialog(onDismissRequest = onDismiss) {
-        Column(
-            modifier = Modifier
-                .width(302.dp)
-                .height(147.dp)
-                .background(Color.White, RoundedCornerShape(26.dp))
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
         ) {
+            // 검은색 배경 (32% 불투명도)
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.32f))
+                    .clickable(onClick = onDismiss)
+            )
+            
+            Column(
+                modifier = Modifier
+                    .width(336.dp)
+                    .height(181.dp)
+                    .background(Color.White, RoundedCornerShape(26.dp))
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
             // 메시지
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
@@ -842,6 +878,7 @@ fun EditCancelDialog(
                     )
                 }
             }
+        }
         }
     }
 }

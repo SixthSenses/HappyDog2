@@ -32,7 +32,31 @@ class FreeWritingViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(FreeWritingUiState())
     val uiState: StateFlow<FreeWritingUiState> = _uiState.asStateFlow()
     
-    // 수정 모드 초기화
+    // postId로 게시글 불러오기 (수정 모드)
+    fun loadPostForEdit(postId: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true)
+            
+            val result = postRepository.getPost(postId)
+            if (result.isSuccess) {
+                val post = result.getOrNull()!!
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    isEditMode = true,
+                    editPostId = postId,
+                    existingText = post.text,
+                    existingImageUrls = post.mediaUrls
+                )
+            } else {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    error = "게시글을 불러올 수 없습니다"
+                )
+            }
+        }
+    }
+    
+    // 수정 모드 초기화 (기존 메서드 유지 - 호환성)
     fun initEditMode(postId: String, text: String, imageUrls: List<String>) {
         _uiState.value = _uiState.value.copy(
             isEditMode = true,

@@ -162,4 +162,10 @@ object NetworkModule {
     fun provideCommentApi(retrofit: Retrofit): CommentApi {
         return retrofit.create(CommentApi::class.java)
     }
+
+    @Provides
+    @Singleton
+    fun provideCartoonJobApi(retrofit: Retrofit): CartoonJobApi {
+        return retrofit.create(CartoonJobApi::class.java)
+    }
 }

@@ -118,16 +118,16 @@ fun UserPostsScreen(
                         ) {
                             // 사용자 정보 (왼쪽)
                             Column(modifier = Modifier.weight(1f)) {
-                                // 반려견 이름 (#000, 25px)
+                                // 반려견 이름 (닉네임 - weight 500, #000, 25px)
                                 Text(
                                     text = firstPost.pet?.name ?: firstPost.author.displayName,
                                     fontFamily = PretendardFont,
-                                    fontWeight = FontWeight(400),
+                                    fontWeight = FontWeight(500),
                                     fontSize = 25.sp,
                                     color = Color(0xFF000000)
                                 )
                                 
-                                // 품종과 나이 (#8B95A1, 14px)
+                                // 품종과 나이 (weight 400, #8B95A1, 14px)
                                 firstPost.pet?.let {
                                     Text(
                                         text = "${it.breed} • ${it.age}살",

@@ -20,7 +20,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.pet_project_frontend.presentation.mungstar.MungStarFeed
 import com.example.pet_project_frontend.presentation.mungstar.FreeWriting
 import com.example.pet_project_frontend.presentation.mungstar.CartoonMaking
+import com.example.pet_project_frontend.presentation.mungstar.CartoonLoadingScreen
 import com.example.pet_project_frontend.presentation.mungstar.PostDetailScreen
+import com.example.pet_project_frontend.presentation.mungstar.UserPostsScreen
 import com.example.pet_project_frontend.presentation.translator.TranslatorScreen
 
 @Composable
@@ -123,19 +125,47 @@ fun PetCareNavHost(
 			val postId = backStackEntry.arguments?.getString("postId")
 			val initialText = backStackEntry.arguments?.getString("initialText")
 			val imageUrlsString = backStackEntry.arguments?.getString("imageUrls")
-			val imageUrls = imageUrlsString?.split(",")?.filter { it.isNotBlank() }
+			val initialImageUrls = imageUrlsString?.split(",")?.filter { it.isNotBlank() }
 			
 			FreeWriting(
 				navController = navController,
 				postId = postId,
 				initialText = initialText,
-				imageUrls = imageUrls
+				initialImageUrls = initialImageUrls
 			)
 		}
 
 		// 만화 제작 화면
 		composable("cartoon_making") { backStackEntry ->
 			CartoonMaking(navController = navController)
+		}
+
+		// 만화 로딩 화면
+		composable(
+			route = "cartoon_loading/{jobId}",
+			arguments = listOf(
+				navArgument("jobId") {
+					type = NavType.StringType
+				}
+			)
+		) { backStackEntry ->
+			CartoonLoadingScreen(navController = navController)
+		}
+
+		// 사용자 게시물 화면
+		composable(
+			route = "user_posts/{author_id}",
+			arguments = listOf(
+				navArgument("author_id") {
+					type = NavType.StringType
+				}
+			)
+		) { backStackEntry ->
+			val authorId = backStackEntry.arguments?.getString("author_id") ?: ""
+			UserPostsScreen(
+				navController = navController,
+				authorId = authorId
+			)
 		}
 
 		// 번역기 화면

@@ -60,10 +60,23 @@ fun FreeWriting(
     
     // 수정 모드 초기화
     val isEditMode = postId != null
-    LaunchedEffect(postId, initialText, initialImageUrls) {
-        if (postId != null && initialText != null) {
-            viewModel.initEditMode(postId, initialText, initialImageUrls ?: emptyList())
-            textContent = initialText
+    LaunchedEffect(postId) {
+        if (postId != null) {
+            if (initialText != null) {
+                // 파라미터로 받은 경우 (기존 호환성)
+                viewModel.initEditMode(postId, initialText, initialImageUrls ?: emptyList())
+                textContent = initialText
+            } else {
+                // postId만 있는 경우 자동으로 불러오기
+                viewModel.loadPostForEdit(postId)
+            }
+        }
+    }
+    
+    // ViewModel에서 불러온 게시글 데이터 반영
+    LaunchedEffect(uiState.existingText) {
+        if (uiState.isEditMode && uiState.existingText.isNotEmpty() && textContent.isEmpty()) {
+            textContent = uiState.existingText
         }
     }
 
@@ -415,6 +428,14 @@ fun FreeWriting(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
+                    // 검은색 배경 (32% 불투명도)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.32f))
+                            .clickable { showCancelDialog = false }
+                    )
+                    
                     // 외부 박스
                     Box(
                         modifier = Modifier
@@ -425,40 +446,48 @@ fun FreeWriting(
                             ),
                         contentAlignment = Alignment.Center
                     ) {
-                        // 내부 박스
-                        Box(
-                            modifier = Modifier.size(302.dp, 137.dp)
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.SpaceBetween
                         ) {
-                            // Title1
-                            Text(
-                                text = if (isEditMode) "게시물 수정을 취소할까요?" else "게시물 작성을 취소할까요?",
-                                fontFamily = PretendardFont,
-                                fontWeight = FontWeight(400),
-                                fontSize = 21.sp,
-                                color = Color(0xFF333D4B),
-                                modifier = Modifier.offset(x = 6.dp, y = (-10).dp)
-                            )
+                            // 메시지
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                // Title1
+                                Text(
+                                    text = if (isEditMode) "게시물 수정을 취소할까요?" else "게시물 작성을 취소할까요?",
+                                    fontFamily = PretendardFont,
+                                    fontWeight = FontWeight(600),
+                                    fontSize = 21.sp,
+                                    color = Color(0xFF333D4B)
+                                )
 
-                            // Title2
-                            Text(
-                                text = if (isEditMode) "변경한 내용은 저장되지 않아요." else "지금까지 쓴 내용은 저장되지 않아요.",
-                                fontFamily = PretendardFont,
-                                fontWeight = FontWeight(400),
-                                fontSize = 16.sp,
-                                color = Color(0xFF6B7684),
-                                modifier = Modifier.offset(x = 6.dp, y = 19.dp)
-                            )
+                                Spacer(modifier = Modifier.height(14.dp))
+
+                                // Title2
+                                Text(
+                                    text = if (isEditMode) "지금까지 수정한 내용은 저장되지 않아요." else "지금까지 쓴 내용은 저장되지 않아요.",
+                                    fontFamily = PretendardFont,
+                                    fontWeight = FontWeight(500),
+                                    fontSize = 16.sp,
+                                    color = Color(0xFF6B7684)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(21.dp))
 
                             // 버튼들
                             Row(
-                                modifier = Modifier
-                                    .offset(x = 6.dp, y = 61.dp),
+                                modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
                                 // 닫기 버튼
                                 Box(
                                     modifier = Modifier
-                                        .size(146.dp, 58.dp)
+                                        .width(146.dp)
+                                        .height(58.dp)
                                         .background(
                                             color = Color(0xFFF3F4F6),
                                             shape = RoundedCornerShape(14.dp)
@@ -469,7 +498,7 @@ fun FreeWriting(
                                     Text(
                                         text = "닫기",
                                         fontFamily = PretendardFont,
-                                        fontWeight = FontWeight(400),
+                                        fontWeight = FontWeight(600),
                                         fontSize = 18.sp,
                                         color = Color(0xFF4E5968)
                                     )
@@ -478,7 +507,8 @@ fun FreeWriting(
                                 // 나가기 버튼
                                 Box(
                                     modifier = Modifier
-                                        .size(146.dp, 58.dp)
+                                        .width(146.dp)
+                                        .height(58.dp)
                                         .background(
                                             color = Color(0xFFEC4453),
                                             shape = RoundedCornerShape(14.dp)
@@ -492,7 +522,7 @@ fun FreeWriting(
                                     Text(
                                         text = "나가기",
                                         fontFamily = PretendardFont,
-                                        fontWeight = FontWeight(400),
+                                        fontWeight = FontWeight(600),
                                         fontSize = 18.sp,
                                         color = Color.White
                                     )
