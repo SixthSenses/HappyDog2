@@ -8,6 +8,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -128,24 +129,26 @@ fun LoginScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 24.dp),
+                    .padding(27.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                verticalArrangement = Arrangement.Bottom
             ) {
                 // 앱 로고 (실제 로고 이미지가 있다면 사용)
                 Image(
+                    modifier = Modifier.size(width = 358.dp, height = 358.dp),
                     painter = painterResource(id = R.drawable.img_login),
                     contentDescription = "image description",
+                    alignment = Alignment.TopCenter,
                     contentScale = ContentScale.Crop
                 )
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 // 앱 제목
                 Text(
                     text = "행복하개",
                     style = TextStyle(
-                        fontSize = 18.sp,
+                        fontSize = 14.sp,
                         fontWeight = FontWeight(500),
                         color = Color(0xFFFFB331),
                         textAlign = TextAlign.Center,
@@ -157,14 +160,14 @@ fun LoginScreen(
                 Text(
                     text = "강아지 케어의 모든 것\n간편하게, 행복하개",
                     style = TextStyle(
-                        fontSize = 36.sp,
+                        fontSize = 28.sp,
                         fontWeight = FontWeight(700),
                         color = Color(0xFF191F28),
                         textAlign = TextAlign.Center,
                     )
                 )
 
-                Spacer(modifier = Modifier.height(50.dp))
+                Spacer(modifier = Modifier.height(140.dp))
 
                 // Google 로그인 버튼
                 Button(
@@ -212,16 +215,16 @@ fun LoginScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
-                // 약관 안내
-                Text(
-                    text = "로그인 시 서비스 이용약관 및\n개인정보 처리방침에 동의하게 됩니다.",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    textAlign = TextAlign.Center,
-                    lineHeight = 18.sp
-                )
+//                // 약관 안내
+//                Text(
+//                    text = "로그인 시 서비스 이용약관 및\n개인정보 처리방침에 동의하게 됩니다.",
+//                    fontSize = 12.sp,
+//                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+//                    textAlign = TextAlign.Center,
+//                    lineHeight = 18.sp
+//                )
             }
         }
     }

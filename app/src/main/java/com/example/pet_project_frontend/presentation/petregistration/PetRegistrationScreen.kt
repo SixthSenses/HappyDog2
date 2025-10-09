@@ -40,9 +40,11 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
@@ -79,6 +81,7 @@ fun CategorySelectField(
     modifier: Modifier = Modifier
 ) {
     var showDialog by remember { mutableStateOf(false) }
+    val focusManager = LocalFocusManager.current // 추가
 
     Column(
         modifier = modifier.padding(vertical = 5.dp),
@@ -107,7 +110,10 @@ fun CategorySelectField(
                 isError = isError,
                 readOnly = true,
                 trailingIcon = {
-                    IconButton(onClick = { showDialog = true }) {
+                    IconButton(onClick = {
+                        focusManager.clearFocus()
+                        showDialog = true
+                    }) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_arrowdown), // .xml 파일
                             contentDescription = label,
@@ -193,6 +199,7 @@ fun CategoryMultiSelectField(
 ) {
     var selectedCategories by remember { mutableStateOf(setOf<String>()) }
     var showDialog by remember { mutableStateOf(false) }
+    val focusManager = LocalFocusManager.current // 추가
 
     Column(
         modifier = modifier.padding(vertical = 5.dp),
@@ -221,7 +228,10 @@ fun CategoryMultiSelectField(
                 isError = isError,
                 readOnly = true,
                 trailingIcon = {
-                    IconButton(onClick = { showDialog = true }) {
+                    IconButton(onClick = {
+                        focusManager.clearFocus()
+                        showDialog = true
+                    }) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_arrowdown), // .xml 파일
                             contentDescription = label,
@@ -308,8 +318,6 @@ fun ResizableSelectionDialog(
     )
 
     ModalBottomSheet(
-        modifier = Modifier
-            .padding(horizontal = 10.dp),
         onDismissRequest = onDismiss,
         sheetState = bottomSheetState,
         dragHandle = {
@@ -335,6 +343,7 @@ fun ResizableSelectionDialog(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .padding(bottom = 10.dp)
                 .heightIn(min = 300.dp, max = 600.dp)
         ) {
             // 헤더
@@ -627,41 +636,44 @@ fun PetRegistrationScreen(
 
                 // 생년월일 선택
                 item {
-                    var birthDateWithDot by remember { mutableStateOf("") }
+                    var birthDateField by remember { mutableStateOf(TextFieldValue("")) }
                     val isError = uiState.error?.contains("생년월일") == true
-                    fun updateBirthDateWithDot(
-                        updateBirthDate: (LocalDate?) -> Unit
-                    ): (String) -> String = { rawInput ->
-                        val digits = rawInput.filter { it.isDigit() }
 
-                        val formatted = buildString {
-                            for (i in digits.indices) {
-                                append(digits[i])
-                                if (i == 3 || i == 5) append('.')
-                            }
-                        }.take(10)
-
-                        val parsedDate: LocalDate? = if (digits.isEmpty()) {
-                            null  // 입력이 없으면 null 반환
-                        } else if (digits.length >= 8) {
-                            try {
-                                LocalDate.parse(formatted.substring(0, 10), DateTimeFormatter.ofPattern("yyyy.MM.dd"))
-                            } catch (e: DateTimeParseException) {
-                                LocalDate.now().plusDays(1)  // 변환 실패 시 미래 날짜 반환
-                            }
-                        } else {
-                            LocalDate.now().plusDays(1)  // 8자리 미만일 때도 미래 날짜 반환
-                        }
-
-                        updateBirthDate(parsedDate)
-                        formatted
-                    }
-
-                    LabeledTextField(
+                    LabeledDateField(
                         label = "생년월일",
-                        value = birthDateWithDot,
-                        onValueChange = {
-                            birthDateWithDot = updateBirthDateWithDot(viewModel::updateBirthDate)(it)
+                        value = birthDateField,
+                        onValueChange = { newValue ->
+                            // 숫자만 추출해서 포맷
+                            val digits = newValue.text.filter { it.isDigit() }
+
+                            val formatted = buildString {
+                                for (i in digits.indices) {
+                                    append(digits[i])
+                                    if (i == 3 || i == 5) append('.')
+                                }
+                            }.take(10)
+
+                            // 커서 (selection)의 위치 조정
+                            val newCursor = when {
+                                // 입력이 늘어났고, 방금 .이 찍혀 커서를 한 칸 뒤로 이동해야 할 때
+                                formatted.length > birthDateField.text.length &&
+                                        (formatted.getOrNull(newValue.selection.start - 1) == '.') ->
+                                    newValue.selection.start + 1
+                                else ->
+                                    minOf(formatted.length, newValue.selection.start)
+                            }
+
+                            birthDateField = TextFieldValue(
+                                text = formatted,
+                                selection = TextRange(newCursor)
+                            )
+                            // 검증 및 상태 업데이트
+                            viewModel.updateBirthDate(
+                                try {
+                                    if (digits.length >= 8) LocalDate.parse(formatted, DateTimeFormatter.ofPattern("yyyy.MM.dd"))
+                                    else null
+                                } catch (e: DateTimeParseException) { null }
+                            )
                         },
                         placeholder = "반려견의 생일을 알려주세요",
                         isError = isError,
@@ -769,6 +781,99 @@ fun LabeledTextField(
     label: String,
     value: String,
     onValueChange: (String) -> Unit,
+    placeholder: String? = null,
+    isError: Boolean = false,
+    isNumberType: Boolean = false,
+    errorMessage: String? = null,
+    singleLine: Boolean = true,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.padding(vertical = 5.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        horizontalAlignment = Alignment.Start
+    ) {
+        Text(
+            text = label,
+            style = TextStyle(
+                fontSize = 13.sp,
+                lineHeight = 14.sp,
+                fontWeight = FontWeight(500),
+                color = if (isError) Color(0xFFF04452) else Color(0xFF333D4B)
+            ),
+            modifier = Modifier.padding(horizontal = 4.dp)
+        )
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            TextField(
+                value = value,
+                onValueChange = onValueChange,
+                placeholder = { placeholder?.let { Text(it) }},
+                singleLine = singleLine,
+                isError = isError,
+                keyboardOptions = if (isNumberType) {
+                    KeyboardOptions.Default.copy(
+                        keyboardType = KeyboardType.Number
+                    )
+                } else {
+                    KeyboardOptions.Default
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color(0xFFF9FAFB))
+                    .border(
+                        width = 0.5.dp,
+                        color = Color(0xFFE5E8EB),
+                        shape = RoundedCornerShape(14.dp)
+                    ),
+                colors = TextFieldDefaults.colors(
+                    focusedTextColor = Color(0xFF333D4B),
+                    unfocusedTextColor = Color(0xFF333D4B),
+                    errorTextColor = Color(0xFF333D4B),
+                    focusedContainerColor = Color(0xFFF9FAFB),
+                    unfocusedContainerColor = Color(0xFFF9FAFB),
+                    errorContainerColor = Color(0xFFFFEEEE),
+                    cursorColor = Color(0xFF426BF2),
+                    errorCursorColor = Color(0xFFE42A38),
+                    selectionColors = TextSelectionColors(
+                        handleColor = Color(0xFF3182F6),
+                        backgroundColor = Color(0x1A001B37)
+                    ),
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    errorIndicatorColor = Color.Transparent,
+                    focusedPlaceholderColor = Color(0xFF8B95A1),
+                    unfocusedPlaceholderColor = Color(0xFF8B95A1),
+                    errorPlaceholderColor = Color.Transparent
+                )
+            )
+
+            if (isError && errorMessage != null) {
+                Text(
+                    text = errorMessage,
+                    style = TextStyle(
+                        fontSize = 13.sp,
+                        lineHeight = 14.sp,
+                        fontWeight = FontWeight(500),
+                        color = Color(0xFFF04452)
+                    ),
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun LabeledDateField(
+    label: String,
+    value: TextFieldValue,
+    onValueChange: (TextFieldValue) -> Unit,
     placeholder: String? = null,
     isError: Boolean = false,
     isNumberType: Boolean = false,
