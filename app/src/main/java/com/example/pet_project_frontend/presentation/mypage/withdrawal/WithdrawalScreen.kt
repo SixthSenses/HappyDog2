@@ -1,4 +1,4 @@
-﻿@file:OptIn(ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3Api::class)
 
 package com.example.pet_project_frontend.presentation.mypage.withdrawal
 
@@ -217,4 +217,3 @@ private fun confirmTextStyle(): TextStyle =
         fontSize = 16.sp,
         fontWeight = FontWeight.SemiBold
     )
-

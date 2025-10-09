@@ -1,4 +1,4 @@
-﻿package com.example.pet_project_frontend.presentation.mypage.withdrawal
+package com.example.pet_project_frontend.presentation.mypage.withdrawal
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

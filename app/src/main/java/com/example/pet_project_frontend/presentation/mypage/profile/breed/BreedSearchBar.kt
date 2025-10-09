@@ -113,3 +113,4 @@ private val Gray600 = Color(0xFF6B7684)
 private val Gray500 = Color(0xFF8B95A1)
 private val Gray100 = Color(0xFFF2F4F6)
 private val TextPrimary = Color(0xFF191F28)
+
