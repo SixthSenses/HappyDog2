@@ -21,6 +21,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -98,16 +99,15 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             AppTheme {
-                // isLoggedIn는 ViewModel에서, 펫 존재 여부와 선택된 펫 ID는 각각 ViewModel 및 TokenManager에서 수집
+                // 원격(develop)과 동일한 분기: isLoggedIn + hasPet만 사용 (selectedPetId 제거)
                 val isLoggedIn by viewModel.isLoggedIn.collectAsStateWithLifecycle()
                 val hasPet by viewModel.hasPet.collectAsStateWithLifecycle()
-                val selectedPetId by tokenManager.getSelectedPetIdFlow()
-                    .collectAsStateWithLifecycle(initialValue = null)
+
                 val navController = rememberNavController()
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentRoute = navBackStackEntry?.destination?.route
 
-                // 바텀바를 보여줄 라우트 목록 (기존 코드 유지)
+                // 바텀바 라우트
                 val bottomBarRoutes = remember {
                     listOf(
                         Screen.PetCare.route,
@@ -119,8 +119,8 @@ class MainActivity : ComponentActivity() {
                 }
                 val showBottomBar = currentRoute in bottomBarRoutes
 
-                // 공지/안내 바텀시트 초기 설정 (기존 코드 유지)
-                var selectedNotice: (@Composable () -> Unit)? = null
+                // 공지/안내 시트 상태 (원격 코드 스타일)
+                var selectedNotice by remember { mutableStateOf<(@Composable () -> Unit)?>(null) }
                 val openNotice: (@Composable (closeNotice: () -> Unit) -> Unit) -> Unit = { composable ->
                     selectedNotice = {
                         composable { selectedNotice = null }
@@ -134,7 +134,9 @@ class MainActivity : ComponentActivity() {
                                 currentRoute = currentRoute ?: "",
                                 onNavigate = { route ->
                                     navController.navigate(route) {
-                                        popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                        popUpTo(navController.graph.startDestinationId) {
+                                            saveState = true
+                                        }
                                         launchSingleTop = true
                                         restoreState = true
                                     }
@@ -151,17 +153,17 @@ class MainActivity : ComponentActivity() {
                             CircularProgressIndicator()
                         }
                     } else {
-                        // 시작 목적지 분기: 로그인, 펫 보유, 선택된 펫 ID 여부를 모두 고려
+                        // 시작 목적지 분기: 로그인 + 펫 존재 여부만 사용
                         val effectiveStart = when {
                             !isLoggedIn -> Screen.Login.route
-                            !hasPet || selectedPetId.isNullOrBlank() -> Screen.PetRegistration.route
+                            !hasPet -> Screen.PetRegistration.route
                             else -> Screen.PetCare.route
                         }
 
-                        // 런타임에도 펫이 없거나 선택된 펫이 없으면 등록 화면으로 유도
-                        LaunchedEffect(isLoggedIn, hasPet, selectedPetId, currentRoute) {
+                        // 런타임에도 펫이 없으면 등록 화면으로 유도
+                        LaunchedEffect(isLoggedIn, hasPet, currentRoute) {
                             if (isLoggedIn &&
-                                ((!hasPet) || selectedPetId.isNullOrBlank()) &&
+                                !hasPet &&
                                 currentRoute != Screen.Login.route &&
                                 currentRoute != Screen.PetRegistration.route
                             ) {
@@ -182,7 +184,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                // 반투명 배경 애니메이션 (Stashed changes의 배경 처리)
+                // 배경 페이드
                 AnimatedVisibility(
                     visible = selectedNotice != null,
                     enter = fadeIn(animationSpec = tween(300)),
@@ -195,11 +197,11 @@ class MainActivity : ComponentActivity() {
                     )
                 }
 
-                // 공지 슬라이드 인/아웃 애니메이션 (기존 코드 유지)
+                // 공지 슬라이드 인/아웃
                 AnimatedVisibility(
                     visible = selectedNotice != null,
-                    enter = slideInVertically(initialOffsetY = { it }),
-                    exit = slideOutVertically(targetOffsetY = { it })
+                    enter = slideInVertically(initialOffsetY = { full -> full }),
+                    exit = slideOutVertically(targetOffsetY = { full -> full })
                 ) {
                     selectedNotice?.invoke()
                 }

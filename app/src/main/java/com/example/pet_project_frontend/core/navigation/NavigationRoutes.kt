@@ -44,6 +44,16 @@ sealed class Screen(val route: String) {
 
     object Withdraw : Screen("mypage/withdraw")
 
+    object VerificationIntro : Screen("mypage/verification/intro")
+    object VerificationGuide : Screen("mypage/verification/guide")
+    object VerificationLoading :
+        Screen("mypage/verification/loading?petId={petId}") {
+        fun createRoute(petId: String): String =
+            "mypage/verification/loading?petId=$petId"
+    }
+
+    object VerificationSuccess : Screen("mypage/verification/success")
+
     object PetCareDashboard : Screen(Routes.PetCare.Dashboard) {
         fun createRoute(
             petId: String? = null,

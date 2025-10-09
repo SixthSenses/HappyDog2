@@ -1,9 +1,16 @@
 ﻿package com.example.pet_project_frontend.core.navigation
 
+import android.content.Context
+import android.net.Uri
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -20,10 +27,20 @@ import com.example.pet_project_frontend.presentation.mypage.profile.gender.Gende
 import com.example.pet_project_frontend.presentation.mypage.profile.gender.GenderUi
 import com.example.pet_project_frontend.presentation.mypage.profile.name.NameEditRoute
 import com.example.pet_project_frontend.presentation.mypage.settings.notification.NotificationSettingsScreen
+import com.example.pet_project_frontend.presentation.mypage.settings.verification.IdentityVerificationViewModel
+import com.example.pet_project_frontend.presentation.mypage.settings.verification.VerificationGuideError
+import com.example.pet_project_frontend.presentation.mypage.settings.verification.VerificationGuideDetectionErrorDialog
+import com.example.pet_project_frontend.presentation.mypage.settings.verification.VerificationGuideDuplicateErrorDialog
+import com.example.pet_project_frontend.presentation.mypage.settings.verification.VerificationGuideScreen
+import com.example.pet_project_frontend.presentation.mypage.settings.verification.VerificationLoadingScreen
+import com.example.pet_project_frontend.presentation.mypage.settings.verification.VerificationMainScreen
+import com.example.pet_project_frontend.presentation.mypage.settings.verification.VerificationResult
+import com.example.pet_project_frontend.presentation.mypage.settings.verification.VerificationResultSuccessScreen
 import com.example.pet_project_frontend.presentation.mypage.withdrawal.WithdrawalScreen
 import com.example.pet_project_frontend.presentation.petcare.PetCareMainScreen
 import com.example.pet_project_frontend.presentation.petregistration.PetRegistrationScreen
 import com.example.pet_project_frontend.presentation.translator.TranslatorScreen
+import java.io.File
 
 @Composable
 fun PetCareNavHost(
@@ -32,12 +49,13 @@ fun PetCareNavHost(
     openNotice: (@Composable (closeNotice: () -> Unit) -> Unit) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+
     NavHost(
         navController = navController,
         startDestination = startDestination,
         modifier = modifier
     ) {
-        // 로그인
         composable(Screen.Login.route) {
             LoginScreen(
                 onLoginResult = { isNewUser ->
@@ -49,17 +67,14 @@ fun PetCareNavHost(
             )
         }
 
-        // 반려견 등록
         composable(Screen.PetRegistration.route) {
             PetRegistrationScreen(navController = navController)
         }
 
-        // 펫케어 메인
         composable(Screen.PetCare.route) {
             PetCareMainScreen()
         }
 
-        // 펫케어 대시보드 딥링크
         composable(
             route = Routes.PetCare.Dashboard,
             arguments = listOf(
@@ -75,12 +90,10 @@ fun PetCareNavHost(
             PetCareMainScreen()
         }
 
-        // 지도 및 기타 탭
         composable(Screen.Map.route) { MapScreen() }
         composable(Screen.Community.route) { PetCareMainScreen() }
         composable(Screen.Translator.route) { TranslatorScreen(openNotice = openNotice) }
 
-        // 마이페이지 메인
         composable(Screen.MyPage.route) {
             MyPageScreen(
                 onNameClick = { currentName ->
@@ -99,24 +112,17 @@ fun PetCareNavHost(
                     navController.navigate(Screen.NotificationSettings.route)
                 },
                 onVerificationClick = {
-                    // TODO: 본인 인증 화면 연결 필요
+                    navController.navigate(Screen.VerificationIntro.route)
                 },
-                onTermsClick = {
-                    // TODO: 이용약관 화면 연결 필요
-                },
-                onPrivacyClick = {
-                    // TODO: 개인정보 처리방침 화면 연결 필요
-                },
+                onTermsClick = { /* TODO */ },
+                onPrivacyClick = { /* TODO */ },
                 onWithdrawClick = {
                     navController.navigate(Screen.Withdraw.route)
                 },
-                onProfileImageClick = {
-                    // TODO: 프로필 이미지 편집 흐름 연결 필요
-                }
+                onProfileImageClick = { /* TODO */ }
             )
         }
 
-        // 이름 수정
         composable(
             route = Screen.EditPetName.route,
             arguments = listOf(
@@ -130,7 +136,6 @@ fun PetCareNavHost(
             NameEditRoute(navController = navController)
         }
 
-        // 생년월일 수정
         composable(
             route = Screen.EditBirthDate.route,
             arguments = listOf(
@@ -144,7 +149,6 @@ fun PetCareNavHost(
             BirthEditRoute(navController = navController)
         }
 
-        // 성별 선택
         composable(
             route = Screen.SelectGender.route,
             arguments = listOf(
@@ -162,8 +166,8 @@ fun PetCareNavHost(
                 onBack = { navController.popBackStack() },
                 onSaved = { selected ->
                     val label = when (selected) {
-                        GenderUi.MALE -> "수컷"
-                        GenderUi.FEMALE -> "암컷"
+                        GenderUi.MALE -> "?⑥븘"
+                        GenderUi.FEMALE -> "?ъ븘"
                     }
                     myPageViewModel.updateGender(label)
                     navController.popBackStack()
@@ -171,7 +175,6 @@ fun PetCareNavHost(
             )
         }
 
-        // 견종 선택
         composable(
             route = Screen.SelectBreed.route,
             arguments = listOf(
@@ -194,12 +197,10 @@ fun PetCareNavHost(
             )
         }
 
-        // 알림 설정
         composable(Screen.NotificationSettings.route) {
             NotificationSettingsScreen(onBack = { navController.popBackStack() })
         }
 
-        // 회원 탈퇴
         composable(Screen.Withdraw.route) {
             WithdrawalScreen(
                 onBack = { navController.popBackStack() },
@@ -211,5 +212,158 @@ fun PetCareNavHost(
                 }
             )
         }
+
+        composable(Screen.VerificationIntro.route) {
+            val verificationViewModel: IdentityVerificationViewModel = hiltViewModel()
+            LaunchedEffect(Unit) {
+                verificationViewModel.resetVerificationResult()
+            }
+            VerificationMainScreen(
+                onVerifyClick = {
+                    navController.navigate(Screen.VerificationGuide.route)
+                }
+            )
+        }
+
+        composable(Screen.VerificationGuide.route) { backStackEntry ->
+            val verificationParent = remember(navController) { navController.getBackStackEntry(Screen.VerificationIntro.route) }
+            val verificationViewModel: IdentityVerificationViewModel = hiltViewModel(verificationParent)
+
+            val myPageEntry = remember(navController) { navController.getBackStackEntry(Screen.MyPage.route) }
+            val myPageViewModel: MyPageViewModel = hiltViewModel(myPageEntry)
+            val myPageState by myPageViewModel.uiState.collectAsStateWithLifecycle()
+
+            val guideEntry = remember(navController) { navController.getBackStackEntry(Screen.VerificationGuide.route) }
+            val errorFlow = guideEntry.savedStateHandle.getStateFlow<String?>("verification_error", null)
+            val errorValue by errorFlow.collectAsState()
+            val errorDialog = when (errorValue) {
+                VerificationResult.Duplicate.name,
+                VerificationResult.AlreadyVerified.name -> VerificationGuideError.Duplicate
+                VerificationResult.InvalidImage.name,
+                VerificationResult.Failed.name,
+                VerificationResult.Unknown.name -> VerificationGuideError.DetectionFailed
+                else -> null
+            }
+
+            VerificationGuideScreen(
+                onBack = { navController.popBackStack() },
+                onPickImage = { uriString ->
+                    guideEntry.savedStateHandle["verification_error"] = null
+                    val file = copyUriToCache(context, uriString)
+                    if (file != null) {
+                        verificationViewModel.onImageSelected(file)
+                        val petId = myPageState.petId
+                        if (!petId.isNullOrBlank()) {
+                            navController.navigate(Screen.VerificationLoading.createRoute(petId))
+                        } else {
+                            guideEntry.savedStateHandle["verification_error"] = VerificationResult.Failed.name
+                        }
+                    } else {
+                        guideEntry.savedStateHandle["verification_error"] = VerificationResult.InvalidImage.name
+                    }
+                },
+                onOpenCamera = { /* TODO: open camera */ },
+                errorDialog = errorDialog,
+                onDismissError = { guideEntry.savedStateHandle["verification_error"] = null }
+            )
+        }
+
+        composable(
+            route = Screen.VerificationLoading.route,
+            arguments = listOf(
+                navArgument("petId") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val petId = backStackEntry.arguments?.getString("petId")
+            if (petId == null) {
+                navController.popBackStack()
+                return@composable
+            }
+            val verificationParent = remember(navController) { navController.getBackStackEntry(Screen.VerificationIntro.route) }
+            val verificationViewModel: IdentityVerificationViewModel = hiltViewModel(verificationParent)
+
+            VerificationLoadingScreen(
+                petId = petId,
+                viewModel = verificationViewModel,
+                onResult = { result ->
+                    when (result) {
+                        VerificationResult.Idle -> Unit
+                        VerificationResult.Success -> {
+                            verificationViewModel.resetVerificationResult()
+                            navController.navigate(Screen.VerificationSuccess.route) {
+                                popUpTo(Screen.VerificationGuide.route) { inclusive = false }
+                            }
+                        }
+
+                        VerificationResult.Duplicate,
+                        VerificationResult.AlreadyVerified -> {
+                            verificationViewModel.resetVerificationResult()
+                            navController.popBackStack(Screen.VerificationGuide.route, inclusive = false)
+                            navController.currentBackStackEntry?.savedStateHandle?.set(
+                                "verification_error",
+                                VerificationResult.Duplicate.name
+                            )
+                        }
+
+                        VerificationResult.InvalidImage,
+                        VerificationResult.Failed,
+                        VerificationResult.Unknown -> {
+                            verificationViewModel.resetVerificationResult()
+                            navController.popBackStack(Screen.VerificationGuide.route, inclusive = false)
+                            navController.currentBackStackEntry?.savedStateHandle?.set(
+                                "verification_error",
+                                VerificationResult.InvalidImage.name
+                            )
+                        }
+                    }
+                },
+                onBack = {
+                    verificationViewModel.resetVerificationResult()
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(Screen.VerificationSuccess.route) {
+            val verificationParent = remember(navController) { navController.getBackStackEntry(Screen.VerificationIntro.route) }
+            val verificationViewModel: IdentityVerificationViewModel = hiltViewModel(verificationParent)
+            val myPageEntry = remember(navController) { navController.getBackStackEntry(Screen.MyPage.route) }
+            val myPageViewModel: MyPageViewModel = hiltViewModel(myPageEntry)
+
+            LaunchedEffect(Unit) {
+                myPageViewModel.loadUserData()
+            }
+
+            VerificationResultSuccessScreen(
+                onClose = {
+                    verificationViewModel.resetVerificationResult()
+                    navController.navigate(Screen.MyPage.route) {
+                        popUpTo(Screen.VerificationIntro.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
+            )
+        }
     }
 }
+
+private fun copyUriToCache(context: Context, uriString: String): File? {
+    return try {
+        val uri = Uri.parse(uriString)
+        val inputStream = context.contentResolver.openInputStream(uri) ?: return null
+        val fileName = uri.lastPathSegment
+            ?.substringAfterLast('/')
+            ?.takeIf { it.isNotBlank() }
+            ?: "verification_${System.currentTimeMillis()}.jpg"
+        val tempFile = File(context.cacheDir, fileName)
+        inputStream.use { input ->
+            tempFile.outputStream().use { output ->
+                input.copyTo(output)
+            }
+        }
+        tempFile
+    } catch (e: Exception) {
+        null
+    }
+}
+
