@@ -132,6 +132,7 @@ fun PhotoCropScreen(
         ) {
             CropTopBar(onBack = onCancel)
 
+            @Suppress("UnusedBoxWithConstraintsScope")
             BoxWithConstraints(
                 modifier = Modifier
                     .weight(1f)

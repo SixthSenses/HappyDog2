@@ -1,4 +1,5 @@
-﻿package com.example.pet_project_frontend.presentation.mypage.profile.birth
+// 변경의도: 저장 시 초기값을 SavedStateHandle에서 받아 화면에 반영하고, MyPage 갱신 신호를 보낼 수 있도록 임시 저장 흐름을 정리한다.
+package com.example.pet_project_frontend.presentation.mypage.profile.birth
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -12,7 +13,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class BirthEditUiState(
-    val text: String = "",      // YYYY/MM/DD
+    val text: String = "",
     val error: String? = null,
     val isSaving: Boolean = false
 )
@@ -38,7 +39,7 @@ class BirthEditViewModel @Inject constructor(
         _uiState.update { it.copy(text = "", error = null) }
     }
 
-    fun onSave(onSuccess: (String) -> Unit) {
+    fun onSave(onSuccess: (String, Boolean) -> Unit) {
         val input = _uiState.value.text.trim()
         val validationMessage = validateBirth(input)
         if (validationMessage != null) {
@@ -48,10 +49,10 @@ class BirthEditViewModel @Inject constructor(
 
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true) }
-            // TODO: 서버 연동 시 API 호출로 교체
+            // TODO 서버 연동 시 치환: 생년월일 수정 API 연동 후 실제 응답 값으로 대체
             delay(150)
             _uiState.update { it.copy(isSaving = false) }
-            onSuccess(input)
+            onSuccess(input, false)
         }
     }
 
@@ -67,8 +68,8 @@ class BirthEditViewModel @Inject constructor(
         val month = parts[1].toInt()
         val day = parts[2].toInt()
 
-        if (year !in 1900..2100) return "연도 값을 확인해 주세요"
-        if (month !in 1..12) return "월은 1~12 사이여야 해요"
+        if (year !in 1900..2100) return "연도 범위를 확인해 주세요"
+        if (month !in 1..12) return "월은 1~12 범위여야 해요"
 
         val maxDay = when (month) {
             1, 3, 5, 7, 8, 10, 12 -> 31

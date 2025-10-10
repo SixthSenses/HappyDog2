@@ -1,3 +1,4 @@
+// 변경의도: 탈퇴 요청 성공 시 세션 정리와 화면 전환이 매끄럽게 이뤄지도록 상태/메시지를 정돈한다.
 package com.example.pet_project_frontend.presentation.mypage.withdrawal
 
 import androidx.lifecycle.ViewModel
@@ -34,12 +35,14 @@ class WithdrawalViewModel @Inject constructor(
                 is AppResult.Success -> {
                     _ui.update { it.copy(isProcessing = false, showCompleted = true) }
                 }
+
                 is AppResult.Error -> {
-                    val message = result.message ?: "탈퇴 요청이 실패했어요"
+                    val message = result.message ?: "탈퇴 요청에 실패했어요. 다시 시도해 주세요."
                     _ui.update { it.copy(isProcessing = false, errorMessage = message) }
                 }
+
                 is AppResult.Exception -> {
-                    val message = result.throwable.message ?: "알 수 없는 오류가 발생했어요"
+                    val message = result.throwable.message ?: "예기치 못한 오류가 발생했어요. 잠시 후 다시 시도해 주세요."
                     _ui.update { it.copy(isProcessing = false, errorMessage = message) }
                 }
             }

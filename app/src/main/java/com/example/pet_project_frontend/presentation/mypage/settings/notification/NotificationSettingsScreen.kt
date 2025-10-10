@@ -1,10 +1,26 @@
-﻿@file:OptIn(ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3Api::class)
 
+// 변경의도: 전체 푸시 토글과 세부 항목을 DataStore 상태와 연동하도록 UI 구성을 보완한다.
 package com.example.pet_project_frontend.presentation.mypage.settings.notification
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -25,6 +41,7 @@ fun NotificationSettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val switchesEnabled = !uiState.loading
+    val detailSwitchEnabled = switchesEnabled && uiState.pushEnabled
 
     Scaffold(
         topBar = {
@@ -54,6 +71,43 @@ fun NotificationSettingsScreen(
                 Spacer(Modifier.height(52.dp))
 
                 Text(
+                    text = "전체 알림",
+                    style = sectionTitleStyle(),
+                    color = Gray900
+                )
+                Spacer(Modifier.height(20.dp))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "푸시 알림",
+                        style = itemLabelStyle(),
+                        color = Gray700
+                    )
+                    Switch(
+                        checked = uiState.pushEnabled,
+                        onCheckedChange = { viewModel.onTogglePush(it) },
+                        enabled = switchesEnabled,
+                        colors = noBorderSwitchColors()
+                    )
+                }
+
+                Spacer(Modifier.height(35.dp))
+
+                Divider(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = DividerColor,
+                    thickness = 1.dp
+                )
+
+                Spacer(Modifier.height(4.dp))
+
+                Text(
                     text = "보고서",
                     style = sectionTitleStyle(),
                     color = Gray900
@@ -75,7 +129,7 @@ fun NotificationSettingsScreen(
                     Switch(
                         checked = uiState.weeklyReport,
                         onCheckedChange = { viewModel.onToggleWeekly(it) },
-                        enabled = switchesEnabled,
+                        enabled = detailSwitchEnabled,
                         colors = noBorderSwitchColors()
                     )
                 }
@@ -112,7 +166,7 @@ fun NotificationSettingsScreen(
                     Switch(
                         checked = uiState.likeEnabled,
                         onCheckedChange = { viewModel.onToggleLike(it) },
-                        enabled = switchesEnabled,
+                        enabled = detailSwitchEnabled,
                         colors = noBorderSwitchColors()
                     )
                 }
@@ -132,7 +186,7 @@ fun NotificationSettingsScreen(
                     Switch(
                         checked = uiState.commentEnabled,
                         onCheckedChange = { viewModel.onToggleComment(it) },
-                        enabled = switchesEnabled,
+                        enabled = detailSwitchEnabled,
                         colors = noBorderSwitchColors()
                     )
                 }

@@ -1,4 +1,5 @@
-﻿package com.example.pet_project_frontend.presentation.mypage.profile.birth
+// 변경의도: 생년월일 편집 화면에서 초기값 주입과 저장 후 MyPage 상태 반영 흐름을 명확히 한다.
+package com.example.pet_project_frontend.presentation.mypage.profile.birth
 
 import android.view.ViewTreeObserver
 import androidx.compose.foundation.background
@@ -62,8 +63,11 @@ fun BirthEditRoute(
         onTextChange = viewModel::onTextChange,
         onClear = viewModel::onClear,
         onSave = {
-            viewModel.onSave { savedBirth ->
+            viewModel.onSave { savedBirth, shouldReload ->
                 myPageViewModel.updateBirthDate(savedBirth)
+                if (shouldReload) {
+                    myPageViewModel.loadUserData()
+                }
                 navController.popBackStack()
             }
         }

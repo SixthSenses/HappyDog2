@@ -1,3 +1,4 @@
+// 변경의도: 마이페이지 편집 경로와 저장 후 상태 갱신 흐름을 연결해 뒤로가기를 포함한 사용자 경험을 정돈한다.
 package com.example.pet_project_frontend.core.navigation
 
 import android.content.Context
@@ -114,12 +115,12 @@ fun PetCareNavHost(
                 onVerificationClick = {
                     navController.navigate(Screen.VerificationIntro.route)
                 },
-                onTermsClick = { /* TODO */ },
-                onPrivacyClick = { /* TODO */ },
+                onTermsClick = { /* TODO 서버 연동 시 치환 */ },
+                onPrivacyClick = { /* TODO 서버 연동 시 치환 */ },
                 onWithdrawClick = {
                     navController.navigate(Screen.Withdraw.route)
                 },
-                onProfileImageClick = { /* TODO */ }
+                onProfileImageClick = { /* TODO 서버 연동 시 치환 */ }
             )
         }
 
@@ -169,12 +170,15 @@ fun PetCareNavHost(
 
             GenderSelectScreen(
                 onBack = { navController.popBackStack() },
-                onSaved = { selected ->
+                onSaved = { selected, shouldReload ->
                     val label = when (selected) {
                         GenderUi.MALE -> "수컷"
                         GenderUi.FEMALE -> "암컷"
                     }
                     myPageViewModel.updateGender(label)
+                    if (shouldReload) {
+                        myPageViewModel.loadUserData()
+                    }
                     navController.popBackStack()
                 }
             )
@@ -195,8 +199,11 @@ fun PetCareNavHost(
 
             BreedSelectScreen(
                 onBack = { navController.popBackStack() },
-                onNext = { breed ->
+                onNext = { breed, shouldReload ->
                     myPageViewModel.updateBreed(breed)
+                    if (shouldReload) {
+                        myPageViewModel.loadUserData()
+                    }
                     navController.popBackStack()
                 }
             )
@@ -372,4 +379,3 @@ private fun copyUriToCache(context: Context, uriString: String): File? {
         null
     }
 }
-

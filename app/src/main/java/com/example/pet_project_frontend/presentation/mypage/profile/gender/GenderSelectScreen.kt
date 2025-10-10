@@ -1,8 +1,18 @@
-﻿package com.example.pet_project_frontend.presentation.mypage.profile.gender
+// 변경의도: 성별 선택 저장 시 MyPage 상태가 즉시 반영되도록 콜백과 UI를 조정한다.
+package com.example.pet_project_frontend.presentation.mypage.profile.gender
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -32,7 +42,7 @@ import com.example.pet_project_frontend.presentation.mypage.common.UiColors
 @Composable
 fun GenderSelectScreen(
     onBack: () -> Unit,
-    onSaved: (GenderUi) -> Unit,
+    onSaved: (GenderUi, Boolean) -> Unit,
     viewModel: GenderSelectViewModel = hiltViewModel()
 ) {
     val ui by viewModel.uiState.collectAsState()
@@ -42,7 +52,9 @@ fun GenderSelectScreen(
         bottomBar = {
             Column(Modifier.fillMaxWidth()) {
                 Button(
-                    onClick = { viewModel.onSave(onSaved) },
+                    onClick = {
+                        viewModel.onSave(onSaved)
+                    },
                     enabled = ui.selected != null && !ui.isSaving,
                     modifier = Modifier
                         .padding(horizontal = 21.dp, vertical = 12.dp)

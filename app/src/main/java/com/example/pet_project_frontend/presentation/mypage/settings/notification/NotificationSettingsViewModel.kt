@@ -1,4 +1,5 @@
-﻿package com.example.pet_project_frontend.presentation.mypage.settings.notification
+// 변경의도: 알림 토글 상태를 DataStore와 동기화하고 서버 연동까지 고려한 임시 저장 흐름을 구성한다.
+package com.example.pet_project_frontend.presentation.mypage.settings.notification
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -17,8 +18,8 @@ class NotificationSettingsViewModel @Inject constructor(
     private val userPreferences: UserPreferences
 ) : ViewModel() {
 
-    // UI에서 사용할 알림 토글 상태
     data class UiState(
+        val pushEnabled: Boolean = true,
         val weeklyReport: Boolean = true,
         val likeEnabled: Boolean = false,
         val commentEnabled: Boolean = false,
@@ -31,29 +32,55 @@ class NotificationSettingsViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             userPreferences.notificationSettings.collectLatest { prefs ->
-                _uiState.value = UiState(
-                    weeklyReport = prefs.weeklyReport,
-                    likeEnabled = prefs.likeEnabled,
-                    commentEnabled = prefs.commentEnabled,
-                    loading = false
-                )
+                _uiState.update {
+                    it.copy(
+                        pushEnabled = prefs.pushEnabled,
+                        weeklyReport = prefs.weeklyReport,
+                        likeEnabled = prefs.likeEnabled,
+                        commentEnabled = prefs.commentEnabled,
+                        loading = false
+                    )
+                }
             }
+        }
+    }
+
+    fun onTogglePush(enabled: Boolean) {
+        _uiState.update { it.copy(pushEnabled = enabled) }
+        persist {
+            userPreferences.setPushEnabled(enabled)
+            // TODO 서버 연동 시 치환: 서버 API 추가 시 토글 상태를 원격에 반영
+        }
+        if (!enabled) {
+            // 임시 정책: 전체 알림 비활성화 시 하위 항목도 함께 비활성화
+            onToggleWeekly(false)
+            onToggleLike(false)
+            onToggleComment(false)
         }
     }
 
     fun onToggleWeekly(enabled: Boolean) {
         _uiState.update { it.copy(weeklyReport = enabled) }
-        persist { userPreferences.setWeeklyReport(enabled) }
+        persist {
+            userPreferences.setWeeklyReport(enabled)
+            // TODO 서버 연동 시 치환: 서버 API와 동기화
+        }
     }
 
     fun onToggleLike(enabled: Boolean) {
         _uiState.update { it.copy(likeEnabled = enabled) }
-        persist { userPreferences.setLikeEnabled(enabled) }
+        persist {
+            userPreferences.setLikeEnabled(enabled)
+            // TODO 서버 연동 시 치환: 서버 API와 동기화
+        }
     }
 
     fun onToggleComment(enabled: Boolean) {
         _uiState.update { it.copy(commentEnabled = enabled) }
-        persist { userPreferences.setCommentEnabled(enabled) }
+        persist {
+            userPreferences.setCommentEnabled(enabled)
+            // TODO 서버 연동 시 치환: 서버 API와 동기화
+        }
     }
 
     private fun persist(block: suspend () -> Unit) {

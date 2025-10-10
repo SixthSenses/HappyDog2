@@ -1,4 +1,5 @@
-﻿package com.example.pet_project_frontend.presentation.mypage.profile.breed
+// 변경의도: 초기 견종 값을 SavedStateHandle에서 읽고 저장 콜백이 MyPage 갱신 여부를 판단하도록 확장한다.
+package com.example.pet_project_frontend.presentation.mypage.profile.breed
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -57,12 +58,13 @@ class BreedSelectViewModel @Inject constructor(
         _ui.update { it.copy(selectedBreedName = name) }
     }
 
-    fun confirmSelection(onSuccess: (String) -> Unit) {
+    fun confirmSelection(onSuccess: (String, Boolean) -> Unit) {
         val selected = _ui.value.selectedBreedName ?: return
         if (_ui.value.isSaving) return
         _ui.update { it.copy(isSaving = true) }
         viewModelScope.launch {
-            onSuccess(selected)
+            // TODO 서버 연동 시 치환: 견종 수정 API를 연동해 실제 응답으로 갱신
+            onSuccess(selected, false)
             _ui.update { state -> state.copy(isSaving = false) }
         }
     }

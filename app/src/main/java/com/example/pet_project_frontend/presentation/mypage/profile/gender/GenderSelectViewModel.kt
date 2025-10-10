@@ -1,4 +1,5 @@
-﻿package com.example.pet_project_frontend.presentation.mypage.profile.gender
+// 변경의도: SavedStateHandle 초기값을 활용하고 저장 시 MyPage가 즉시 반영되도록 임시 콜백 구조를 확장한다.
+package com.example.pet_project_frontend.presentation.mypage.profile.gender
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -10,7 +11,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-// UI에서 사용할 성별 타입
 enum class GenderUi { MALE, FEMALE }
 
 data class GenderUiState(
@@ -41,7 +41,7 @@ class GenderSelectViewModel @Inject constructor(
         _ui.value = _ui.value.copy(selected = gender, error = null)
     }
 
-    fun onSave(onSuccess: (GenderUi) -> Unit) = viewModelScope.launch {
+    fun onSave(onSuccess: (GenderUi, Boolean) -> Unit) = viewModelScope.launch {
         val selected = _ui.value.selected ?: run {
             _ui.value = _ui.value.copy(error = "성별을 선택해 주세요")
             return@launch
@@ -49,11 +49,11 @@ class GenderSelectViewModel @Inject constructor(
 
         _ui.value = _ui.value.copy(isSaving = true, error = null)
 
-        // TODO: 서버 연동 시 실제 API 호출로 대체
+        // TODO 서버 연동 시 치환: 성별 수정 API 연동 후 응답 기반으로 처리
         runCatching { selected }
             .onSuccess { resolved ->
                 _ui.value = _ui.value.copy(isSaving = false)
-                onSuccess(resolved)
+                onSuccess(resolved, false)
             }
             .onFailure {
                 _ui.value = _ui.value.copy(isSaving = false, error = "요청 처리에 실패했어요")

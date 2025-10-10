@@ -1,11 +1,22 @@
-﻿@file:OptIn(ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3Api::class)
 
+// 변경의도: 견종 선택 결과를 MyPage에 즉시 반영하면서 향후 서버 연동 시 재활용할 수 있도록 콜백을 확장한다.
 package com.example.pet_project_frontend.presentation.mypage.profile.breed
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -36,11 +47,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.pet_project_frontend.R
 import com.example.pet_project_frontend.core.components.TopBar
+import androidx.compose.foundation.layout.size
 
 @Composable
 fun BreedSelectScreen(
     onBack: () -> Unit,
-    onNext: (String) -> Unit,
+    onNext: (String, Boolean) -> Unit,
     viewModel: BreedSelectViewModel = hiltViewModel()
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
@@ -126,9 +138,9 @@ fun BreedSelectScreen(
                 when {
                     ui.error != null -> {
                         Text(
-                            text = ui.error ?: "",
+                            text = ui.error ?: "견종 정보를 불러오는 중 문제가 발생했어요",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Gray600,
+                            color = Color(0xFFE42A38),
                             modifier = Modifier.padding(top = 32.dp)
                         )
                     }
@@ -136,19 +148,18 @@ fun BreedSelectScreen(
                     ui.breeds.isNotEmpty() -> {
                         LazyColumn(
                             modifier = Modifier
-                                .width(362.dp)
-                                .fillMaxHeight(),
-                            verticalArrangement = Arrangement.spacedBy(24.dp),
-                            horizontalAlignment = Alignment.Start,
-                            contentPadding = PaddingValues(vertical = 24.dp)
+                                .fillMaxSize()
+                                .padding(horizontal = 24.dp)
                         ) {
-                            items(ui.breeds, key = { it }) { breedName ->
+                            items(ui.breeds) { breed ->
                                 BreedOptionRow(
-                                    name = breedName,
-                                    selected = ui.selectedBreedName == breedName,
-                                    onClick = { viewModel.onBreedSelected(breedName) }
+                                    name = breed,
+                                    selected = breed == ui.selectedBreedName,
+                                    onClick = { viewModel.onBreedSelected(breed) }
                                 )
+                                Spacer(Modifier.height(20.dp))
                             }
+                            item { Spacer(Modifier.height(16.dp)) }
                         }
                     }
 
@@ -274,8 +285,3 @@ private val Gray900 = Color(0xFF333D4B)
 private val Gray600 = Color(0xFF6B7684)
 private val GrayCheck = Color(0xFFD1D6DA)
 private val Blue = Color(0xFF3182F6)
-
-
-
-
-
