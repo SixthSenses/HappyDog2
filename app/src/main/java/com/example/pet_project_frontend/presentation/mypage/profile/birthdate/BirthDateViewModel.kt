@@ -1,6 +1,8 @@
-// 변경의도: 저장 시 초기값을 SavedStateHandle에서 받아 화면에 반영하고, MyPage 갱신 신호를 보낼 수 있도록 임시 저장 흐름을 정리한다.
-package com.example.pet_project_frontend.presentation.mypage.profile.birth
+// 변경의도: 자동 포맷 이후에도 커서가 끝에 유지되도록 TextFieldValue 기반으로 생년월일 입력 상태를 관리한다.
+package com.example.pet_project_frontend.presentation.mypage.profile.birthdate
 
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -13,7 +15,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class BirthEditUiState(
-    val text: String = "",
+    val textFieldValue: TextFieldValue = TextFieldValue(""),
     val error: String? = null,
     val isSaving: Boolean = false
 )
@@ -28,19 +30,24 @@ class BirthEditViewModel @Inject constructor(
 
     init {
         val initial = savedStateHandle.get<String>("initialBirth") ?: ""
-        _uiState.update { it.copy(text = initial, error = null) }
+        setFormattedValue(initial)
     }
 
-    fun onTextChange(new: String) {
-        _uiState.update { it.copy(text = new, error = null) }
+    fun onTextChange(newValue: TextFieldValue) {
+        setFormattedValue(newValue.text)
     }
 
     fun onClear() {
-        _uiState.update { it.copy(text = "", error = null) }
+        _uiState.update {
+            it.copy(
+                textFieldValue = TextFieldValue("", TextRange.Zero),
+                error = null
+            )
+        }
     }
 
     fun onSave(onSuccess: (String, Boolean) -> Unit) {
-        val input = _uiState.value.text.trim()
+        val input = _uiState.value.textFieldValue.text.trim()
         val validationMessage = validateBirth(input)
         if (validationMessage != null) {
             _uiState.update { it.copy(error = validationMessage) }
@@ -52,7 +59,8 @@ class BirthEditViewModel @Inject constructor(
             // TODO 서버 연동 시 치환: 생년월일 수정 API 연동 후 실제 응답 값으로 대체
             delay(150)
             _uiState.update { it.copy(isSaving = false) }
-            onSuccess(input, false)
+            val normalized = normalizeForDisplay(input)
+            onSuccess(normalized, false)
         }
     }
 
@@ -60,10 +68,13 @@ class BirthEditViewModel @Inject constructor(
         val trimmed = input.trim()
         if (trimmed.isEmpty()) return "생년월일을 입력해 주세요"
 
-        val regex = Regex("""^\d{4}/\d{1,2}/\d{1,2}$""")
-        if (!regex.matches(trimmed)) return "YYYY/MM/DD 형식으로 입력해 주세요"
+        val regex = Regex("""^\d{4}([./-])\d{1,2}\1\d{1,2}$""")
+        if (!regex.matches(trimmed)) return "YYYY.MM.DD 형식으로 입력해 주세요"
 
-        val parts = trimmed.split("/")
+        val normalized = normalizeForDisplay(trimmed)
+        val parts = normalized.split(".")
+        if (parts.size != 3) return "유효한 날짜가 아니에요"
+
         val year = parts[0].toInt()
         val month = parts[1].toInt()
         val day = parts[2].toInt()
@@ -81,4 +92,38 @@ class BirthEditViewModel @Inject constructor(
 
         return null
     }
+
+    private fun setFormattedValue(raw: String) {
+        val formatted = formatInput(raw)
+        _uiState.update {
+            it.copy(
+                textFieldValue = TextFieldValue(
+                    text = formatted,
+                    selection = TextRange(formatted.length)
+                ),
+                error = null
+            )
+        }
+    }
+
+    private fun formatInput(raw: String): String {
+        val digits = raw.filter { it.isDigit() }.take(8)
+        if (digits.isEmpty()) return ""
+        val builder = StringBuilder()
+        digits.forEachIndexed { index, char ->
+            builder.append(char)
+            val isYearEnd = index == 3
+            val isMonthEnd = index == 5
+            val hasMore = index != digits.lastIndex
+            if ((isYearEnd || isMonthEnd) && hasMore) {
+                builder.append('.')
+            }
+        }
+        return builder.toString()
+    }
+
+    private fun normalizeForDisplay(input: String): String =
+        input.replace("-", ".")
+            .replace("/", ".")
+            .replace(" ", "")
 }

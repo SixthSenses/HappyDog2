@@ -22,7 +22,7 @@ import com.example.pet_project_frontend.presentation.auth.LoginScreen
 import com.example.pet_project_frontend.presentation.map.MapScreen
 import com.example.pet_project_frontend.presentation.mypage.main.MyPageScreen
 import com.example.pet_project_frontend.presentation.mypage.main.MyPageViewModel
-import com.example.pet_project_frontend.presentation.mypage.profile.birth.BirthEditRoute
+import com.example.pet_project_frontend.presentation.mypage.profile.birthdate.BirthEditRoute
 import com.example.pet_project_frontend.presentation.mypage.profile.breed.BreedSelectScreen
 import com.example.pet_project_frontend.presentation.mypage.profile.gender.GenderSelectScreen
 import com.example.pet_project_frontend.presentation.mypage.profile.gender.GenderUi

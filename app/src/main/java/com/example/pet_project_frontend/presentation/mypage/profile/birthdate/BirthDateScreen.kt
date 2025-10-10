@@ -1,6 +1,7 @@
-// 변경의도: 생년월일 편집 화면에서 초기값 주입과 저장 후 MyPage 상태 반영 흐름을 명확히 한다.
-package com.example.pet_project_frontend.presentation.mypage.profile.birth
+// 변경의도: TextFieldValue를 사용해 자동 포맷 후에도 커서가 끝에 머물도록 생년월일 입력 UI를 보완한다.
+package com.example.pet_project_frontend.presentation.mypage.profile.birthdate
 
+import android.graphics.Rect
 import android.view.ViewTreeObserver
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -34,9 +35,9 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -56,9 +57,7 @@ fun BirthEditRoute(
     val myPageViewModel: MyPageViewModel = hiltViewModel(parentEntry)
 
     BirthEditScreen(
-        text = ui.text,
-        error = ui.error,
-        isSaving = ui.isSaving,
+        uiState = ui,
         onBack = { navController.popBackStack() },
         onTextChange = viewModel::onTextChange,
         onClear = viewModel::onClear,
@@ -77,11 +76,9 @@ fun BirthEditRoute(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun BirthEditScreen(
-    text: String,
-    error: String?,
-    isSaving: Boolean,
+    uiState: BirthEditUiState,
     onBack: () -> Unit,
-    onTextChange: (String) -> Unit,
+    onTextChange: (TextFieldValue) -> Unit,
     onClear: () -> Unit,
     onSave: () -> Unit
 ) {
@@ -92,7 +89,7 @@ private fun BirthEditScreen(
 
     DisposableEffect(view) {
         val listener = ViewTreeObserver.OnGlobalLayoutListener {
-            val rect = android.graphics.Rect()
+            val rect = Rect()
             view.getWindowVisibleDisplayFrame(rect)
             val screenHeight = view.rootView.height
             val keypadHeight = screenHeight - rect.height()
@@ -115,8 +112,7 @@ private fun BirthEditScreen(
         Column(modifier = Modifier.padding(horizontal = 24.dp)) {
             Text(
                 text = "생년월일을 입력해 주세요",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.SemiBold
+                style = MaterialTheme.typography.headlineSmall
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -131,33 +127,38 @@ private fun BirthEditScreen(
 
             Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
                 BasicTextField(
-                    value = text,
+                    value = uiState.textFieldValue,
                     onValueChange = onTextChange,
                     modifier = Modifier
                         .fillMaxWidth()
                         .onFocusChanged { focused = it.isFocused },
                     textStyle = TextStyle(
                         color = Color(0xFF333D4B),
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.SemiBold
+                        fontSize = 24.sp
                     ),
                     keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Text,
+                        keyboardType = KeyboardType.Number,
                         imeAction = ImeAction.Done
                     ),
-                    keyboardActions = KeyboardActions(onDone = { if (text.isNotBlank() && error == null && !isSaving) onSave() }),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            if (uiState.textFieldValue.text.isNotBlank() && uiState.error == null && !uiState.isSaving) {
+                                onSave()
+                            }
+                        }
+                    ),
                     singleLine = true
                 )
 
-                if (text.isBlank() && !focused) {
+                if (uiState.textFieldValue.text.isBlank() && !focused) {
                     Text(
-                        text = "YYYY/MM/DD",
+                        text = "YYYY.MM.DD",
                         color = Color(0x8C333D4B),
                         fontSize = 24.sp
                     )
                 }
 
-                if (text.isNotBlank()) {
+                if (uiState.textFieldValue.text.isNotBlank()) {
                     Text(
                         text = "지우기",
                         modifier = Modifier
@@ -177,25 +178,24 @@ private fun BirthEditScreen(
                     .height(2.dp)
                     .background(
                         when {
-                            error != null -> Color(0xFFD32F2F)
+                            uiState.error != null -> Color(0xFFD32F2F)
                             focused -> Color(0xFF3182F6)
                             else -> Color(0x0D000000)
                         }
                     )
             )
 
-            if (!error.isNullOrEmpty()) {
+            uiState.error?.let { message ->
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = error,
+                    text = message,
                     color = Color(0xFFD32F2F),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium
+                    fontSize = 12.sp
                 )
             }
         }
 
-        Spacer(modifier = Modifier.weight(1f))
+        Spacer(modifier = Modifier.weight(1f, fill = true))
 
         if (isKeyboardVisible) {
             Box(
@@ -205,7 +205,7 @@ private fun BirthEditScreen(
             ) {
                 Button(
                     onClick = onSave,
-                    enabled = text.isNotBlank() && error == null && !isSaving,
+                    enabled = uiState.textFieldValue.text.isNotBlank() && uiState.error == null && !uiState.isSaving,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFF3182F6),
                         disabledContainerColor = Color(0x403182F6)
@@ -214,7 +214,10 @@ private fun BirthEditScreen(
                         .fillMaxWidth()
                         .height(54.dp)
                 ) {
-                    Text(if (isSaving) "저장 중..." else "다음", color = Color.White, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        text = if (uiState.isSaving) "저장 중..." else "다음",
+                        color = Color.White
+                    )
                 }
             }
         }
