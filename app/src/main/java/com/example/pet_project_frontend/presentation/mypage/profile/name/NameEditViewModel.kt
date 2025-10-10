@@ -1,68 +1,122 @@
+// 변경 의도: 네비게이션 인자로 전달된 펫 ID를 활용해 이름 편집 결과를 서버에 반영하고 검증 상태를 명확히 분리.
 package com.example.pet_project_frontend.presentation.mypage.profile.name
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.pet_project_frontend.core.common.AppResult
+import com.example.pet_project_frontend.data.remote.dto.request.PetUpdateRequest
+import com.example.pet_project_frontend.domain.repository.PetRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+data class NameEditUiState(
+    val text: String = "",
+    val error: String? = null,
+    val isSaving: Boolean = false,
+    val isValidationError: Boolean = false
+)
+
 @HiltViewModel
 class NameEditViewModel @Inject constructor(
-    private val savedStateHandle: SavedStateHandle
+    private val savedStateHandle: SavedStateHandle,
+    private val petRepository: PetRepository
 ) : ViewModel() {
 
-    data class UiState(
-        val text: String = "",
-        val error: String? = null,
-        val isSaving: Boolean = false
-    )
+    private val petId: String? = savedStateHandle
+        .get<String>("petId")
+        ?.takeUnless { it == "null" || it.isBlank() }
 
-    private val _uiState = MutableStateFlow(
-        UiState(text = savedStateHandle.get<String>("initialName").orEmpty())
-    )
-    val uiState: StateFlow<UiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(NameEditUiState())
+    val uiState: StateFlow<NameEditUiState> = _uiState
 
     init {
-        // 네비게이션에서 넘겨준 초기 이름 (없으면 공백)
-        val initial = savedStateHandle.get<String>("initialName") ?: ""
-        _uiState.update { it.copy(text = initial, error = null) }
+        val initialName = savedStateHandle
+            .get<String>("initialName")
+            ?.takeUnless { it == "null" }
+            ?.trim()
+            .orEmpty()
+        _uiState.value = _uiState.value.copy(text = initialName)
     }
 
-    fun onTextChange(new: String) {
-        _uiState.update { it.copy(text = new, error = validate(new)) }
+    fun onTextChange(newText: String) {
+        _uiState.value = _uiState.value.copy(
+            text = newText,
+            error = null,
+            isValidationError = false
+        )
     }
 
     fun onClear() {
-        _uiState.update { it.copy(text = "", error = null) }
+        _uiState.value = _uiState.value.copy(
+            text = "",
+            error = null,
+            isValidationError = false
+        )
     }
 
-    fun onSave(onSuccess: (String) -> Unit) {
-        val name = _uiState.value.text.trim()
-        val err = validate(name)
-        if (err != null) {
-            _uiState.update { it.copy(error = err) }
+    fun onSave(onSaved: (String, Boolean) -> Unit) {
+        val trimmed = _uiState.value.text.trim()
+        val validationError = validate(trimmed)
+        if (validationError != null) {
+            _uiState.value = _uiState.value.copy(
+                error = validationError,
+                isValidationError = true
+            )
             return
         }
-        // TODO: Repository 연동(Flask/Firebase) 예정. 현재는 UX용 로딩만.
+
+        val targetPetId = petId
+        if (targetPetId.isNullOrBlank()) {
+            viewModelScope.launch {
+                _uiState.value = _uiState.value.copy(isSaving = true, error = null, isValidationError = false)
+                _uiState.value = _uiState.value.copy(isSaving = false)
+                onSaved(trimmed, false)
+            }
+            return
+        }
+
         viewModelScope.launch {
-            _uiState.update { it.copy(isSaving = true) }
-            delay(300)
-            _uiState.update { it.copy(isSaving = false) }
-            onSuccess(name)
+            _uiState.value = _uiState.value.copy(isSaving = true, error = null, isValidationError = false)
+            val request = PetUpdateRequest(name = trimmed)
+            when (val result = petRepository.updatePetProfile(targetPetId, request)) {
+                is AppResult.Success -> {
+                    val updatedName = result.data.name.takeUnless { it.isNullOrBlank() } ?: trimmed
+                    _uiState.value = _uiState.value.copy(isSaving = false)
+                    onSaved(updatedName, true)
+                }
+                is AppResult.Error -> {
+                    val message = result.message ?: GENERIC_SAVE_ERROR_MESSAGE
+                    _uiState.value = _uiState.value.copy(
+                        isSaving = false,
+                        error = message,
+                        isValidationError = false
+                    )
+                }
+                is AppResult.Exception -> {
+                    val message = result.throwable.message ?: GENERIC_SAVE_ERROR_MESSAGE
+                    _uiState.value = _uiState.value.copy(
+                        isSaving = false,
+                        error = message,
+                        isValidationError = false
+                    )
+                }
+            }
         }
     }
 
-    private fun validate(input: String): String? {
-        val t = input.trim()
-        if (t.isEmpty()) return "이름을 입력해 주세요."
-        if (t.length !in 1..12) return "이름은 1~12자까지 입력할 수 있어요."
-        val ok = Regex("^[가-힣a-zA-Z0-9 ]+$").matches(t)
-        return if (ok) null else "한글, 영문, 숫자만 사용할 수 있어요."
+    private fun validate(name: String): String? {
+        if (name.isBlank()) return VALIDATION_ERROR_MESSAGE
+        if (name.length > MAX_NAME_LENGTH) return VALIDATION_ERROR_MESSAGE
+        return null
+    }
+
+    companion object {
+        private const val MAX_NAME_LENGTH = 10
+        private const val VALIDATION_ERROR_MESSAGE = "이름을 다시 확인해주세요."
+        private const val GENERIC_SAVE_ERROR_MESSAGE = "이름 저장에 실패했습니다. 다시 시도해주세요."
     }
 }

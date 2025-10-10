@@ -1,4 +1,4 @@
-﻿package com.example.pet_project_frontend.core.navigation
+package com.example.pet_project_frontend.core.navigation
 
 import android.net.Uri
 
@@ -12,10 +12,11 @@ sealed class Screen(val route: String) {
     object Translator : Screen("translator")
     object MyPage : Screen("mypage")
 
-    object EditPetName : Screen("mypage/edit/name?initialName={initialName}") {
-        fun createRoute(initialName: String): String {
-            val encoded = Uri.encode(initialName)
-            return "mypage/edit/name?initialName=$encoded"
+    object EditPetName : Screen("mypage/edit/name?initialName={initialName}&petId={petId}") {
+        fun createRoute(initialName: String, petId: String?): String {
+            val encodedName = Uri.encode(initialName)
+            val encodedPetId = Uri.encode(petId ?: "")
+            return "mypage/edit/name?initialName=$encodedName&petId=$encodedPetId"
         }
     }
 

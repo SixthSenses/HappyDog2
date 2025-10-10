@@ -1,4 +1,4 @@
-﻿package com.example.pet_project_frontend.core.navigation
+package com.example.pet_project_frontend.core.navigation
 
 import android.content.Context
 import android.net.Uri
@@ -96,8 +96,8 @@ fun PetCareNavHost(
 
         composable(Screen.MyPage.route) {
             MyPageScreen(
-                onNameClick = { currentName ->
-                    navController.navigate(Screen.EditPetName.createRoute(currentName))
+                onNameClick = { petId, currentName ->
+                    navController.navigate(Screen.EditPetName.createRoute(currentName, petId))
                 },
                 onBirthdateClick = { birth ->
                     navController.navigate(Screen.EditBirthDate.createRoute(birth))
@@ -127,6 +127,11 @@ fun PetCareNavHost(
             route = Screen.EditPetName.route,
             arguments = listOf(
                 navArgument("initialName") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                    nullable = true
+                },
+                navArgument("petId") {
                     type = NavType.StringType
                     defaultValue = ""
                     nullable = true
