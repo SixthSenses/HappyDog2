@@ -84,12 +84,7 @@ class MyPageViewModel @Inject constructor(
     }
 
     private fun updateState(user: User, pet: Pet) {
-        val ageYears = Period.between(pet.birthDate, LocalDate.now()).years
-        val ageText = when {
-            ageYears <= 0 -> "Less than 1 year"
-            ageYears == 1 -> "1 year"
-            else -> "$ageYears years"
-        }
+        val ageText = calculateAgeLabel(pet.birthDate)
 
         val genderText = when (pet.gender) {
             Gender.MALE -> "수컷"
@@ -140,20 +135,29 @@ class MyPageViewModel @Inject constructor(
         _uiState.update { it.copy(breed = newBreed.trim()) }
     }
 
+    private fun calculateAgeLabel(birthDate: LocalDate): String {
+        val today = LocalDate.now()
+        if (birthDate.isAfter(today)) return ""
+        val period = Period.between(birthDate, today)
+
+        val years = period.years
+        val months = period.months
+        val days = period.days
+
+        return when {
+            years > 0 -> "${years}살"
+            months > 0 -> "${months}개월"
+            days > 0 -> "${days}일"
+            else -> "신생아"
+        }
+    }
+
     private fun calculateAgeLabel(birth: String): String {
         if (birth.isBlank()) return ""
         val sanitized = birth.replace(".", "-").replace("/", "-")
         return try {
             val birthDate = LocalDate.parse(sanitized, birthFormatter)
-            val today = LocalDate.now()
-            if (birthDate.isAfter(today)) return ""
-            val period = Period.between(birthDate, today)
-            when {
-                period.years > 0 -> "${period.years} years"
-                period.months > 0 -> "${period.months} months"
-                period.days > 0 -> "${period.days} days"
-                else -> "0 days"
-            }
+            calculateAgeLabel(birthDate)
         } catch (_: DateTimeParseException) {
             ""
         }

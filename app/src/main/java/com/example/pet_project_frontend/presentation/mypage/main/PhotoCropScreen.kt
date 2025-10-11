@@ -1,4 +1,5 @@
 ﻿// 프로필 사진 크롭 화면 - 제스처 및 임시 저장 로직 갱신.
+// 변경의도: 프로필 사진 크롭 화면에서 원형 미리보기와 이미지 배치를 보정합니다.
 package com.example.pet_project_frontend.presentation.mypage.main
 
 import android.content.Context
@@ -139,7 +140,7 @@ fun PhotoCropScreen(
                     .fillMaxWidth()
             ) {
                 val density = LocalDensity.current
-                val horizontalPadding = 25.dp
+                val horizontalPadding = 0.dp
                 val verticalPadding = (maxHeight * 0.12f).coerceIn(48.dp, 140.dp)
                 val contentWidthDp = (maxWidth - horizontalPadding * 2f).coerceAtLeast(120.dp)
                 val contentHeightDp = (maxHeight - verticalPadding * 2f).coerceAtLeast(120.dp)
@@ -228,7 +229,6 @@ fun PhotoCropScreen(
                             )
 
                             Canvas(modifier = Modifier.fillMaxSize()) {
-                                drawRect(color = CropTokens.OverlayScrim)
                                 val left = (contentWidthPx - circleDiameterPx) / 2f
                                 val top = (contentHeightPx - circleDiameterPx) / 2f
                                 val overlayPath = Path().apply {
@@ -239,11 +239,18 @@ fun PhotoCropScreen(
                                         )
                                     )
                                 }
+                                val layerBounds = Rect(offset = Offset.Zero, size = size)
+                                drawContext.canvas.saveLayer(
+                                    layerBounds,
+                                    androidx.compose.ui.graphics.Paint()
+                                )
+                                drawRect(color = CropTokens.OverlayScrim)
                                 drawPath(
                                     path = overlayPath,
                                     color = Color.Transparent,
                                     blendMode = BlendMode.Clear
                                 )
+                                drawContext.canvas.restore()
                             }
                         }
                     } else if (isLoading) {

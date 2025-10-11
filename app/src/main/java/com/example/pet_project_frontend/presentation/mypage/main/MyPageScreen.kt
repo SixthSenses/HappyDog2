@@ -1,4 +1,5 @@
 ﻿// 마이페이지 화면 여백 및 프로필 아이콘 표현 개선을 위한 수정.
+// 변경의도: 마이페이지 프로필 이미지를 최신 상태로 보여주고 편집 버튼 배치를 보정합니다.
 package com.example.pet_project_frontend.presentation.mypage.main
 
 import android.net.Uri
@@ -39,6 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -59,6 +61,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.pet_project_frontend.R
 import com.example.pet_project_frontend.core.theme.MyPageColors
 import com.example.pet_project_frontend.presentation.mypage.main.components.SettingsItemRow
+import coil.compose.AsyncImage
 
 object Variables {
     val unnamed: Color = Color(0xFF333D4B)
@@ -283,11 +286,13 @@ private fun ProfileSummarySection(
     uiState: MyPageUiState,
     onProfileImageClick: () -> Unit
 ) {
-    val displayName = uiState.petName.ifBlank { "이름을 설정해주세요" }
+    val displayName = uiState.petName.ifBlank { "이름을 입력해주세요" }
     val subtitle = buildList {
         if (uiState.breed.isNotBlank()) add(uiState.breed)
         if (uiState.age.isNotBlank()) add(uiState.age)
-    }.joinToString(" • ")
+    }.joinToString(" · ")
+    val profileImageUrl = uiState.profileImageUrl
+    val hasProfileImage = !profileImageUrl.isNullOrBlank()
 
     Row(
         modifier = Modifier
@@ -298,19 +303,34 @@ private fun ProfileSummarySection(
         Box(
             modifier = Modifier
                 .size(59.dp)
-                .clip(CircleShape)
-                .background(Variables.unnamed)
                 .clickable { onProfileImageClick() },
             contentAlignment = Alignment.Center
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.icon),
-                contentDescription = "프로필 이미지",
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(1.dp),
-                contentScale = ContentScale.Crop
-            )
+                    .clip(CircleShape)
+                    .background(Variables.unnamed)
+                    .clipToBounds()
+            ) {
+                if (hasProfileImage) {
+                    AsyncImage(
+                        model = profileImageUrl,
+                        contentDescription = "반려견 프로필 이미지",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Image(
+                        painter = painterResource(id = R.drawable.icon),
+                        contentDescription = "반려견 프로필 이미지",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(1.dp),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+            }
             Box(
                 modifier = Modifier
                     .size(19.dp)
@@ -407,7 +427,6 @@ private fun ProfileDetailSection(
         }
     }
 }
-
 @Composable
 private fun SectionContainer(
     shape: RoundedCornerShape,
@@ -423,6 +442,7 @@ private fun SectionContainer(
 }
 
 @Composable
+
 private fun ProfileButtonField(
     label: String,
     value: String,
