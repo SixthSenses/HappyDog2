@@ -22,6 +22,7 @@ object PetMapper {
             ownerId = dto.userId,
             isVerified = dto.isVerified,
             nosePrintUrl = dto.nosePrintUrl,
+            profileImageUrl = dto.profileImageUrl, // 프로필 이미지 URL 매핑 추가
             healthConcerns = dto.healthConcerns ?: emptyList()
         )
     }

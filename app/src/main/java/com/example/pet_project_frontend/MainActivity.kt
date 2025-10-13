@@ -168,6 +168,7 @@ class MainActivity : ComponentActivity() {
 
                     PetCareNavHost(
                         navController = navController,
+
                         startDestination = effectiveStart,
                         openNotice = openNotice,
                         modifier = Modifier.padding(innerPadding)
