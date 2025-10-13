@@ -30,7 +30,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import android.graphics.Rect
+import android.view.ViewTreeObserver
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
@@ -99,6 +103,20 @@ private fun NameEditScreen(
 ) {
     val scrollState = rememberScrollState()
     var isFocused by remember { mutableStateOf(false) }
+    val view = LocalView.current
+    var isKeyboardVisible by remember { mutableStateOf(false) }
+
+    DisposableEffect(view) {
+        val listener = ViewTreeObserver.OnGlobalLayoutListener {
+            val rect = Rect()
+            view.getWindowVisibleDisplayFrame(rect)
+            val screenHeight = view.rootView.height
+            val keypadHeight = screenHeight - rect.height()
+            isKeyboardVisible = keypadHeight > screenHeight * 0.15f
+        }
+        view.viewTreeObserver.addOnGlobalLayoutListener(listener)
+        onDispose { view.viewTreeObserver.removeOnGlobalLayoutListener(listener) }
+    }
 
     Box(
         modifier = Modifier
@@ -117,7 +135,6 @@ private fun NameEditScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .statusBarsPadding()
-                    .padding(horizontal = 16.dp)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -249,34 +266,34 @@ private fun NameEditScreen(
             }
         }
 
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-        ) {
-            Button(
-                onClick = onSave,
-                enabled = text.isNotBlank() && !isValidationError && !isSaving,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Variables.primary,
-                    disabledContainerColor = Variables.primary.copy(alpha = 0.4f)
-                ),
+        if (isKeyboardVisible) {
+            Column(
                 modifier = Modifier
+                    .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .height(54.dp)
             ) {
-                Text(
-                    text = if (isSaving) "저장 중..." else "저장",
-                    color = Color.White,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 18.sp
-                )
+                Button(
+                    onClick = onSave,
+                    enabled = text.isNotBlank() && !isValidationError && !isSaving,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Variables.primary,
+                        disabledContainerColor = Variables.primary.copy(alpha = 0.4f)
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp)
+                        .height(54.dp)
+                ) {
+                    Text(
+                        text = if (isSaving) "저장 중..." else "저장",
+                        color = Color.White,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 18.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            GestureBar(modifier = Modifier.fillMaxWidth())
         }
     }
 }

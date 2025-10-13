@@ -35,6 +35,7 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.pet_project_frontend.R
 import com.example.pet_project_frontend.core.components.TopBar
@@ -71,7 +72,6 @@ fun GenderSelectScreen(
                 ) {
                     Text(if (ui.isSaving) "저장 중..." else "다음")
                 }
-                GestureBar()
             }
         }
     ) { padding ->
@@ -84,7 +84,8 @@ fun GenderSelectScreen(
         ) {
             Text(
                 text = "반려견의 성별을 선택해 주세요",
-                style = MaterialTheme.typography.headlineSmall,
+                fontSize = 24.sp,
+                lineHeight = 24.sp,
                 color = UiColors.TitleText,
                 fontFamily = FontFamily(Font(R.font.pretendard_medium)),
                 fontWeight = FontWeight(600),
@@ -130,8 +131,11 @@ private fun GenderOptionRow(
     ) {
         Text(
             text = label,
+            fontSize = 18.sp,
+            lineHeight = 18.sp,
+            fontFamily = FontFamily(Font(R.font.pretendard_regular)),
+            fontWeight = FontWeight(500),
             color = UiColors.BodyText,
-            style = MaterialTheme.typography.titleMedium
         )
 
         val background = if (selected) UiColors.PrimaryBlue else Color(0xFFD1D6DA)

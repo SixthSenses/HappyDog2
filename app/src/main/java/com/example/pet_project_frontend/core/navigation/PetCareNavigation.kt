@@ -275,7 +275,6 @@ fun PetCareNavHost(
                         guideEntry.savedStateHandle["verification_error"] = VerificationResult.InvalidImage.name
                     }
                 },
-                onOpenCamera = { /* TODO: open camera */ },
                 errorDialog = errorDialog,
                 onDismissError = { guideEntry.savedStateHandle["verification_error"] = null }
             )

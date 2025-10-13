@@ -11,9 +11,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.pet_project_frontend.R
 import com.example.pet_project_frontend.presentation.mypage.settings.verification.VerificationColors
 
 @Composable
@@ -37,7 +40,7 @@ fun VerificationFeatureItem(
             Image(
                 painter = painterResource(iconRes),
                 contentDescription = null,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(34.dp)
             )
         }
 
@@ -47,8 +50,9 @@ fun VerificationFeatureItem(
             Text(
                 text = title,
                 color = VerificationColors.Body,               // #333D4B
-                fontSize = 18.sp,
-                fontWeight = FontWeight.SemiBold,
+                fontSize = 16.sp,
+                fontFamily = FontFamily(Font(R.font.pretendard_medium)),
+                fontWeight = FontWeight(600),
                 lineHeight = 18.sp,                            // 100%
                 letterSpacing = (-0.36).sp
             )
@@ -56,8 +60,9 @@ fun VerificationFeatureItem(
             Text(
                 text = subtitle,
                 color = VerificationColors.Sub,                // #4E5968
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Medium,
+                fontSize = 13.sp,
+                fontFamily = FontFamily(Font(R.font.pretendard_regular)),
+                fontWeight = FontWeight(500),
                 lineHeight = 15.sp,                            // 100%
                 letterSpacing = 0.375.sp
             )

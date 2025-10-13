@@ -27,11 +27,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.pet_project_frontend.R
 import com.example.pet_project_frontend.core.components.TopBar
 
 @Composable
@@ -68,11 +71,14 @@ fun NotificationSettingsScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp)
             ) {
-                Spacer(Modifier.height(52.dp))
+                Spacer(Modifier.height(10.dp))
 
                 Text(
                     text = "전체 알림",
-                    style = sectionTitleStyle(),
+                    fontFamily = FontFamily(Font(R.font.pretendard_medium)),
+                    fontWeight = FontWeight(600),
+                    fontSize = 21.sp,
+                    lineHeight = 21.sp,
                     color = Gray900
                 )
                 Spacer(Modifier.height(20.dp))
@@ -86,7 +92,10 @@ fun NotificationSettingsScreen(
                 ) {
                     Text(
                         text = "푸시 알림",
-                        style = itemLabelStyle(),
+                        fontFamily = FontFamily(Font(R.font.pretendard_regular)),
+                        fontWeight = FontWeight(600),
+                        fontSize = 18.sp,
+                        lineHeight = 18.sp,
                         color = Gray700
                     )
                     Switch(
@@ -97,7 +106,7 @@ fun NotificationSettingsScreen(
                     )
                 }
 
-                Spacer(Modifier.height(35.dp))
+                Spacer(Modifier.height(15.dp))
 
                 Divider(
                     modifier = Modifier.fillMaxWidth(),
@@ -105,11 +114,14 @@ fun NotificationSettingsScreen(
                     thickness = 1.dp
                 )
 
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(15.dp))
 
                 Text(
-                    text = "보고서",
-                    style = sectionTitleStyle(),
+                    text = "펫케어",
+                    fontFamily = FontFamily(Font(R.font.pretendard_medium)),
+                    fontWeight = FontWeight(600),
+                    fontSize = 21.sp,
+                    lineHeight = 21.sp,
                     color = Gray900
                 )
                 Spacer(Modifier.height(20.dp))
@@ -123,7 +135,10 @@ fun NotificationSettingsScreen(
                 ) {
                     Text(
                         text = "주간 리포트",
-                        style = itemLabelStyle(),
+                        fontFamily = FontFamily(Font(R.font.pretendard_regular)),
+                        fontWeight = FontWeight(600),
+                        fontSize = 18.sp,
+                        lineHeight = 18.sp,
                         color = Gray700
                     )
                     Switch(
@@ -134,7 +149,7 @@ fun NotificationSettingsScreen(
                     )
                 }
 
-                Spacer(Modifier.height(35.dp))
+                Spacer(Modifier.height(15.dp))
 
                 Divider(
                     modifier = Modifier.fillMaxWidth(),
@@ -142,10 +157,14 @@ fun NotificationSettingsScreen(
                     thickness = 1.dp
                 )
 
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(15.dp))
 
                 Text(
                     text = "멍스타그램",
+                    fontFamily = FontFamily(Font(R.font.pretendard_medium)),
+                    fontWeight = FontWeight(600),
+                    fontSize = 21.sp,
+                    lineHeight = 21.sp,
                     style = sectionTitleStyle(),
                     color = Gray900
                 )
@@ -160,6 +179,10 @@ fun NotificationSettingsScreen(
                 ) {
                     Text(
                         text = "좋아요",
+                        fontFamily = FontFamily(Font(R.font.pretendard_regular)),
+                        fontWeight = FontWeight(600),
+                        fontSize = 18.sp,
+                        lineHeight = 18.sp,
                         style = itemLabelStyle(),
                         color = Gray700
                     )
@@ -180,7 +203,10 @@ fun NotificationSettingsScreen(
                 ) {
                     Text(
                         text = "댓글",
-                        style = itemLabelStyle(),
+                        fontFamily = FontFamily(Font(R.font.pretendard_regular)),
+                        fontWeight = FontWeight(600),
+                        fontSize = 18.sp,
+                        lineHeight = 18.sp,
                         color = Gray700
                     )
                     Switch(

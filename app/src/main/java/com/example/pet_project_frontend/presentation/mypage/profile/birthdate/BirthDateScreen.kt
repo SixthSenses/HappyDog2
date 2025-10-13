@@ -107,7 +107,7 @@ private fun BirthEditScreen(
     ) {
         TopBar(title = {}, onNavigateBack = onBack)
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(15.dp))
 
         Column(modifier = Modifier.padding(horizontal = 24.dp)) {
             Text(
@@ -221,7 +221,5 @@ private fun BirthEditScreen(
                 }
             }
         }
-
-        GestureBar(modifier = Modifier.fillMaxWidth())
     }
 }
