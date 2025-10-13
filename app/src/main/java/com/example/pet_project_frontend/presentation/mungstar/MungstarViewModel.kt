@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pet_project_frontend.domain.model.Post
 import com.example.pet_project_frontend.domain.repository.PostRepository
+import com.example.pet_project_frontend.domain.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,19 +18,36 @@ data class MungStarUiState(
     val nextCursor: String? = null,
     val hasMore: Boolean = false,
     val error: String? = null,
-    val isRefreshing: Boolean = false
+    val isRefreshing: Boolean = false,
+    val currentUserId: String? = null
 )
 
 @HiltViewModel
 class MungStarViewModel @Inject constructor(
-    private val postRepository: PostRepository
+    private val postRepository: PostRepository,
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MungStarUiState())
     val uiState: StateFlow<MungStarUiState> = _uiState.asStateFlow()
 
     init {
+        loadCurrentUser()
         loadPosts()
+    }
+
+    // 현재 사용자 정보 로드
+    private fun loadCurrentUser() {
+        viewModelScope.launch {
+            try {
+                val result = userRepository.getUserInfo()
+                if (result is com.example.pet_project_frontend.core.common.AppResult.Success) {
+                    _uiState.value = _uiState.value.copy(currentUserId = result.data.id)
+                }
+            } catch (e: Exception) {
+                // 에러 무시 (person 아이콘만 비활성화)
+            }
+        }
     }
 
     // 게시글 목록 로드

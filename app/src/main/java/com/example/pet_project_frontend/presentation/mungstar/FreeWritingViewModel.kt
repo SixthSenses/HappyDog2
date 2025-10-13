@@ -90,19 +90,12 @@ class FreeWritingViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(error = "내용을 입력해주세요")
             return
         }
-        
-        // 이미지 필수 검증 (백엔드 스펙: file_paths required, minItems: 1)
-        if (_uiState.value.uploadedImages.isEmpty()) {
-            Log.w(TAG, "No images uploaded")
-            _uiState.value = _uiState.value.copy(error = "최소 1개의 이미지를 추가해주세요")
-            return
-        }
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
             try {
-                // 1. 이미지 업로드
+                // 1. 이미지 업로드 (이미지가 있는 경우에만)
                 val filePaths = mutableListOf<String>()
                 
                 for ((index, uri) in _uiState.value.uploadedImages.withIndex()) {
@@ -146,9 +139,16 @@ class FreeWritingViewModel @Inject constructor(
                         return@launch
                     }
 
-                    Log.d(TAG, "File uploaded successfully: ${uploadUrl.filePath}")
-                    // 업로드 성공 시 file_path 저장
-                    filePaths.add(uploadUrl.filePath)
+                    Log.d(TAG, "File uploaded successfully")
+                    Log.d(TAG, "filePath: ${uploadUrl.filePath}")
+                    Log.d(TAG, "publicUrl: ${uploadUrl.publicUrl}")
+                    
+                    // ⚠️ 원본 filePath를 그대로 사용 (Firebase 인증 토큰 포함)
+                    // publicUrl이 있으면 사용, 없으면 filePath 그대로 사용
+                    val urlToUse = uploadUrl.publicUrl ?: uploadUrl.filePath
+                    
+                    Log.d(TAG, "Using URL: $urlToUse")
+                    filePaths.add(urlToUse)
                 }
 
                 // 2. 게시글 생성

@@ -2,10 +2,12 @@ package com.example.pet_project_frontend.presentation.mungstar
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -15,14 +17,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -43,6 +48,9 @@ fun MungStarFeed(
 ) {
     var showBottomSheet by remember { mutableStateOf(false) }
     var showSuccessToast by remember { mutableStateOf(false) }
+    var showCartoonToast by remember { mutableStateOf(false) }
+    var showDeleteToast by remember { mutableStateOf(false) }
+    var showUpdateToast by remember { mutableStateOf(false) }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
 
@@ -58,6 +66,33 @@ fun MungStarFeed(
             currentBackStackEntry.savedStateHandle.remove<Boolean>("post_created")
             kotlinx.coroutines.delay(2000)
             showSuccessToast = false
+        }
+        
+        // CartoonLoading에서 돌아왔을 때 만화 등록 토스트 표시
+        val cartoonCreated = currentBackStackEntry?.savedStateHandle?.get<Boolean>("cartoon_created")
+        if (cartoonCreated == true) {
+            showCartoonToast = true
+            currentBackStackEntry.savedStateHandle.remove<Boolean>("cartoon_created")
+            kotlinx.coroutines.delay(2000)
+            showCartoonToast = false
+        }
+        
+        // PostDetail에서 돌아왔을 때 삭제 토스트 표시
+        val postDeleted = currentBackStackEntry?.savedStateHandle?.get<Boolean>("post_deleted")
+        if (postDeleted == true) {
+            showDeleteToast = true
+            currentBackStackEntry.savedStateHandle.remove<Boolean>("post_deleted")
+            kotlinx.coroutines.delay(2000)
+            showDeleteToast = false
+        }
+        
+        // Free_Writing에서 돌아왔을 때 수정 토스트 표시
+        val postUpdated = currentBackStackEntry?.savedStateHandle?.get<Boolean>("post_updated")
+        if (postUpdated == true) {
+            showUpdateToast = true
+            currentBackStackEntry.savedStateHandle.remove<Boolean>("post_updated")
+            kotlinx.coroutines.delay(2000)
+            showUpdateToast = false
         }
     }
 
@@ -81,7 +116,7 @@ fun MungStarFeed(
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            // 앱바
+            // 상단 앱바 (디바이스 너비 × 64픽셀)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -89,32 +124,47 @@ fun MungStarFeed(
                     .offset(y = 10.dp)
                     .background(Color.White)
             ) {
+                // mungstargram.png (왼쪽에서 20픽셀, 수직 중앙)
                 Image(
                     painter = painterResource(id = R.drawable.mungstargram),
                     contentDescription = "MungStarGram Logo",
                     modifier = Modifier
                         .size(132.dp, 32.dp)
-                        .offset(x = 20.dp, y = 16.dp),
+                        .align(Alignment.CenterStart)
+                        .offset(x = 20.dp),
                     contentScale = ContentScale.Fit
                 )
 
-                Image(
-                    painter = painterResource(id = R.drawable.notifications),
-                    contentDescription = "Notifications",
+                // 오른쪽 아이콘 그룹
+                Row(
                     modifier = Modifier
-                        .size(24.dp)
-                        .offset(x = (20 + 132 + 160).dp, y = 20.dp),
-                    contentScale = ContentScale.Fit
-                )
+                        .align(Alignment.CenterEnd)
+                        .padding(end = 20.dp),
+                    horizontalArrangement = Arrangement.spacedBy(15.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // notifications.png (22×22)
+                    Image(
+                        painter = painterResource(id = R.drawable.notifications),
+                        contentDescription = "Notifications",
+                        modifier = Modifier.size(22.dp),
+                        contentScale = ContentScale.Fit
+                    )
 
-                Image(
-                    painter = painterResource(id = R.drawable.person),
-                    contentDescription = "Person",
-                    modifier = Modifier
-                        .size(30.dp)
-                        .offset(x = (20 + 132 + 160 + 24 + 20).dp, y = 17.dp),
-                    contentScale = ContentScale.Fit
-                )
+                    // person.png (20×20) - 현재 사용자 프로필로 이동
+                    Image(
+                        painter = painterResource(id = R.drawable.person),
+                        contentDescription = "My Profile",
+                        modifier = Modifier
+                            .size(20.dp)
+                            .clickable {
+                                uiState.currentUserId?.let { userId ->
+                                    navController.navigate("user_posts/$userId")
+                                }
+                            },
+                        contentScale = ContentScale.Fit
+                    )
+                }
             }
 
             // 앱바 아래 8픽셀 간격
@@ -124,7 +174,7 @@ fun MungStarFeed(
             HorizontalDivider(
                 modifier = Modifier.fillMaxWidth(),
                 thickness = 1.dp,
-                color = Color(0xFFB1B8C0)
+                color = Color(0xFF8B95A1)
             )
 
             // 피드 목록
@@ -183,7 +233,7 @@ fun MungStarFeed(
                     HorizontalDivider(
                         modifier = Modifier.fillMaxWidth(),
                         thickness = 1.dp,
-                        color = Color(0xFFB1B8C0)
+                        color = Color(0xFF8B95A1)
                     )
                 }
                 
@@ -215,7 +265,7 @@ fun MungStarFeed(
             Image(
                 painter = painterResource(id = R.drawable.add),
                 contentDescription = "Add",
-                modifier = Modifier.size(30.dp),
+                modifier = Modifier.size(21.dp),
                 contentScale = ContentScale.Fit
             )
         }
@@ -233,35 +283,240 @@ fun MungStarFeed(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(top = 130.dp),
+                    .padding(top = 78.dp),
                 contentAlignment = Alignment.TopCenter
             ) {
                 Row(
                     modifier = Modifier
-                        .width(230.dp)
+                        .width(203.dp)
                         .height(50.dp)
+                        .shadow(
+                            elevation = 4.dp,
+                            shape = RoundedCornerShape(26.dp),
+                            ambientColor = Color.Black.copy(alpha = 0.08f),
+                            spotColor = Color.Black.copy(alpha = 0.08f)
+                        )
+                        .border(
+                            width = 0.5.dp,
+                            color = Color(0xFFE4E8EB),
+                            shape = RoundedCornerShape(26.dp)
+                        )
                         .background(
-                            color = Color.White,
+                            color = Color(0xFFFFFFFF),
                             shape = RoundedCornerShape(26.dp)
                         )
                         .padding(horizontal = 16.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
                 ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.registeration_check_icon),
-                        contentDescription = "등록 완료",
-                        modifier = Modifier.size(20.dp)
-                    )
+                    // 초록색 원 배경 + check 아이콘
+                    Box(
+                        modifier = Modifier
+                            .size(20.dp)
+                            .background(
+                                color = Color(0xFF15C47E),
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.check),
+                            contentDescription = "등록 완료",
+                            modifier = Modifier.size(width = 9.dp, height = 7.dp)
+                        )
+                    }
                     
                     Spacer(modifier = Modifier.width(10.dp))
                     
                     Text(
                         text = "게시물이 등록되었어요.",
                         fontFamily = PretendardFont,
-                        fontWeight = FontWeight(400),
+                        fontWeight = FontWeight(500),
                         fontSize = 16.sp,
-                        color = Color.Black
+                        color = Color(0xFF333D4B)
+                    )
+                }
+            }
+        }
+        
+        // 만화 등록 완료 토스트
+        if (showCartoonToast) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = 78.dp),
+                contentAlignment = Alignment.TopCenter
+            ) {
+                Row(
+                    modifier = Modifier
+                        .width(203.dp)
+                        .height(50.dp)
+                        .shadow(
+                            elevation = 4.dp,
+                            shape = RoundedCornerShape(26.dp),
+                            ambientColor = Color.Black.copy(alpha = 0.08f),
+                            spotColor = Color.Black.copy(alpha = 0.08f)
+                        )
+                        .border(
+                            width = 0.5.dp,
+                            color = Color(0xFFE4E8EB),
+                            shape = RoundedCornerShape(26.dp)
+                        )
+                        .background(
+                            color = Color(0xFFFFFFFF),
+                            shape = RoundedCornerShape(26.dp)
+                        )
+                        .padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    // 초록색 원 배경 + check 아이콘
+                    Box(
+                        modifier = Modifier
+                            .size(20.dp)
+                            .background(
+                                color = Color(0xFF15C47E),
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.check),
+                            contentDescription = "완료",
+                            modifier = Modifier.size(width = 9.dp, height = 7.dp)
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.width(10.dp))
+                    
+                    Text(
+                        text = "만화가 등록되었어요.",
+                        fontFamily = PretendardFont,
+                        fontWeight = FontWeight(500),
+                        fontSize = 16.sp,
+                        color = Color(0xFF333D4B)
+                    )
+                }
+            }
+        }
+        
+        // 게시물 삭제 완료 토스트
+        if (showDeleteToast) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = 78.dp),
+                contentAlignment = Alignment.TopCenter
+            ) {
+                Row(
+                    modifier = Modifier
+                        .width(203.dp)
+                        .height(50.dp)
+                        .shadow(
+                            elevation = 4.dp,
+                            shape = RoundedCornerShape(26.dp),
+                            ambientColor = Color.Black.copy(alpha = 0.08f),
+                            spotColor = Color.Black.copy(alpha = 0.08f)
+                        )
+                        .border(
+                            width = 0.5.dp,
+                            color = Color(0xFFE4E8EB),
+                            shape = RoundedCornerShape(26.dp)
+                        )
+                        .background(
+                            color = Color(0xFFFFFFFF),
+                            shape = RoundedCornerShape(26.dp)
+                        )
+                        .padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    // 초록색 원 배경 + check 아이콘
+                    Box(
+                        modifier = Modifier
+                            .size(20.dp)
+                            .background(
+                                color = Color(0xFF15C47E),
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.check),
+                            contentDescription = "삭제 완료",
+                            modifier = Modifier.size(width = 9.dp, height = 7.dp)
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.width(10.dp))
+                    
+                    Text(
+                        text = "게시물이 삭제되었어요.",
+                        fontFamily = PretendardFont,
+                        fontWeight = FontWeight(500),
+                        fontSize = 16.sp,
+                        color = Color(0xFF333D4B)
+                    )
+                }
+            }
+        }
+        
+        // 게시물 수정 완료 토스트
+        if (showUpdateToast) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = 78.dp),
+                contentAlignment = Alignment.TopCenter
+            ) {
+                Row(
+                    modifier = Modifier
+                        .width(203.dp)
+                        .height(50.dp)
+                        .shadow(
+                            elevation = 4.dp,
+                            shape = RoundedCornerShape(26.dp),
+                            ambientColor = Color.Black.copy(alpha = 0.08f),
+                            spotColor = Color.Black.copy(alpha = 0.08f)
+                        )
+                        .border(
+                            width = 0.5.dp,
+                            color = Color(0xFFE4E8EB),
+                            shape = RoundedCornerShape(26.dp)
+                        )
+                        .background(
+                            color = Color(0xFFFFFFFF),
+                            shape = RoundedCornerShape(26.dp)
+                        )
+                        .padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    // 초록색 원 배경 + check 아이콘
+                    Box(
+                        modifier = Modifier
+                            .size(20.dp)
+                            .background(
+                                color = Color(0xFF15C47E),
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.check),
+                            contentDescription = "수정 완료",
+                            modifier = Modifier.size(width = 9.dp, height = 7.dp)
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.width(10.dp))
+                    
+                    Text(
+                        text = "게시물이 수정되었어요.",
+                        fontFamily = PretendardFont,
+                        fontWeight = FontWeight(500),
+                        fontSize = 16.sp,
+                        color = Color(0xFF333D4B)
                     )
                 }
             }
@@ -378,37 +633,24 @@ fun PostItem(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // 이미지 (텍스트 아래 10px 간격, 그리드 형태로 표시, 클릭 시 상세 화면)
+        // 이미지 (텍스트 아래 10px 간격, 가로 스크롤, 클릭 시 상세 화면)
         if (post.mediaUrls.isNotEmpty()) {
-            // 이미지를 2개씩 행으로 나눔
-            val rows = post.mediaUrls.chunked(2)
-            
-            Column(
-                modifier = Modifier.clickable(onClick = onPostClick),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+            LazyRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                rows.forEach { rowImages ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        rowImages.forEach { imageUrl ->
-                            AsyncImage(
-                                model = imageUrl,
-                                contentDescription = "Post image",
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .aspectRatio(1f)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(Color(0xFFF5F5F5)),
-                                contentScale = ContentScale.Crop
-                            )
-                        }
-                        // 홀수 개일 경우 빈 공간 채우기
-                        if (rowImages.size == 1) {
-                            Spacer(modifier = Modifier.weight(1f))
-                        }
-                    }
+                items(post.mediaUrls) { imageUrl ->
+                    // FirebaseStorageInterceptor가 자동으로 URL을 갱신함
+                    AsyncImage(
+                        model = imageUrl,
+                        contentDescription = "Post image",
+                        modifier = Modifier
+                            .size(250.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFFF5F5F5))
+                            .clickable(onClick = onPostClick), // 각 이미지에 clickable 적용
+                        contentScale = ContentScale.Crop
+                    )
                 }
             }
 
@@ -420,7 +662,7 @@ fun PostItem(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 좋아요 버튼 (24X24) - 0개일 때 like.png, 1개 이상일 때 favorite.png
+            // 좋아요 버튼 - 0개일 때 like.png (22dp), 1개 이상일 때 favorite.png (24dp)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.clickable { onLikeClick() }
@@ -430,7 +672,7 @@ fun PostItem(
                         id = if (post.likesCount > 0) R.drawable.favorite else R.drawable.like
                     ),
                     contentDescription = "Like",
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(if (post.likesCount > 0) 24.dp else 22.dp)
                 )
                 
                 // 좋아요 수 (1개부터 표시, #EC4453, 15px)
@@ -439,7 +681,7 @@ fun PostItem(
                     Text(
                         text = post.likesCount.toString(),
                         fontFamily = PretendardFont,
-                        fontWeight = FontWeight(400),
+                        fontWeight = FontWeight(500),
                         fontSize = 15.sp,
                         color = Color(0xFFEC4453)
                     )
@@ -462,7 +704,7 @@ fun PostItem(
                 Text(
                     text = post.commentsCount.toString(),
                     fontFamily = PretendardFont,
-                    fontWeight = FontWeight(400),
+                    fontWeight = FontWeight(500),
                     fontSize = 15.sp,
                     color = Color(0xFFB1B8C0)
                 )
@@ -480,13 +722,14 @@ fun CustomBottomSheet(
     var selectedContainer by remember { mutableStateOf<Int?>(null) }
 
     Dialog(
-        onDismissRequest = onDismiss
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.BottomCenter
         ) {
-            // 검은색 배경 (32% 불투명도)
+            // 검은색 배경 (32% 불투명도) - 화면 전체
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -516,7 +759,9 @@ fun CustomBottomSheet(
                         .fillMaxWidth()
                         .padding(horizontal = 0.dp)
                 ) {
-                    // 닫기 바 (Divider)
+                    Spacer(modifier = Modifier.height(10.dp))
+                    
+                    // 닫기 바 (Divider) - 위에서 10픽셀 아래
                     Box(
                         modifier = Modifier
                             .width(50.dp)
@@ -526,10 +771,9 @@ fun CustomBottomSheet(
                                 shape = RoundedCornerShape(2.dp)
                             )
                             .align(Alignment.CenterHorizontally)
-                            .offset(y = 12.dp)
                     )
 
-                    Spacer(modifier = Modifier.height(40.dp))
+                    Spacer(modifier = Modifier.height(47.dp))
 
                     // 어떤 주제인가요? 텍스트
                     Text(

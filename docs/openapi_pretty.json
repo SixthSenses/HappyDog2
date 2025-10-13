@@ -36,6 +36,11 @@
             "$ref": "#/components/responses/INTERNAL_ERROR"
           }
         },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "tags": [
           "auth"
         ]
@@ -82,6 +87,11 @@
             }
           }
         },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "tags": [
           "auth"
         ]
@@ -116,6 +126,11 @@
             "$ref": "#/components/responses/INTERNAL_ERROR"
           }
         },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "tags": [
           "auth"
         ]
@@ -162,6 +177,11 @@
             }
           }
         },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "tags": [
           "auth"
         ]
@@ -208,6 +228,11 @@
             }
           }
         },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "tags": [
           "auth"
         ]
@@ -254,6 +279,11 @@
             }
           }
         },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "tags": [
           "uploads"
         ]
@@ -261,8 +291,8 @@
     },
     "/api/uploads/finalize-cartoon": {
       "post": {
-        "summary": "만화 이미지 공개 전환",
-        "description": "업로드된 만화 원본 이미지를 공개로 전환하고 URL을 반환합니다.\n\n    RequestSchema: FinalizeCartoonRequestSchema\n    ResponseSchema[200]: FinalizeCartoonResponseSchema",
+        "summary": "[DEPRECATED] 만화 이미지 URL 생성",
+        "description": "⚠️ 더 이상 사용되지 않는 엔드포인트입니다.\n    POST /api/cartoon-jobs 엔드포인트에서 이미지 URL을 자동으로 생성합니다.\n    \n    이전 버전 클라이언트 호환성을 위해 유지되고 있으며, 향후 제거될 예정입니다.\n\n    RequestSchema: FinalizeCartoonRequestSchema\n    ResponseSchema[200]: FinalizeCartoonResponseSchema",
         "responses": {
           "200": {
             "description": "성공",
@@ -300,6 +330,11 @@
             }
           }
         },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "tags": [
           "uploads"
         ]
@@ -583,7 +618,7 @@
     "/api/posts/": {
       "post": {
         "summary": "게시글을 생성합니다.",
-        "description": "클라이언트는 텍스트(`text`)와 업로드 완료된 파일 경로 리스트(`file_paths`)를 전달합니다.\n    성공 시 생성된 게시글의 전체 정보를 201 응답으로 반환하며, 생성 이벤트 후속 처리(post_events_service)가 비동기/후속 로직을 트리거합니다.\n\n    RequestSchema: PostCreateSchema\n    ResponseSchema[201]: PostResponseSchema",
+        "description": "클라이언트는 필수로 텍스트(`text`)를 전달하고, 선택적으로 업로드 완료된 파일 경로 리스트(`file_paths`)를 전달할 수 있습니다.\n    이미지 없이 텍스트만으로도 게시글 작성이 가능합니다.\n    성공 시 생성된 게시글의 전체 정보를 201 응답으로 반환하며, 생성 이벤트 후속 처리(post_events_service)가 비동기/후속 로직을 트리거합니다.\n\n    RequestSchema: PostCreateSchema\n    ResponseSchema[201]: PostResponseSchema",
         "responses": {
           "200": {
             "description": "성공"
@@ -1228,6 +1263,11 @@
             }
           }
         },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "tags": [
           "cartoon-jobs"
         ]
@@ -1275,6 +1315,11 @@
             "description": "Path parameter 'job_id' (converter: string)"
           }
         ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "tags": [
           "cartoon-jobs"
         ]
@@ -1320,6 +1365,11 @@
             "description": "Path parameter 'job_id' (converter: string)"
           }
         ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "tags": [
           "cartoon-jobs"
         ]
@@ -1356,6 +1406,11 @@
             "$ref": "#/components/responses/INTERNAL_ERROR"
           }
         },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "tags": [
           "cartoon-jobs"
         ]
@@ -1392,6 +1447,65 @@
             "$ref": "#/components/responses/INTERNAL_ERROR"
           }
         },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "breeds"
+        ]
+      }
+    },
+    "/api/breeds/guide/{breed_name}": {
+      "get": {
+        "summary": "특정 품종 백과사전 정보 조회",
+        "description": "ResponseSchema[200]: BreedGuideSchema\n    ResponseSchema[404]: ErrorResponseSchema",
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BreedGuideSchema"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/VALIDATION_ERROR"
+          },
+          "401": {
+            "$ref": "#/components/responses/UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/FORBIDDEN"
+          },
+          "404": {
+            "$ref": "#/components/responses/NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseSchema"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/INTERNAL_ERROR"
+          }
+        },
+        "parameters": [
+          {
+            "name": "breed_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Path parameter 'breed_name' (converter: string)"
+          }
+        ],
         "security": [
           {
             "BearerAuth": []
@@ -1668,7 +1782,7 @@
       },
       "patch": {
         "summary": "반려동물 프로필 수정",
-        "description": "소유자만 접근할 수 있는 반려동물의 프로필 정보를 부분 업데이트합니다. 필요한 필드만 수정할 수 있습니다.\n\n    RequestSchema: PetUpdateSchema\n    ResponseSchema[200]: PetProfileResponseSchema",
+        "description": "소유자만 접근할 수 있는 반려동물의 프로필 정보를 부분 업데이트합니다. \n    이름, 성별, 견종, 생년월일, 털 색깔, 건강 관심사, 프로필 이미지 등 필요한 필드만 선택적으로 수정할 수 있습니다.\n\n    RequestSchema: PetUpdateSchema\n    ResponseSchema[200]: PetProfileResponseSchema",
         "responses": {
           "200": {
             "description": "성공",
@@ -1862,6 +1976,47 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PetViewBasedResponseSchema"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/VALIDATION_ERROR"
+          },
+          "401": {
+            "$ref": "#/components/responses/UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/FORBIDDEN"
+          },
+          "404": {
+            "$ref": "#/components/responses/NOT_FOUND"
+          },
+          "500": {
+            "$ref": "#/components/responses/INTERNAL_ERROR"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "pets"
+        ]
+      }
+    },
+    "/api/pets/eye-analyses": {
+      "get": {
+        "summary": "안구 검사 이력 조회 (본인 전용)",
+        "description": "인증된 사용자 본인의 검사 이력을 최신순으로 반환합니다. 선택적으로 특정 `pet_id`로 필터링할 수 있습니다.\n\n    RequestSchema(query): EyeAnalysisHistoryQuerySchema\n    ResponseSchema[200]: EyeAnalysisHistoryListResponseSchema",
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EyeAnalysisHistoryListResponseSchema"
                 }
               }
             }
@@ -2254,6 +2409,110 @@
         ]
       }
     },
+    "/api/pet-care/{pet_id}/records/daily/summary": {
+      "get": {
+        "summary": "특정 날짜 요약 + 목표 진행률 조회",
+        "description": "UI의 오늘/특정일 달성률, 개수, 간단 요약을 반환합니다.\n\n    ResponseSchema[200]: DailySummaryWithGoalsResponseSchema",
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DailySummaryWithGoalsResponseSchema"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/VALIDATION_ERROR"
+          },
+          "401": {
+            "$ref": "#/components/responses/UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/FORBIDDEN"
+          },
+          "404": {
+            "$ref": "#/components/responses/NOT_FOUND"
+          },
+          "500": {
+            "$ref": "#/components/responses/INTERNAL_ERROR"
+          }
+        },
+        "parameters": [
+          {
+            "name": "pet_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Path parameter 'pet_id' (converter: string)"
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "pet-care"
+        ]
+      }
+    },
+    "/api/pet-care/{pet_id}/records/summary/range": {
+      "get": {
+        "summary": "기간 요약 + 트렌드 + 목표 추적 조회",
+        "description": "월간 분석 카드/문구를 구성하는 데이터에 대응합니다.\n\n    ResponseSchema[200]: RangeSummaryWithTrendsResponseSchema",
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RangeSummaryWithTrendsResponseSchema"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/VALIDATION_ERROR"
+          },
+          "401": {
+            "$ref": "#/components/responses/UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/FORBIDDEN"
+          },
+          "404": {
+            "$ref": "#/components/responses/NOT_FOUND"
+          },
+          "500": {
+            "$ref": "#/components/responses/INTERNAL_ERROR"
+          }
+        },
+        "parameters": [
+          {
+            "name": "pet_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Path parameter 'pet_id' (converter: string)"
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "pet-care"
+        ]
+      }
+    },
     "/api/notifications": {
       "get": {
         "summary": "알림 목록 조회",
@@ -2451,7 +2710,8 @@
         },
         "required": [
           "message"
-        ]
+        ],
+        "description": "로그아웃 응답."
       },
       "AuthTokensRefreshResponseSchema": {
         "type": "object",
@@ -2462,7 +2722,8 @@
         },
         "required": [
           "access_token"
-        ]
+        ],
+        "description": "토큰 재발급 응답 (새 access_token)."
       },
       "AuthTokensResponseSchema": {
         "type": "object",
@@ -2470,17 +2731,17 @@
           "access_token": {
             "type": "string"
           },
-          "user_id": {
+          "refresh_token": {
             "type": "string"
           },
-          "user_info": {
-            "$ref": "#/components/schemas/AuthUserInfoSchema"
+          "user_id": {
+            "type": "string"
           },
           "is_new_user": {
             "type": "boolean"
           },
-          "refresh_token": {
-            "type": "string"
+          "user_info": {
+            "$ref": "#/components/schemas/AuthUserInfoSchema"
           }
         },
         "required": [
@@ -2489,7 +2750,8 @@
           "refresh_token",
           "user_id",
           "user_info"
-        ]
+        ],
+        "description": "소셜 로그인/콜백 성공 시 토큰/유저 정보."
       },
       "AuthUserInfoSchema": {
         "type": "object",
@@ -2509,28 +2771,30 @@
           "email",
           "nickname",
           "user_id"
-        ]
+        ],
+        "description": "토큰 발급 시 함께 반환되는 사용자 요약 정보"
       },
       "AuthorizationUrlResponseSchema": {
         "type": "object",
         "properties": {
+          "authorization_url": {
+            "type": "string",
+            "format": "uri"
+          },
           "redirect_uri": {
             "type": "string",
             "format": "uri"
           },
           "state": {
             "type": "string"
-          },
-          "authorization_url": {
-            "type": "string",
-            "format": "uri"
           }
         },
         "required": [
           "authorization_url",
           "redirect_uri",
           "state"
-        ]
+        ],
+        "description": "GET /api/auth/google/authorize 응답 스키마"
       },
       "LogoutRequestSchema": {
         "type": "object",
@@ -2545,22 +2809,42 @@
         "required": [
           "access_token",
           "refresh_token"
-        ]
+        ],
+        "description": "로그아웃 요청의 유효성을 검사하는 스키마"
       },
       "SocialLoginSchema": {
         "type": "object",
         "properties": {
-          "auth_code": {
+          "provider": {
             "type": "string"
           },
-          "provider": {
+          "auth_code": {
             "type": "string"
           }
         },
         "required": [
           "auth_code",
           "provider"
-        ]
+        ],
+        "description": "소셜 로그인 요청의 유효성을 검사하는 스키마"
+      },
+      "BreedBasicInfoSchema": {
+        "type": "object",
+        "properties": {
+          "weight": {
+            "type": "string"
+          },
+          "height": {
+            "type": "string"
+          },
+          "life_span": {
+            "type": "string"
+          },
+          "origin": {
+            "type": "string"
+          }
+        },
+        "description": "백과사전: 기본 정보"
       },
       "BreedExistsResponseSchema": {
         "type": "object",
@@ -2575,7 +2859,41 @@
         "required": [
           "breed_name",
           "exists"
-        ]
+        ],
+        "description": "품종 존재 여부 확인 응답."
+      },
+      "BreedGuideSchema": {
+        "type": "object",
+        "properties": {
+          "breed_name": {
+            "type": "string"
+          },
+          "english_name": {
+            "type": "string"
+          },
+          "basic_info": {
+            "$ref": "#/components/schemas/BreedBasicInfoSchema"
+          },
+          "personality": {
+            "$ref": "#/components/schemas/BreedPersonalitySchema"
+          },
+          "common_diseases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "care_points": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "breed_name"
+        ],
+        "description": "품종 백과사전 콘텐츠 스키마"
       },
       "BreedListSchema": {
         "type": "object",
@@ -2595,26 +2913,31 @@
         "required": [
           "breeds",
           "total_count"
-        ]
+        ],
+        "description": "품종 목록 조회 응답을 위한 스키마"
+      },
+      "BreedPersonalitySchema": {
+        "type": "object",
+        "properties": {
+          "strengths": {
+            "type": "string"
+          },
+          "weaknesses": {
+            "type": "string"
+          },
+          "traits": {
+            "type": "string"
+          }
+        },
+        "description": "백과사전: 성격/특징"
       },
       "BreedSchema": {
         "type": "object",
         "properties": {
-          "updated_at": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time"
-          },
           "breed_name": {
             "type": "string",
             "minLength": 1,
             "maxLength": 50
-          },
-          "weight_kg": {
-            "$ref": "#/components/schemas/HeightWeightSchema"
           },
           "life_expectancy": {
             "type": "number",
@@ -2624,6 +2947,17 @@
           },
           "height_cm": {
             "$ref": "#/components/schemas/HeightWeightSchema"
+          },
+          "weight_kg": {
+            "$ref": "#/components/schemas/HeightWeightSchema"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
           }
         },
         "required": [
@@ -2631,7 +2965,8 @@
           "height_cm",
           "life_expectancy",
           "weight_kg"
-        ]
+        ],
+        "description": "개별 품종 정보를 위한 스키마"
       },
       "BreedSearchSchema": {
         "type": "object",
@@ -2655,7 +2990,8 @@
         },
         "required": [
           "query"
-        ]
+        ],
+        "description": "품종 검색 요청을 위한 스키마"
       },
       "BreedSummaryListSchema": {
         "type": "object",
@@ -2675,56 +3011,54 @@
         "required": [
           "breeds",
           "total_count"
-        ]
+        ],
+        "description": "품종 요약 목록 조회 응답을 위한 스키마"
       },
       "BreedSummarySchema": {
         "type": "object",
         "properties": {
           "breed_name": {
             "type": "string"
-          },
-          "life_expectancy": {
-            "type": "number",
-            "format": "float"
           }
         },
         "required": [
-          "breed_name",
-          "life_expectancy"
-        ]
+          "breed_name"
+        ],
+        "description": "품종 요약 정보를 위한 스키마 (드롭다운 등에서 사용)"
       },
       "ErrorResponseSchema": {
         "type": "object",
         "properties": {
+          "error_code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
           "details": {
             "type": "object",
             "additionalProperties": {
               "type": "string"
             },
             "nullable": true
-          },
-          "error_code": {
-            "type": "string"
-          },
-          "message": {
-            "type": "string"
           }
         },
         "required": [
           "error_code",
           "message"
-        ]
+        ],
+        "description": "오류 응답 스키마"
       },
       "HeightWeightSchema": {
         "type": "object",
         "properties": {
-          "female": {
+          "male": {
             "type": "number",
             "format": "float",
             "nullable": true,
             "minimum": 0
           },
-          "male": {
+          "female": {
             "type": "number",
             "format": "float",
             "nullable": true,
@@ -2734,16 +3068,12 @@
         "required": [
           "female",
           "male"
-        ]
+        ],
+        "description": "키/몸무게 정보 (성별별)를 위한 스키마"
       },
       "CartoonJobCreateSchema": {
         "type": "object",
         "properties": {
-          "user_text": {
-            "type": "string",
-            "nullable": true,
-            "maxLength": 500
-          },
           "file_paths": {
             "type": "array",
             "items": {
@@ -2752,25 +3082,21 @@
             },
             "minItems": 1,
             "maxItems": 1
+          },
+          "user_text": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 500
           }
         },
         "required": [
           "file_paths"
-        ]
+        ],
+        "description": "POST /api/cartoon-jobs\n    만화 생성을 요청할 때의 데이터 형식을 정의하고 유효성을 검사합니다."
       },
       "CartoonJobHealthResponseSchema": {
         "type": "object",
         "properties": {
-          "integration_health": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            }
-          },
-          "max_workers": {
-            "type": "integer",
-            "format": "int32"
-          },
           "active_jobs": {
             "type": "integer",
             "format": "int32"
@@ -2778,6 +3104,16 @@
           "queue_size": {
             "type": "integer",
             "format": "int32"
+          },
+          "max_workers": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "integration_health": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
           }
         },
         "required": [
@@ -2785,21 +3121,33 @@
           "integration_health",
           "max_workers",
           "queue_size"
-        ]
+        ],
+        "description": "Cartoon job processor health 응답."
       },
       "CartoonJobResponseSchema": {
         "type": "object",
         "properties": {
+          "job_id": {
+            "type": "string"
+          },
           "user_id": {
             "type": "string"
           },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time"
+          "status": {
+            "type": "string"
           },
           "original_image_url": {
             "type": "string",
             "format": "uri"
+          },
+          "user_text": {
+            "type": "string",
+            "nullable": true
+          },
+          "result_image_url": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true
           },
           "error_message": {
             "type": "string",
@@ -2809,20 +3157,9 @@
             "type": "string",
             "format": "date-time"
           },
-          "status": {
-            "type": "string"
-          },
-          "user_text": {
+          "updated_at": {
             "type": "string",
-            "nullable": true
-          },
-          "job_id": {
-            "type": "string"
-          },
-          "result_image_url": {
-            "type": "string",
-            "format": "uri",
-            "nullable": true
+            "format": "date-time"
           }
         },
         "required": [
@@ -2832,7 +3169,8 @@
           "status",
           "updated_at",
           "user_id"
-        ]
+        ],
+        "description": "만화 생성 작업 정보 응답을 위한 최종 JSON 형식을 정의합니다.\n    (생성, 조회, 취소 시 모두 이 스키마를 사용)"
       },
       "AuthorSchema": {
         "type": "object",
@@ -2847,7 +3185,8 @@
         "required": [
           "nickname",
           "user_id"
-        ]
+        ],
+        "description": "게시물 응답에 포함될 작성자 정보 스키마."
       },
       "CommentCreateSchema": {
         "type": "object",
@@ -2860,18 +3199,19 @@
         },
         "required": [
           "text"
-        ]
+        ],
+        "description": "POST /api/posts/{post_id}/comments\n    댓글 생성을 요청할 때의 데이터 형식을 정의하고 유효성을 검사합니다."
       },
       "CommentLikeToggleResponseSchema": {
         "type": "object",
         "properties": {
+          "message": {
+            "type": "string"
+          },
           "liked": {
             "type": "boolean"
           },
           "comment_id": {
-            "type": "string"
-          },
-          "message": {
             "type": "string"
           }
         },
@@ -2879,37 +3219,49 @@
           "comment_id",
           "liked",
           "message"
-        ]
+        ],
+        "description": "댓글 좋아요 토글 결과 응답."
       },
       "CommentListResponseSchema": {
         "type": "object",
         "properties": {
-          "next_cursor": {
-            "type": "string",
-            "nullable": true
-          },
           "comments": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/CommentResponseSchema"
             }
+          },
+          "next_cursor": {
+            "type": "string",
+            "nullable": true
           }
         },
         "required": [
           "comments"
-        ]
+        ],
+        "description": "댓글 목록 응답.\n\n    - comments: 댓글 객체 배열\n    - next_cursor: 다음 페이지 커서 (없으면 null)"
       },
       "CommentResponseSchema": {
         "type": "object",
         "properties": {
+          "comment_id": {
+            "type": "string"
+          },
+          "post_id": {
+            "type": "string"
+          },
           "author": {
             "$ref": "#/components/schemas/AuthorSchema"
+          },
+          "pet": {
+            "$ref": "#/components/schemas/PetInfoSchema"
           },
           "text": {
             "type": "string"
           },
-          "comment_id": {
-            "type": "string"
+          "like_count": {
+            "type": "integer",
+            "format": "int32"
           },
           "created_at": {
             "type": "string",
@@ -2917,16 +3269,6 @@
           },
           "is_liked": {
             "type": "boolean"
-          },
-          "like_count": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "post_id": {
-            "type": "string"
-          },
-          "pet": {
-            "$ref": "#/components/schemas/PetInfoSchema"
           }
         },
         "required": [
@@ -2937,28 +3279,29 @@
           "pet",
           "post_id",
           "text"
-        ]
+        ],
+        "description": "댓글 정보 응답을 위한 최종 JSON 형식을 정의합니다."
       },
       "PetInfoSchema": {
         "type": "object",
         "properties": {
+          "pet_id": {
+            "type": "string"
+          },
           "name": {
+            "type": "string"
+          },
+          "breed": {
             "type": "string"
           },
           "birthdate": {
             "type": "string",
             "format": "date-time"
           },
-          "pet_id": {
-            "type": "string"
-          },
           "profile_image_url": {
             "type": "string",
             "format": "uri",
             "nullable": true
-          },
-          "breed": {
-            "type": "string"
           }
         },
         "required": [
@@ -2966,23 +3309,25 @@
           "breed",
           "name",
           "pet_id"
-        ]
+        ],
+        "description": "게시물 응답에 포함될 반려동물 정보 스키마."
       },
       "EmptyRequestSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {},
+        "description": "바디가 없는 요청(POST/PUT/PATCH)도 명시적으로 문서화하기 위한 placeholder."
       },
       "HealthStatusResponseSchema": {
         "type": "object",
         "properties": {
+          "status": {
+            "type": "string"
+          },
           "counters": {
             "type": "object",
             "additionalProperties": {
               "type": "string"
             }
-          },
-          "status": {
-            "type": "string"
           }
         },
         "required": [
@@ -2992,11 +3337,13 @@
       },
       "NoContentSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {},
+        "description": "204 No Content 응답 본문 없음 표시 placeholder."
       },
       "NotificationAckRequestSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {},
+        "description": "알림 읽음 처리 요청 스키마"
       },
       "NotificationAckResponseSchema": {
         "type": "object",
@@ -3007,7 +3354,8 @@
         },
         "required": [
           "status"
-        ]
+        ],
+        "description": "알림 확인 처리 응답 스키마"
       },
       "NotificationItemSchema": {
         "type": "object",
@@ -3015,23 +3363,23 @@
           "id": {
             "type": "string"
           },
-          "deeplink": {
-            "type": "string"
-          },
-          "created_at": {
-            "type": "string"
-          },
-          "message": {
-            "type": "string"
-          },
-          "read": {
-            "type": "boolean"
-          },
           "type": {
             "type": "string"
           },
           "title": {
             "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "deeplink": {
+            "type": "string"
+          },
+          "read": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -3042,7 +3390,8 @@
           "read",
           "title",
           "type"
-        ]
+        ],
+        "description": "단일 알림 응답 스키마"
       },
       "NotificationListRequestSchema": {
         "type": "object",
@@ -3053,19 +3402,20 @@
             "minimum": 1,
             "maximum": 100
           },
+          "cursor": {
+            "type": "string",
+            "nullable": true,
+            "minLength": 1
+          },
           "format": {
             "type": "string",
             "enum": [
               "mobile",
               "web"
             ]
-          },
-          "cursor": {
-            "type": "string",
-            "nullable": true,
-            "minLength": 1
           }
-        }
+        },
+        "description": "알림 목록 조회 요청 스키마"
       },
       "NotificationListResponseSchema": {
         "type": "object",
@@ -3086,7 +3436,8 @@
         "required": [
           "items",
           "meta"
-        ]
+        ],
+        "description": "알림 목록 응답 스키마"
       },
       "NotificationUnreadCountResponseSchema": {
         "type": "object",
@@ -3099,7 +3450,8 @@
         },
         "required": [
           "unread_count"
-        ]
+        ],
+        "description": "미읽은 알림 수 응답 스키마"
       },
       "BiometricAnalysisRequestSchema": {
         "type": "object",
@@ -3110,7 +3462,90 @@
         },
         "required": [
           "file_path"
-        ]
+        ],
+        "description": "비문 및 안구 분석 요청을 위한 공통 스키마."
+      },
+      "EyeAnalysisHistoryItemSchema": {
+        "type": "object",
+        "properties": {
+          "analysis_id": {
+            "type": "string"
+          },
+          "pet_id": {
+            "type": "string"
+          },
+          "disease_name": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "probability_percent": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "image_url": {
+            "type": "string",
+            "nullable": true
+          },
+          "predictions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EyeDiseasePredictionSchema"
+            }
+          },
+          "is_normal": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "analysis_id",
+          "created_at",
+          "disease_name",
+          "pet_id",
+          "probability_percent"
+        ],
+        "description": "안구 검사 이력 1건에 대한 응답 스키마."
+      },
+      "EyeAnalysisHistoryListResponseSchema": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EyeAnalysisHistoryItemSchema"
+            }
+          },
+          "next_cursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "description": "안구 검사 이력 목록 응답 스키마."
+      },
+      "EyeAnalysisHistoryQuerySchema": {
+        "type": "object",
+        "properties": {
+          "pet_id": {
+            "type": "string",
+            "nullable": true
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1,
+            "maximum": 50
+          },
+          "cursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "description": "GET /api/pets/eye-analyses 쿼리 파라미터 검증 스키마."
       },
       "EyeAnalysisResponseSchema": {
         "type": "object",
@@ -3118,34 +3553,79 @@
           "analysis_id": {
             "type": "string"
           },
+          "disease_name": {
+            "type": "string"
+          },
           "probability": {
             "type": "number",
             "format": "float"
+          },
+          "probability_percent": {
+            "type": "integer",
+            "format": "int32"
           },
           "image_url": {
             "type": "string",
             "nullable": true
           },
-          "disease_name": {
-            "type": "string"
+          "predictions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            }
+          },
+          "is_normal": {
+            "type": "boolean"
           }
         },
         "required": [
           "analysis_id",
           "disease_name",
           "probability"
+        ],
+        "description": "안구 분석 결과 응답 스키마."
+      },
+      "EyeDiseasePredictionSchema": {
+        "type": "object",
+        "properties": {
+          "disease_name": {
+            "type": "string"
+          },
+          "probability": {
+            "type": "number",
+            "format": "float"
+          },
+          "probability_percent": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "required": [
+          "disease_name",
+          "probability",
+          "probability_percent"
         ]
       },
       "NosePrintRegistrationResponseSchema": {
         "type": "object",
         "properties": {
-          "analysis_id": {
-            "type": "string",
-            "nullable": true
+          "success": {
+            "type": "boolean"
           },
           "confidence": {
             "type": "number",
             "format": "float",
+            "nullable": true
+          },
+          "features": {
+            "type": "object",
+            "nullable": true
+          },
+          "analysis_id": {
+            "type": "string",
             "nullable": true
           },
           "metadata": {
@@ -3155,13 +3635,6 @@
             },
             "nullable": true
           },
-          "features": {
-            "type": "object",
-            "nullable": true
-          },
-          "success": {
-            "type": "boolean"
-          },
           "status": {
             "type": "string",
             "nullable": true
@@ -3169,45 +3642,20 @@
         },
         "required": [
           "success"
-        ]
+        ],
+        "description": "비문(코) 등록/인증 결과 응답 스키마."
       },
       "PetProfileResponseSchema": {
         "type": "object",
         "properties": {
-          "user_id": {
-            "type": "string"
-          },
-          "is_verified": {
-            "type": "boolean"
-          },
-          "name": {
-            "type": "string"
-          },
-          "nose_print_url": {
-            "type": "string",
-            "format": "uri",
-            "nullable": true
-          },
-          "fur_color": {
-            "type": "string",
-            "nullable": true
-          },
-          "birthdate": {
-            "type": "string",
-            "format": "date"
-          },
           "pet_id": {
             "type": "string"
           },
-          "health_concerns": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
+          "user_id": {
+            "type": "string"
           },
-          "profile_image_url": {
-            "type": "string",
-            "nullable": true
+          "name": {
+            "type": "string"
           },
           "gender": {
             "type": "string",
@@ -3219,12 +3667,39 @@
           "breed": {
             "type": "string"
           },
+          "birthdate": {
+            "type": "string",
+            "format": "date"
+          },
+          "fur_color": {
+            "type": "string",
+            "nullable": true
+          },
+          "health_concerns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "is_verified": {
+            "type": "boolean"
+          },
+          "profile_image_url": {
+            "type": "string",
+            "nullable": true
+          },
+          "nose_print_url": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true
+          },
           "faiss_id": {
             "type": "integer",
             "format": "int32",
             "nullable": true
           }
-        }
+        },
+        "description": "소유자 전용 프로필 정보 응답 스키마 (모든 정보 포함)."
       },
       "PetRegistrationSchema": {
         "type": "object",
@@ -3233,25 +3708,6 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 20
-          },
-          "fur_color": {
-            "type": "string",
-            "nullable": true
-          },
-          "birthdate": {
-            "type": "string",
-            "format": "date"
-          },
-          "health_concerns": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "nullable": true
-          },
-          "profile_image_url": {
-            "type": "string",
-            "nullable": true
           },
           "gender": {
             "type": "string",
@@ -3264,6 +3720,25 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 30
+          },
+          "birthdate": {
+            "type": "string",
+            "format": "date"
+          },
+          "fur_color": {
+            "type": "string",
+            "nullable": true
+          },
+          "health_concerns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "profile_image_url": {
+            "type": "string",
+            "nullable": true
           }
         },
         "required": [
@@ -3276,6 +3751,27 @@
       "PetUpdateSchema": {
         "type": "object",
         "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20
+          },
+          "gender": {
+            "type": "string",
+            "enum": [
+              "FEMALE",
+              "MALE"
+            ]
+          },
+          "breed": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 30
+          },
+          "birthdate": {
+            "type": "string",
+            "format": "date"
+          },
           "fur_color": {
             "type": "string"
           },
@@ -3284,11 +3780,6 @@
             "items": {
               "type": "string"
             }
-          },
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 20
           },
           "profile_image_url": {
             "type": "string",
@@ -3299,32 +3790,22 @@
       "PetViewBasedResponseSchema": {
         "type": "object",
         "properties": {
-          "is_verified": {
-            "type": "boolean"
-          },
-          "post_count": {
-            "type": "integer",
-            "format": "int32",
-            "nullable": true
+          "pet_id": {
+            "type": "string"
           },
           "name": {
             "type": "string"
           },
+          "profile_image_url": {
+            "type": "string",
+            "nullable": true
+          },
+          "is_verified": {
+            "type": "boolean"
+          },
           "birthdate": {
             "type": "string",
             "format": "date",
-            "nullable": true
-          },
-          "pet_id": {
-            "type": "string"
-          },
-          "age_months": {
-            "type": "integer",
-            "format": "int32",
-            "nullable": true
-          },
-          "profile_image_url": {
-            "type": "string",
             "nullable": true
           },
           "gender": {
@@ -3338,19 +3819,37 @@
           "breed": {
             "type": "string",
             "nullable": true
+          },
+          "age_months": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "post_count": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
           }
         },
         "required": [
           "is_verified",
           "name"
-        ]
+        ],
+        "description": "뷰 기반 필터링이 적용된 Pet 프로필 응답 스키마."
       },
       "CareRecordCreateSchema": {
         "type": "object",
         "properties": {
-          "memo": {
+          "record_type": {
             "type": "string",
-            "nullable": true
+            "enum": [
+              "activity",
+              "bcs",
+              "meal_count",
+              "stool",
+              "vomit",
+              "weight"
+            ]
           },
           "timestamp": {
             "type": "integer",
@@ -3358,6 +3857,37 @@
           },
           "data": {
             "type": "object"
+          },
+          "memo": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "data",
+          "record_type",
+          "timestamp"
+        ],
+        "description": "개별 펫케어 기록 생성을 위한 스키마.\n    각 기록 타입별로 개별적으로 받을 수 있습니다."
+      },
+      "CareRecordUpdateSchema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object"
+          },
+          "memo": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "description": "기존 펫케어 기록 수정을 위한 스키마."
+      },
+      "DailyRecordsQuerySchema": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string"
           },
           "record_type": {
             "type": "string",
@@ -3372,22 +3902,9 @@
           }
         },
         "required": [
-          "data",
-          "record_type",
-          "timestamp"
-        ]
-      },
-      "CareRecordUpdateSchema": {
-        "type": "object",
-        "properties": {
-          "memo": {
-            "type": "string",
-            "nullable": true
-          },
-          "data": {
-            "type": "object"
-          }
-        }
+          "date"
+        ],
+        "description": "특정 날짜의 기록 조회 쿼리 스키마.\n    - record_type가 주어지면 해당 타입만 필터링합니다."
       },
       "DailyRecordsResponseSchema": {
         "type": "object",
@@ -3408,14 +3925,63 @@
             },
             "nullable": true
           }
-        }
+        },
+        "description": "특정 날짜의 모든 기록 응답 스키마."
+      },
+      "DailySummaryWithGoalsResponseSchema": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string"
+          },
+          "records": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecordResponseSchema"
+            }
+          },
+          "record_counts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "meta": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "goal_progress": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "description": "일별 요약 + 목표 진행률 응답 스키마.\n    UI의 오늘 달성률(%)/달성 여부 및 기본 레코드 목록에 대응합니다."
+      },
+      "DeleteRecordResponseSchema": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "deleted_id": {
+            "type": "string"
+          }
+        },
+        "description": "기록 삭제 응답 스키마(200 응답 본문)."
       },
       "PetCareSettingsSchema": {
         "type": "object",
         "properties": {
-          "updated_at": {
-            "type": "string",
-            "format": "date-time"
+          "target_weight": {
+            "type": "number",
+            "format": "float",
+            "minimum": 0.1,
+            "maximum": 200.0
           },
           "target_daily_meal_count": {
             "type": "integer",
@@ -3423,23 +3989,23 @@
             "minimum": 1,
             "maximum": 10
           },
-          "daily_meal_count": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 1,
-            "maximum": 10
-          },
-          "target_weight": {
-            "type": "number",
-            "format": "float",
-            "minimum": 0.1,
-            "maximum": 200.0
-          },
           "target_daily_activity_minutes": {
             "type": "integer",
             "format": "int32",
             "minimum": 0,
             "maximum": 1440
+          },
+          "target_daily_activity_sessions": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0,
+            "maximum": 48
+          },
+          "activity_session_minutes": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0,
+            "maximum": 600
           },
           "daily_activity_increment": {
             "type": "integer",
@@ -3449,47 +4015,99 @@
           },
           "pet_id": {
             "type": "string"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "펫케어 설정 조회/수정 스키마.\n\n    목표 활동 분(`target_daily_activity_minutes`)은 파생 필드이며\n    ( `target_daily_activity_sessions` × `activity_session_minutes` ) 로 계산됩니다.\n    클라이언트는 PATCH/PUT 요청에서 `target_daily_activity_minutes` 값을 전송하지 말아야 하며,\n    서버는 전송하더라도 무시합니다.\n\n    식사 목표는 `target_daily_meal_count`(=goalMealCount)만 사용합니다.\n    과거에 존재하던 `daily_meal_count` 필드는 혼동 방지를 위해 제거되었습니다."
+      },
+      "RangeQuerySchema": {
+        "type": "object",
+        "properties": {
+          "start_date": {
+            "type": "string"
+          },
+          "end_date": {
+            "type": "string"
           }
         },
         "required": [
-          "daily_activity_increment",
-          "daily_meal_count",
-          "target_daily_activity_minutes",
-          "target_daily_meal_count",
-          "target_weight"
-        ]
+          "end_date",
+          "start_date"
+        ],
+        "description": "기간 요약/트렌드 조회 쿼리 스키마."
+      },
+      "RangeSummaryWithTrendsResponseSchema": {
+        "type": "object",
+        "properties": {
+          "start_date": {
+            "type": "string"
+          },
+          "end_date": {
+            "type": "string"
+          },
+          "records_by_date": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "meta": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "trends": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "goal_tracking": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "description": "기간 요약 + 트렌드 + 목표 추적 응답 스키마.\n    월간 분석 카드/텍스트 등에 대응합니다."
       },
       "RecordResponseSchema": {
         "type": "object",
         "properties": {
-          "timestamp_ms": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "searchDate": {
-            "type": "string"
-          },
-          "memo": {
-            "type": "string",
-            "nullable": true
-          },
-          "record_type": {
-            "type": "string"
-          },
           "log_id": {
             "type": "string"
           },
           "pet_id": {
             "type": "string"
           },
-          "data": {
-            "type": "object"
+          "record_type": {
+            "type": "string"
           },
           "timestamp": {
             "type": "integer",
             "format": "int32"
+          },
+          "timestamp_ms": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "data": {
+            "type": "object"
+          },
+          "memo": {
+            "type": "string",
+            "nullable": true
+          },
+          "searchDate": {
+            "type": "string"
           }
-        }
+        },
+        "description": "기록 응답을 위한 스키마."
       },
       "PostCreateSchema": {
         "type": "object",
@@ -3504,13 +4122,13 @@
             "items": {
               "type": "string"
             },
-            "minItems": 1
+            "minItems": 0
           }
         },
         "required": [
-          "file_paths",
           "text"
-        ]
+        ],
+        "description": "POST /api/posts 요청 본문의 유효성을 검사합니다."
       },
       "PostLikeToggleResponseSchema": {
         "type": "object",
@@ -3521,48 +4139,50 @@
         },
         "required": [
           "message"
-        ]
+        ],
+        "description": "POST /api/posts/{post_id}/like 좋아요 토글 결과.\n\n    단순 메시지 필드만을 포함합니다."
       },
       "PostResponseSchema": {
         "type": "object",
         "properties": {
+          "post_id": {
+            "type": "string"
+          },
           "author": {
             "$ref": "#/components/schemas/AuthorSchema"
           },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "text": {
-            "type": "string"
-          },
-          "comment_count": {
-            "type": "integer",
-            "format": "int32"
+          "pet": {
+            "$ref": "#/components/schemas/PetInfoSchema"
           },
           "image_urls": {
             "type": "array",
             "items": {
               "type": "string",
               "format": "uri"
-            }
+            },
+            "nullable": true
           },
-          "created_at": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "is_liked": {
-            "type": "boolean"
+          "text": {
+            "type": "string"
           },
           "like_count": {
             "type": "integer",
             "format": "int32"
           },
-          "post_id": {
-            "type": "string"
+          "comment_count": {
+            "type": "integer",
+            "format": "int32"
           },
-          "pet": {
-            "$ref": "#/components/schemas/PetInfoSchema"
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "is_liked": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -3574,7 +4194,8 @@
           "pet",
           "text",
           "updated_at"
-        ]
+        ],
+        "description": "게시글 정보 응답을 위한 최종 JSON 형식을 정의합니다."
       },
       "PostUpdateSchema": {
         "type": "object",
@@ -3587,7 +4208,8 @@
         },
         "required": [
           "text"
-        ]
+        ],
+        "description": "PATCH /api/posts/{post_id} 요청 본문의 유효성을 검사합니다."
       },
       "PostsFeedResponseSchema": {
         "type": "object",
@@ -3605,7 +4227,8 @@
         },
         "required": [
           "posts"
-        ]
+        ],
+        "description": "피드/사용자별 게시글 목록 응답 래퍼.\n\n    GET /api/posts, GET /api/posts/users/{author_id}/posts 에서 사용.\n    posts 배열과 다음 페이지 커서가 포함됩니다."
       },
       "FinalizeCartoonRequestSchema": {
         "type": "object",
@@ -3628,16 +4251,12 @@
         },
         "required": [
           "public_url"
-        ]
+        ],
+        "description": "만화 원본 공개 전환 응답."
       },
       "UploadUrlRequestSchema": {
         "type": "object",
         "properties": {
-          "filename": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 200
-          },
           "upload_type": {
             "type": "string",
             "enum": [
@@ -3647,6 +4266,11 @@
               "pet_profile",
               "post_image"
             ]
+          },
+          "filename": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
           },
           "content_type": {
             "type": "string",
@@ -3667,19 +4291,20 @@
             "type": "string",
             "format": "uri"
           },
+          "file_path": {
+            "type": "string"
+          },
           "expires_at": {
             "type": "string",
             "format": "date-time"
-          },
-          "file_path": {
-            "type": "string"
           }
         },
         "required": [
           "expires_at",
           "file_path",
           "upload_url"
-        ]
+        ],
+        "description": "업로드 URL 발급 응답."
       },
       "FCMTokenSchema": {
         "type": "object",
@@ -3690,7 +4315,8 @@
         },
         "required": [
           "fcm_token"
-        ]
+        ],
+        "description": "POST /api/users/me/fcm-token\n    FCM 토큰 등록/업데이트 요청 본문의 유효성을 검사하는 스키마."
       },
       "FCMTokenUpdateResponseSchema": {
         "type": "object",
@@ -3701,37 +4327,40 @@
         },
         "required": [
           "message"
-        ]
+        ],
+        "description": "FCM 토큰 업데이트 결과 메시지."
       },
       "NotificationPreferencesResponseSchema": {
         "type": "object",
         "properties": {
+          "mode": {
+            "type": "string",
+            "nullable": true
+          },
           "types": {
             "type": "object",
             "additionalProperties": {
               "type": "string"
             }
-          },
-          "mode": {
-            "type": "string",
-            "nullable": true
           }
-        }
+        },
+        "description": "알림 설정 조회/수정 결과 응답 스키마 (GET/PUT 공용)."
       },
       "NotificationPreferencesSchema": {
         "type": "object",
         "properties": {
+          "mode": {
+            "type": "string",
+            "nullable": true
+          },
           "types": {
             "type": "object",
             "additionalProperties": {
               "type": "string"
             }
-          },
-          "mode": {
-            "type": "string",
-            "nullable": true
           }
-        }
+        },
+        "description": "유저 알림 개인 설정 스키마."
       },
       "UserMeResponseSchema": {
         "type": "object",
@@ -3746,19 +4375,20 @@
             "type": "string",
             "format": "email"
           },
+          "has_pet": {
+            "type": "boolean"
+          },
           "pet_id": {
             "type": "string",
             "nullable": true
-          },
-          "has_pet": {
-            "type": "boolean"
           }
         },
         "required": [
           "email",
           "nickname",
           "user_id"
-        ]
+        ],
+        "description": "GET /api/users/me 응답.\n\n    내 기본 정보 (민감정보 제외) 및 보조 상태(has_pet/pet_id) 포함."
       },
       "UserPublicResponseSchema": {
         "type": "object",
@@ -3766,30 +4396,30 @@
           "user_id": {
             "type": "string"
           },
+          "nickname": {
+            "type": "string"
+          },
           "post_count": {
             "type": "integer",
             "format": "int32"
-          },
-          "nickname": {
-            "type": "string"
           }
         },
         "required": [
           "nickname",
-          "post_count",
-          "user_id"
-        ]
+          "post_count"
+        ],
+        "description": "GET /api/users/{user_id}\n    다른 사용자의 프로필 정보를 응답할 때 사용하는 스키마.\n    민감한 정보(예: email, google_id, fcm_token)는 제외하고\n    공개 가능한 정보만 포함하여 반환하도록 정의합니다.\n    프로필 이미지는 Pet 정보에서 가져오도록 변경됨."
       },
       "UserSummaryPetSchema": {
         "type": "object",
         "properties": {
-          "is_verified": {
-            "type": "boolean"
+          "pet_id": {
+            "type": "string"
           },
           "name": {
             "type": "string"
           },
-          "pet_id": {
+          "breed": {
             "type": "string"
           },
           "profile_image_url": {
@@ -3797,15 +4427,16 @@
             "format": "uri",
             "nullable": true
           },
-          "breed": {
-            "type": "string"
+          "is_verified": {
+            "type": "boolean"
           }
         },
         "required": [
           "breed",
           "name",
           "pet_id"
-        ]
+        ],
+        "description": "요약 응답 중 pet 부분 (단일 반려동물 정책)."
       },
       "UserSummaryResponseSchema": {
         "type": "object",
@@ -3813,21 +4444,22 @@
           "user": {
             "$ref": "#/components/schemas/UserSummaryUserSchema"
           },
+          "pet": {
+            "$ref": "#/components/schemas/UserSummaryPetSchema",
+            "nullable": true
+          },
           "pet_care_settings": {
             "type": "object",
             "additionalProperties": {
               "type": "string"
             },
             "nullable": true
-          },
-          "pet": {
-            "$ref": "#/components/schemas/UserSummaryPetSchema",
-            "nullable": true
           }
         },
         "required": [
           "user"
-        ]
+        ],
+        "description": "GET /api/users/me/summary 응답.\n\n    user / pet / pet_care_settings (옵셔널) 통합 구조.\n    pet_care_settings는 동적 dict 로 덤프."
       },
       "UserSummaryUserSchema": {
         "type": "object",
@@ -3835,18 +4467,19 @@
           "user_id": {
             "type": "string"
           },
+          "nickname": {
+            "type": "string"
+          },
           "post_count": {
             "type": "integer",
             "format": "int32"
-          },
-          "nickname": {
-            "type": "string"
           }
         },
         "required": [
           "nickname",
           "user_id"
-        ]
+        ],
+        "description": "요약 응답 중 user 부분 (post_count 등 추가 필드 포함 가능)."
       }
     },
     "responses": {
@@ -4160,6 +4793,16 @@
       }
     }
   },
+  "servers": [
+    {
+      "url": "http://localhost:5000",
+      "description": "Development"
+    },
+    {
+      "url": "https://api.happydog.com",
+      "description": "Production"
+    }
+  ],
   "tags": [
     {
       "name": "auth"

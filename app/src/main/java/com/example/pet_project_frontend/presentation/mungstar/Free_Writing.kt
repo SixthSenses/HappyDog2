@@ -83,11 +83,17 @@ fun FreeWriting(
     // 성공 처리
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) {
-            Toast.makeText(
-                context,
-                if (isEditMode) "게시물이 수정되었습니다" else "게시물이 등록되었습니다",
-                Toast.LENGTH_SHORT
-            ).show()
+            if (!isEditMode) {
+                // 새 게시물 작성 시: 멍스타그램으로 이동하면서 토스트 표시
+                navController.previousBackStackEntry
+                    ?.savedStateHandle
+                    ?.set("post_created", true)
+            } else {
+                // 게시물 수정 시: 멍스타그램으로 이동하면서 수정 토스트 표시
+                navController.previousBackStackEntry
+                    ?.savedStateHandle
+                    ?.set("post_updated", true)
+            }
             navController.popBackStack()
         }
     }
@@ -154,39 +160,33 @@ fun FreeWriting(
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            // 위에서 42px 떨어진 앱바
+            // 상단 앱바 (디바이스 너비 × 64픽셀)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(64.dp)
-                    .offset(y = 42.dp)
                     .background(Color.White)
             ) {
-                // back.png 버튼
+                // back.png 버튼 (24X24, 왼쪽에서 16픽셀)
                 Image(
                     painter = painterResource(id = R.drawable.back),
                     contentDescription = "뒤로가기",
                     modifier = Modifier
-                        .size(40.dp)
-                        .offset(x = 4.dp, y = 12.dp)
+                        .size(24.dp)
+                        .align(Alignment.CenterStart)
+                        .offset(x = 16.dp)
                         .clickable { handleBackPressed() }
                 )
 
-                // Title 박스
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 56.dp, vertical = 23.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "새로운 게시물",
-                        fontFamily = PretendardFont,
-                        fontWeight = FontWeight(400),
-                        fontSize = 18.sp,
-                        color = Color.Black
-                    )
-                }
+                // 새로운 게시물 텍스트 (가운데, FontWeight 500)
+                Text(
+                    text = "새로운 게시물",
+                    fontFamily = PretendardFont,
+                    fontWeight = FontWeight(500),
+                    fontSize = 18.sp,
+                    color = Color.Black,
+                    modifier = Modifier.align(Alignment.Center)
+                )
             }
 
             // Background 박스와 텍스트 입력 영역
@@ -194,7 +194,6 @@ fun FreeWriting(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .offset(y = 42.dp)
                     .background(Color.White)
                     .padding(horizontal = 25.dp, vertical = 20.dp)
             ) {
@@ -314,67 +313,89 @@ fun FreeWriting(
                 }
             }
 
-            // Background Bar
+            // 구분선
+            HorizontalDivider(
+                modifier = Modifier.fillMaxWidth(),
+                thickness = 1.dp,
+                color = Color(0xFFE4E8EB)
+            )
+            
+            // 하단 앱바 (디바이스 너비 × 52px)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(62.dp)
+                    .height(52.dp)
                     .background(Color.White)
             ) {
-                // image.png (갤러리) - 수정 모드에서는 비활성화
-                if (!isEditMode) {
-                    Image(
-                        painter = painterResource(id = R.drawable.image),
-                        contentDescription = "갤러리",
-                        modifier = Modifier
-                            .size(24.dp)
-                            .offset(x = 22.dp, y = 19.dp)
-                            .clickable {
-                                if (uiState.uploadedImages.size < 4) {
-                                    galleryLauncher.launch("image/*")
+                // 왼쪽 아이콘 그룹
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .padding(start = 22.dp),
+                    horizontalArrangement = Arrangement.spacedBy(18.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // image.png (갤러리) - 수정 모드에서는 비활성화, 28×28
+                    if (!isEditMode) {
+                        Image(
+                            painter = painterResource(id = R.drawable.image),
+                            contentDescription = "갤러리",
+                            modifier = Modifier
+                                .size(28.dp)
+                                .clickable {
+                                    if (uiState.uploadedImages.size < 4) {
+                                        galleryLauncher.launch("image/*")
+                                    }
                                 }
-                            }
-                    )
+                        )
 
-                    // photo_camera.png (카메라) - 수정 모드에서는 비활성화
-                    Image(
-                        painter = painterResource(id = R.drawable.photo_camera),
-                        contentDescription = "카메라",
-                        modifier = Modifier
-                            .size(24.dp)
-                            .offset(x = (22 + 24 + 18).dp, y = 19.dp)
-                            .clickable {
-                                if (uiState.uploadedImages.size < 4) {
-                                    when (PackageManager.PERMISSION_GRANTED) {
-                                        ContextCompat.checkSelfPermission(
-                                            context,
-                                            Manifest.permission.CAMERA
-                                        ) -> {
-                                            photoUri = createImageFile()
-                                            cameraLauncher.launch(photoUri!!)
-                                        }
-                                        else -> {
-                                            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                        // photo_camera.png (카메라) - 수정 모드에서는 비활성화, 28×28
+                        Image(
+                            painter = painterResource(id = R.drawable.photo_camera),
+                            contentDescription = "카메라",
+                            modifier = Modifier
+                                .size(28.dp)
+                                .clickable {
+                                    if (uiState.uploadedImages.size < 4) {
+                                        when (PackageManager.PERMISSION_GRANTED) {
+                                            ContextCompat.checkSelfPermission(
+                                                context,
+                                                Manifest.permission.CAMERA
+                                            ) -> {
+                                                photoUri = createImageFile()
+                                                cameraLauncher.launch(photoUri!!)
+                                            }
+                                            else -> {
+                                                cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                                            }
                                         }
                                     }
                                 }
-                            }
-                    )
+                        )
+                    }
                 }
 
-                // 게시하기 버튼 (클릭해도 아무 동작 안함)
+                // 게시하기/수정하기 버튼 (오른쪽에서 18px, 91×32, 모서리 18)
+                // 수정 모드: 원본과 다를 때만 활성화, 작성 모드: 텍스트 있을 때 활성화
+                val isButtonEnabled = if (isEditMode) {
+                    textContent != initialText && !uiState.isLoading
+                } else {
+                    textContent.isNotEmpty() && !uiState.isLoading
+                }
+                
                 Box(
                     modifier = Modifier
                         .size(91.dp, 32.dp)
-                        .offset(x = 318.dp, y = 15.dp)
+                        .align(Alignment.CenterEnd)
+                        .offset(x = (-18).dp)
                         .background(
-                            color = if (textContent.isNotEmpty() && !uiState.isLoading)
+                            color = if (isButtonEnabled)
                                 Color(0xFF3182F6)
                             else
-                                Color(0x403182F6),
+                                Color(0xFF3182F6).copy(alpha = 0.3f),
                             shape = RoundedCornerShape(18.dp)
                         )
-                        .clickable(enabled = textContent.isNotEmpty() && !uiState.isLoading) {
+                        .clickable(enabled = isButtonEnabled) {
                             if (isEditMode) {
                                 viewModel.updatePost(textContent)
                             } else {
@@ -393,9 +414,9 @@ fun FreeWriting(
                         Text(
                             text = if (isEditMode) "수정하기" else "게시하기",
                             fontFamily = PretendardFont,
-                            fontWeight = FontWeight(400),
-                            color = Color.White,
-                            fontSize = 14.sp
+                            fontWeight = FontWeight(600),
+                            color = Color(0xFFFFFFFF),
+                            fontSize = 18.sp
                         )
                     }
                 }
@@ -421,7 +442,8 @@ fun FreeWriting(
                 onDismissRequest = { showCancelDialog = false },
                 properties = DialogProperties(
                     dismissOnBackPress = true,
-                    dismissOnClickOutside = true
+                    dismissOnClickOutside = true,
+                    usePlatformDefaultWidth = false  // 전체 화면 사용
                 )
             ) {
                 Box(

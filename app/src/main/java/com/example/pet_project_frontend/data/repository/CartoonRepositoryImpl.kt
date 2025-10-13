@@ -35,7 +35,7 @@ class CartoonRepositoryImpl @Inject constructor(
             // 1. 업로드 URL 요청
             val filename = "cartoon_${System.currentTimeMillis()}.jpg"
             val contentType = "image/jpeg"
-            val uploadType = "cartoon"
+            val uploadType = "cartoon_source_image" // API 스펙: cartoon_source_image
             
             val uploadUrlResponse = uploadApi.getUploadUrl(
                 UploadUrlRequestDto(
@@ -50,12 +50,34 @@ class CartoonRepositoryImpl @Inject constructor(
                 return Result.failure(Exception("업로드 URL 생성 실패"))
             }
             
-            val uploadUrl = uploadUrlResponse.body()!!.uploadUrl
-            val filePath = uploadUrlResponse.body()!!.filePath
-            Log.d(TAG, "createCartoonJob: Got upload URL, filePath=$filePath")
+            val uploadUrlData = uploadUrlResponse.body()!!
+            Log.d(TAG, "createCartoonJob: Got uploadUrl=${uploadUrlData.uploadUrl}")
+            Log.d(TAG, "createCartoonJob: Got filePath=${uploadUrlData.filePath}")
+            Log.d(TAG, "createCartoonJob: Got publicUrl=${uploadUrlData.publicUrl}")
+            
+            // fileUrl 구성: publicUrl > 완전한 URL인 filePath > uploadUrl에서 쿼리 제거
+            val fileUrl = when {
+                // publicUrl이 있으면 우선 사용
+                uploadUrlData.publicUrl != null -> {
+                    Log.d(TAG, "createCartoonJob: Using publicUrl")
+                    uploadUrlData.publicUrl
+                }
+                // filePath가 이미 완전한 URL인 경우
+                uploadUrlData.filePath.startsWith("http") -> {
+                    Log.d(TAG, "createCartoonJob: filePath is complete URL")
+                    uploadUrlData.filePath
+                }
+                // uploadUrl에 이미 전체 경로가 포함되어 있으므로 쿼리 파라미터만 제거
+                else -> {
+                    Log.d(TAG, "createCartoonJob: Using uploadUrl without query params")
+                    uploadUrlData.uploadUrl.substringBefore("?")
+                }
+            }
+            
+            Log.d(TAG, "createCartoonJob: Using fileUrl=$fileUrl")
             
             // 2. 이미지 업로드
-            val uploadResult = uploadImageToS3(uploadUrl, imageUri, contentType)
+            val uploadResult = uploadImageToS3(uploadUrlData.uploadUrl, imageUri, contentType)
             if (uploadResult.isFailure) {
                 Log.e(TAG, "createCartoonJob: Image upload failed")
                 return Result.failure(uploadResult.exceptionOrNull() ?: Exception("이미지 업로드 실패"))
@@ -66,9 +88,10 @@ class CartoonRepositoryImpl @Inject constructor(
             // 3. Cartoon Job 생성
             val request = CartoonJobCreateRequest(
                 userText = userText,
-                filePaths = listOf(filePath)
+                filePaths = listOf(fileUrl) // 완전한 URL 사용
             )
             
+            Log.d(TAG, "createCartoonJob: Creating job with userText='$userText', fileUrl='$fileUrl'")
             val response = cartoonJobApi.createCartoonJob(request)
             
             if (response.isSuccessful && response.body() != null) {
@@ -76,8 +99,11 @@ class CartoonRepositoryImpl @Inject constructor(
                 Log.d(TAG, "createCartoonJob: Success, jobId=$jobId")
                 Result.success(jobId)
             } else {
+                val errorBody = response.errorBody()?.string()
                 Log.e(TAG, "createCartoonJob: API failed: ${response.code()}")
-                Result.failure(Exception("만화 작업 생성 실패: ${response.code()}"))
+                Log.e(TAG, "createCartoonJob: Request - userText=$userText, fileUrl=$fileUrl")
+                Log.e(TAG, "createCartoonJob: Error body - $errorBody")
+                Result.failure(Exception("만화 작업 생성 실패: ${response.code()} - $errorBody"))
             }
         } catch (e: Exception) {
             Log.e(TAG, "createCartoonJob: Exception", e)

@@ -39,8 +39,29 @@ class CartoonLoadingViewModel @Inject constructor(
     val uiState: StateFlow<CartoonLoadingUiState> = _uiState.asStateFlow()
 
     private val jobId: String = savedStateHandle.get<String>("jobId") ?: ""
+    private val userText: String? = savedStateHandle.get<String>("userText")?.let { encodedText ->
+        // Base64 디코딩
+        if (encodedText.isNotBlank()) {
+            try {
+                val decodedBytes = android.util.Base64.decode(
+                    encodedText,
+                    android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP
+                )
+                String(decodedBytes, Charsets.UTF_8)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to decode userText", e)
+                null
+            }
+        } else {
+            null
+        }
+    }
+    
+    // 중복 게시 방지 플래그
+    private var hasCreatedPost = false
 
     init {
+        Log.d(TAG, "init: ViewModel created with jobId=$jobId, userText=$userText")
         if (jobId.isNotEmpty()) {
             startPolling()
         } else {
@@ -74,11 +95,28 @@ class CartoonLoadingViewModel @Inject constructor(
                         when (status.status) {
                             "completed" -> {
                                 Log.d(TAG, "startPolling: Job completed, resultUrl=${status.resultImageUrl}")
+                                
+                                // 중복 방지: 플래그를 먼저 확인하고 즉시 설정
+                                if (hasCreatedPost) {
+                                    Log.d(TAG, "startPolling: Post already created, skipping")
+                                    return@launch
+                                }
+                                
+                                // 플래그를 먼저 설정하여 중복 호출 방지
+                                hasCreatedPost = true
+                                
+                                // 폴링 즉시 중단
                                 _uiState.value = _uiState.value.copy(isLoading = false)
                                 
-                                // 만화 이미지로 게시글 자동 생성
+                                // 만화 이미지로 게시글 자동 생성 (동기적으로 대기)
                                 if (status.resultImageUrl != null) {
-                                    createCartoonPost(status.resultImageUrl)
+                                    Log.d(TAG, "startPolling: Creating post synchronously")
+                                    createCartoonPostSync(status.resultImageUrl)
+                                } else {
+                                    Log.e(TAG, "startPolling: No result URL available")
+                                    _uiState.value = _uiState.value.copy(
+                                        error = "만화 결과 이미지 URL이 없습니다"
+                                    )
                                 }
                                 return@launch
                             }
@@ -145,34 +183,41 @@ class CartoonLoadingViewModel @Inject constructor(
     }
 
     /**
-     * 완성된 만화 이미지로 게시글 생성
+     * 완성된 만화 이미지로 게시글 생성 (동기적 실행 - 폴링 코루틴 내에서 직접 호출)
      */
-    private fun createCartoonPost(imageUrl: String) {
-        viewModelScope.launch {
-            try {
-                Log.d(TAG, "createCartoonPost: Creating post with imageUrl=$imageUrl")
-                
-                // 빈 텍스트와 만화 이미지 URL로 게시글 생성
-                val result = postRepository.createPost(
-                    text = "", // 만화는 텍스트 없이
-                    filePaths = listOf(imageUrl)
-                )
-                
-                result.onSuccess { post ->
-                    Log.d(TAG, "createCartoonPost: Post created successfully, postId=${post.postId}")
-                    _uiState.value = _uiState.value.copy(isCompleted = true)
-                }.onFailure { error ->
-                    Log.e(TAG, "createCartoonPost: Failed to create post", error)
-                    _uiState.value = _uiState.value.copy(
-                        error = "게시글 생성에 실패했습니다: ${error.message}"
-                    )
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "createCartoonPost: Exception", e)
+    private suspend fun createCartoonPostSync(imageUrl: String) {
+        Log.d(TAG, "createCartoonPostSync: ENTER - Starting post creation")
+        Log.d(TAG, "createCartoonPostSync: imageUrl=$imageUrl")
+        
+        try {
+            // 텍스트 정리: 공백 제거 및 유효성 검증
+            val cleanedText = userText?.trim().takeIf { !it.isNullOrBlank() } ?: ""
+            
+            Log.d(TAG, "createCartoonPostSync: text length=${cleanedText.length}")
+            
+            // 사용자가 작성한 텍스트와 만화 이미지 URL로 게시글 생성
+            val result = postRepository.createPost(
+                text = cleanedText,
+                filePaths = listOf(imageUrl)
+            )
+            
+            result.onSuccess { post ->
+                Log.d(TAG, "createCartoonPostSync: Post created successfully, postId=${post.postId}")
+                _uiState.value = _uiState.value.copy(isCompleted = true)
+                Log.d(TAG, "createCartoonPostSync: EXIT - Post creation completed")
+            }.onFailure { error ->
+                Log.e(TAG, "createCartoonPostSync: Failed to create post", error)
                 _uiState.value = _uiState.value.copy(
-                    error = "게시글 생성 중 오류가 발생했습니다"
+                    error = "게시글 생성에 실패했습니다: ${error.message}"
                 )
+                Log.e(TAG, "createCartoonPostSync: EXIT - Post creation failed")
             }
+        } catch (e: Exception) {
+            Log.e(TAG, "createCartoonPostSync: Exception", e)
+            _uiState.value = _uiState.value.copy(
+                error = "게시글 생성 중 오류가 발생했습니다"
+            )
+            Log.e(TAG, "createCartoonPostSync: EXIT - Exception occurred")
         }
     }
 }

@@ -142,10 +142,15 @@ fun PetCareNavHost(
 
 		// 만화 로딩 화면
 		composable(
-			route = "cartoon_loading/{jobId}",
+			route = "cartoon_loading/{jobId}?userText={userText}",
 			arguments = listOf(
 				navArgument("jobId") {
 					type = NavType.StringType
+				},
+				navArgument("userText") {
+					type = NavType.StringType
+					nullable = true
+					defaultValue = null
 				}
 			)
 		) { backStackEntry ->

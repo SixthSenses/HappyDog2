@@ -3,6 +3,7 @@ package com.example.pet_project_frontend.presentation.mungstar
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -24,6 +26,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import kotlinx.coroutines.delay
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -56,20 +60,28 @@ fun PostDetailScreen(
         }
     }
     
+    // 댓글 등록 토스트 표시
+    LaunchedEffect(uiState.showCommentToast) {
+        if (uiState.showCommentToast) {
+            delay(2000)
+            viewModel.hideCommentToast()
+        }
+    }
+    
     Box(
         modifier = Modifier
             .fillMaxSize()
             .imePadding() // 키보드와 함께 올라가도록
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // 상단 헤더 바 (412X64)
+            // 상단 헤더 바 (디바이스 너비 × 64픽셀)
             Box(
                 modifier = Modifier
-                    .width(412.dp)
+                    .fillMaxWidth()
                     .height(64.dp)
                     .background(Color.White)
             ) {
-                // back.png (24X24) 왼쪽
+                // back.png (24X24, 왼쪽에서 16픽셀)
                 Image(
                     painter = painterResource(id = R.drawable.back),
                     contentDescription = "뒤로가기",
@@ -80,11 +92,11 @@ fun PostDetailScreen(
                         .clickable { navController.popBackStack() }
                 )
                 
-                // "게시물" 텍스트 가운데
+                // "게시물" 텍스트 (가운데, FontWeight 500)
                 Text(
                     text = "게시물",
                     fontFamily = PretendardFont,
-                    fontWeight = FontWeight(400),
+                    fontWeight = FontWeight(500),
                     fontSize = 18.sp,
                     modifier = Modifier.align(Alignment.Center)
                 )
@@ -114,22 +126,32 @@ fun PostDetailScreen(
                             )
                         }
                         
-                        // 댓글이 없을 때 메시지
+                        // 댓글이 없을 때 no_post.png와 메시지
                         if (uiState.comments.isEmpty() && !uiState.isLoading) {
                             item {
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(vertical = 24.dp),
+                                        .padding(vertical = 40.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Text(
-                                        text = "아직 댓글이 없어요.",
-                                        fontFamily = PretendardFont,
-                                        fontWeight = FontWeight(400),
-                                        fontSize = 16.sp,
-                                        color = Color(0xFF6B7684)
-                                    )
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        Image(
+                                            painter = painterResource(id = R.drawable.no_post),
+                                            contentDescription = "댓글 없음",
+                                            modifier = Modifier.size(64.dp)
+                                        )
+                                        Text(
+                                            text = "아직 댓글이 없어요.",
+                                            fontFamily = PretendardFont,
+                                            fontWeight = FontWeight(400),
+                                            fontSize = 16.sp,
+                                            color = Color(0xFF6B7684)
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -200,11 +222,79 @@ fun PostDetailScreen(
                 isDeleting = uiState.isDeleting,
                 onConfirm = {
                     viewModel.deletePost {
+                        // 삭제 완료 후 토스트 표시를 위한 플래그 설정
+                        navController.previousBackStackEntry
+                            ?.savedStateHandle
+                            ?.set("post_deleted", true)
                         navController.popBackStack()
                     }
                 },
                 onDismiss = { viewModel.hideDeleteDialog() }
             )
+        }
+        
+        // 댓글 등록 토스트
+        if (uiState.showCommentToast) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentHeight()
+                    .offset(y = 78.dp),
+                contentAlignment = Alignment.TopCenter
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(190.dp, 50.dp)
+                        .shadow(
+                            elevation = 4.dp,
+                            shape = RoundedCornerShape(26.dp),
+                            spotColor = Color.Black.copy(alpha = 0.08f)
+                        )
+                        .border(
+                            width = 0.5.dp,
+                            color = Color(0xFFE4E8EB),
+                            shape = RoundedCornerShape(26.dp)
+                        )
+                        .background(
+                            color = Color(0xFFFFFFFF),
+                            shape = RoundedCornerShape(26.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        // 체크 원
+                        Box(
+                            modifier = Modifier
+                                .size(20.dp)
+                                .background(
+                                    color = Color(0xFF15C47E),
+                                    shape = CircleShape
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.check),
+                                contentDescription = "체크",
+                                modifier = Modifier.size(9.dp, 7.dp)
+                            )
+                        }
+                        
+                        Spacer(modifier = Modifier.width(10.dp))
+                        
+                        // 텍스트
+                        Text(
+                            text = "댓글이 등록되었어요.",
+                            fontFamily = PretendardFont,
+                            fontWeight = FontWeight(500),
+                            fontSize = 16.sp,
+                            color = Color(0xFF333D4B)
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -220,12 +310,11 @@ fun PostDetailItem(
         modifier = Modifier
             .fillMaxWidth()
             .background(Color.White)
+            .padding(26.dp)
     ) {
         // 작성자 정보
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // 프로필 이미지 (클릭 시 사용자 게시물 페이지로 이동)
@@ -283,14 +372,15 @@ fun PostDetailItem(
             }
         }
         
-        // 게시글 텍스트 (사용자 정보 아래 20px, #333D4B, 17px)
+        Spacer(modifier = Modifier.height(20.dp))
+        
+        // 게시글 텍스트 (#333D4B, 17px)
         Text(
             text = post.text,
             fontFamily = PretendardFont,
             fontWeight = FontWeight(400),
             fontSize = 17.sp,
-            color = Color(0xFF333D4B),
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp)
+            color = Color(0xFF333D4B)
         )
         
         // 이미지 (텍스트 아래 10px 간격, 그리드 형태로 표시)
@@ -301,7 +391,6 @@ fun PostDetailItem(
             val rows = post.mediaUrls.chunked(2)
             
             Column(
-                modifier = Modifier.padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 rows.forEach { rowImages ->
@@ -311,7 +400,7 @@ fun PostDetailItem(
                     ) {
                         rowImages.forEach { imageUrl ->
                             AsyncImage(
-                                model = imageUrl,
+                                model = imageUrl, // FirebaseStorageInterceptor가 자동으로 URL 갱신
                                 contentDescription = "게시글 이미지",
                                 modifier = Modifier
                                     .weight(1f)
@@ -330,21 +419,21 @@ fun PostDetailItem(
             }
         }
         
+        Spacer(modifier = Modifier.height(12.dp))
+        
         // 좋아요, 댓글, 더보기
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 좋아요 아이콘 (24X24) - 0개일 때 like.png, 1개 이상일 때 favorite.png
+            // 좋아요 아이콘 - 0개일 때 like.png (22dp), 1개 이상일 때 favorite.png (24dp)
             Image(
                 painter = painterResource(
                     id = if (post.likesCount > 0) R.drawable.favorite else R.drawable.like
                 ),
                 contentDescription = "좋아요",
                 modifier = Modifier
-                    .size(24.dp)
+                    .size(if (post.likesCount > 0) 24.dp else 22.dp)
                     .clickable(onClick = onLikeClick)
             )
             
@@ -354,7 +443,7 @@ fun PostDetailItem(
                 Text(
                     text = "${post.likesCount}",
                     fontFamily = PretendardFont,
-                    fontWeight = FontWeight(400),
+                    fontWeight = FontWeight(500),
                     fontSize = 15.sp,
                     color = Color(0xFFEC4453)
                 )
@@ -375,7 +464,7 @@ fun PostDetailItem(
             Text(
                 text = "${post.commentsCount}",
                 fontFamily = PretendardFont,
-                fontWeight = FontWeight(400),
+                fontWeight = FontWeight(500),
                 fontSize = 15.sp,
                 color = Color(0xFFB1B8C0)
             )
@@ -392,7 +481,7 @@ fun PostDetailItem(
             )
         }
         
-        HorizontalDivider(color = Color(0xFFB1B8C0), thickness = 8.dp)
+        HorizontalDivider(color = Color(0xFF8B95A1), thickness = 8.dp)
     }
 }
 
@@ -691,7 +780,10 @@ fun DeleteConfirmDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    Dialog(onDismissRequest = onDismiss) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)  // 전체 화면 사용
+    ) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
@@ -793,7 +885,10 @@ fun EditCancelDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    Dialog(onDismissRequest = onDismiss) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)  // 전체 화면 사용
+    ) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center

@@ -23,7 +23,8 @@ data class PostDetailUiState(
     val error: String? = null,
     val showMoreMenu: Boolean = false,
     val showDeleteDialog: Boolean = false,
-    val isDeleting: Boolean = false
+    val isDeleting: Boolean = false,
+    val showCommentToast: Boolean = false
 )
 
 @HiltViewModel
@@ -105,12 +106,18 @@ class PostDetailViewModel @Inject constructor(
             if (result.isSuccess) {
                 // 댓글 목록 새로고침
                 loadComments(postId)
+                // 토스트 표시
+                _uiState.value = _uiState.value.copy(showCommentToast = true)
             } else {
                 _uiState.value = _uiState.value.copy(
                     error = result.exceptionOrNull()?.message ?: "댓글 작성 실패"
                 )
             }
         }
+    }
+    
+    fun hideCommentToast() {
+        _uiState.value = _uiState.value.copy(showCommentToast = false)
     }
     
     fun deleteComment(commentId: String) {

@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
+import androidx.compose.ui.draw.clip
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,6 +31,7 @@ fun CartoonMaking(
 ) {
     var textContent by remember { mutableStateOf("") }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     // 이미지 선택 런처
     val galleryLauncher = rememberLauncherForActivityResult(
@@ -45,7 +47,16 @@ fun CartoonMaking(
         val jobId = uiState.jobId
         if (jobId != null) {
             viewModel.resetJobId() // 재사용을 위해 초기화
-            navController.navigate("cartoon_loading/$jobId")
+            // Base64 인코딩하여 텍스트 안전하게 전달
+            val encodedText = if (textContent.isNotBlank()) {
+                android.util.Base64.encodeToString(
+                    textContent.toByteArray(Charsets.UTF_8),
+                    android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP
+                )
+            } else {
+                ""
+            }
+            navController.navigate("cartoon_loading/$jobId?userText=$encodedText")
         }
     }
 
@@ -55,25 +66,25 @@ fun CartoonMaking(
             .background(Color.White)
             .imePadding() // 키보드와 함께 올라가도록
     ) {
-        // 상단 앱바 (412X64)
+        // 상단 앱바 (디바이스 너비 × 64픽셀)
         Box(
             modifier = Modifier
-                .width(412.dp)
+                .fillMaxWidth()
                 .height(64.dp)
                 .background(Color.White)
         ) {
-            // back.png (왼쪽에서 8픽셀)
+            // back.png (24X24, 왼쪽에서 16픽셀)
             Image(
                 painter = painterResource(id = R.drawable.back),
                 contentDescription = "뒤로가기",
                 modifier = Modifier
                     .size(24.dp)
                     .align(Alignment.CenterStart)
-                    .offset(x = 8.dp)
+                    .offset(x = 16.dp)
                     .clickable { navController.popBackStack() }
             )
 
-            // 새로운 만화 생성하기 텍스트 (가운데)
+            // 새로운 만화 생성하기 텍스트 (가운데, FontWeight 500)
             Text(
                 text = "새로운 만화 생성하기",
                 fontFamily = PretendardFont,
@@ -125,7 +136,7 @@ fun CartoonMaking(
         HorizontalDivider(
             modifier = Modifier.fillMaxWidth(),
             thickness = 1.dp,
-            color = Color(0xFFB1B8C0)
+            color = Color(0xFF8B95A1)
         )
 
         // 하단 앱바 (412X52)
@@ -163,6 +174,7 @@ fun CartoonMaking(
             }
 
             // 오른쪽 만화 생성하기 버튼 (125X32, 오른쪽에서 18픽셀)
+            // 텍스트 + 이미지 모두 필요 (백엔드 file_paths 필수)
             val isActive = textContent.isNotBlank() && uiState.selectedImages.isNotEmpty()
             Box(
                 modifier = Modifier
@@ -170,12 +182,20 @@ fun CartoonMaking(
                     .height(32.dp)
                     .align(Alignment.CenterEnd)
                     .offset(x = (-18).dp)
+                    .clip(RoundedCornerShape(18.dp))
                     .background(
-                        color = if (isActive) Color(0xFF3182F6) else Color(49, 130, 246, (0.25f * 255).toInt()),
-                        shape = RoundedCornerShape(18.dp)
+                        color = if (isActive) Color(0xFF3182F6) else Color(49, 130, 246, (0.25f * 255).toInt())
                     )
                     .clickable(enabled = isActive) {
-                        viewModel.generateCartoon(textContent)
+                        if (uiState.selectedImages.isEmpty()) {
+                            android.widget.Toast.makeText(
+                                context,
+                                "이미지를 선택해주세요",
+                                android.widget.Toast.LENGTH_SHORT
+                            ).show()
+                        } else {
+                            viewModel.generateCartoon(textContent)
+                        }
                     },
                 contentAlignment = Alignment.Center
             ) {
