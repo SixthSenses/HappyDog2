@@ -43,10 +43,15 @@ class NameEditViewModel @Inject constructor(
     }
 
     fun onTextChange(newText: String) {
+        val trimmed = newText.trim()
+        val validationError = when {
+            trimmed.length > MAX_NAME_LENGTH -> VALIDATION_ERROR_MESSAGE
+            else -> null
+        }
         _uiState.value = _uiState.value.copy(
             text = newText,
-            error = null,
-            isValidationError = false
+            error = validationError,
+            isValidationError = validationError != null
         )
     }
 
@@ -115,8 +120,8 @@ class NameEditViewModel @Inject constructor(
     }
 
     companion object {
-        private const val MAX_NAME_LENGTH = 10
-        private const val VALIDATION_ERROR_MESSAGE = "이름을 다시 확인해주세요."
+        private const val MAX_NAME_LENGTH = 11
+        private const val VALIDATION_ERROR_MESSAGE = "이름은 11자 이내로 입력해주세요."
         private const val GENERIC_SAVE_ERROR_MESSAGE = "이름 저장에 실패했습니다. 다시 시도해주세요."
     }
 }

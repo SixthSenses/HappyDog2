@@ -1,3 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">행복하개</string>
+    <string name="app_name">해피독</string>
+    <string name="breed_header_title">반려견의 견종을 선택해주세요</string>
+    <string name="breed_button_saving">저장 중...</string>
+    <string name="breed_button_next">다음</string>
+    <string name="breed_search_placeholder">견종 검색</string>
+    <string name="breed_search_content_description">견종 검색</string>
+    <string name="breed_search_clear">검색어 지우기</string>
+    <string name="breed_search_empty">검색 결과가 없어요.</string>
+    <string name="breed_empty_default">등록된 견종이 없어요.</string>
+    <string name="breed_error_generic">견종 정보를 불러오지 못했어요.</string>
+    <string name="breed_selected">선택됨</string>
+    <string name="breed_unselected">선택 가능</string>
 </resources>

@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 
-// 변경의도: 견종 선택 결과를 MyPage에 즉시 반영하면서 향후 서버 연동 시 재활용할 수 있도록 콜백을 확장한다.
+// 변경의도: 와이어프레임에 맞춰 UI를 재구성하고, 고정 너비/높이 대신 유연한 레이아웃을 사용하여 다양한 해상도에 대응합니다.
 package com.example.pet_project_frontend.presentation.mypage.profile.breed
 
 import androidx.compose.foundation.Image
@@ -11,12 +11,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -39,6 +38,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -47,7 +48,13 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.pet_project_frontend.R
 import com.example.pet_project_frontend.core.components.TopBar
-import androidx.compose.foundation.layout.size
+
+// Re-using existing colors and defining new ones from wireframe
+private val TitleColor = Color(0xFF191F28)
+private val Gray900 = Color(0xFF333D4B)
+private val Gray600 = Color(0xFF6B7684)
+private val GrayCheck = Color(0xFFD1D6DA)
+private val Blue = Color(0xFF3182F6)
 
 @Composable
 fun BreedSelectScreen(
@@ -65,74 +72,82 @@ fun BreedSelectScreen(
             )
         },
         bottomBar = {
-            Box(
+            // Use bottomBar for the CTA button to anchor it to the bottom.
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(78.dp)
                     .background(Color.White)
+                    .padding(horizontal = 21.dp, vertical = 10.dp)
             ) {
                 Button(
                     onClick = { viewModel.confirmSelection(onNext) },
+                    // Use fillMaxWidth to make it responsive. Padding is handled by the parent.
                     modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 12.dp)
-                        .width(370.dp)
+                        .fillMaxWidth()
                         .height(58.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Blue,
-                        contentColor = Color.White
+                        contentColor = Color.White,
+                        disabledContainerColor = Blue.copy(alpha = 0.4f)
                     ),
                     enabled = ui.selectedBreedName != null && !ui.isSaving
                 ) {
-                    val buttonText = if (ui.isSaving) "저장 중..." else "선택 완료"
+                    val buttonText = if (ui.isSaving) "저장 중..." else "다음"
                     Text(buttonText, style = nextButtonTextStyle())
                 }
             }
-        }
-    ) { inner ->
+        },
+        containerColor = Color.White
+    ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.White)
-                .padding(inner)
+                .padding(innerPadding)
         ) {
-            Box(
+            // Header Text
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "반려견의 견종을 선택해주세요",
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp)
-                    .background(Color.White)
-            ) {
-                Text(
-                    text = "반려견의 견종을 선택해 주세요",
-                    modifier = Modifier
-                        .align(Alignment.CenterStart)
-                        .padding(start = 24.dp),
-                    style = headerStyle(),
-                    color = Gray900
+                    .padding(horizontal = 24.dp),
+                style = TextStyle(
+                    fontSize = 22.sp,
+                    lineHeight = 30.sp,
+                    fontFamily = FontFamily(Font(R.font.pretendard_semibold)),
+                    fontWeight = FontWeight(600),
+                    color = TitleColor,
                 )
-            }
+            )
 
+            // Search Field Container
+            Spacer(modifier = Modifier.height(16.dp))
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(74.dp)
-                    .background(Color.White)
+                    .padding(horizontal = 24.dp),
+                contentAlignment = Alignment.Center // 수직 중앙 정렬로 여백을 만듭니다.
             ) {
                 BreedSearchBar(
                     value = ui.query,
                     onValueChange = viewModel::onQueryChange,
                     onClear = viewModel::clearQuery,
-                    modifier = Modifier
-                        .padding(start = 24.dp, end = 24.dp, top = 14.dp)
-                        .fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth() // 너비를 채웁니다.
                 )
             }
 
+            // Spacer below search bar
+            Spacer(modifier = Modifier.height(35.dp))
+
+            // Content Area (List or Empty/Error states)
             Box(
+                // Use weight to make this Box fill all remaining vertical space
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f),
+                    .weight(1f)
+                    .padding(horizontal = 24.dp),
                 contentAlignment = Alignment.TopCenter
             ) {
                 when {
@@ -147,9 +162,7 @@ fun BreedSelectScreen(
 
                     ui.breeds.isNotEmpty() -> {
                         LazyColumn(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 24.dp)
+                            modifier = Modifier.fillMaxSize()
                         ) {
                             items(ui.breeds) { breed ->
                                 BreedOptionRow(
@@ -159,7 +172,6 @@ fun BreedSelectScreen(
                                 )
                                 Spacer(Modifier.height(20.dp))
                             }
-                            item { Spacer(Modifier.height(16.dp)) }
                         }
                     }
 
@@ -167,27 +179,15 @@ fun BreedSelectScreen(
                         CircularProgressIndicator(modifier = Modifier.padding(top = 32.dp))
                     }
 
+                    // This is the "Empty Result" state
                     ui.query.isNotBlank() -> {
                         EmptyResult()
                     }
 
                     else -> {
-                        Text(
-                            text = ui.error ?: "등록된 견종이 없어요",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Gray600,
-                            modifier = Modifier.padding(top = 32.dp)
-                        )
+                        // This is the initial empty state before backend responds
+                        // Or if backend returns an empty list for an empty query
                     }
-                }
-
-                if (ui.isLoading && ui.breeds.isNotEmpty()) {
-                    CircularProgressIndicator(
-                        modifier = Modifier
-                            .align(Alignment.TopCenter)
-                            .padding(top = 8.dp),
-                        strokeWidth = 2.dp
-                    )
                 }
             }
         }
@@ -221,49 +221,44 @@ private fun BreedOptionRow(
                 .background(if (selected) Blue else GrayCheck),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = Icons.Filled.Check,
-                contentDescription = if (selected) "선택됨" else "선택 안 됨",
-                tint = Color.White
-            )
+            if (selected) {
+                Icon(
+                    imageVector = Icons.Filled.Check,
+                    contentDescription = "선택됨",
+                    tint = Color.White
+                )
+            }
         }
     }
 }
 
 @Composable
 private fun EmptyResult() {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 232.dp, start = 176.dp, end = 176.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+    // Use Box with Center alignment to properly center the content
+    // This replaces the huge, hardcoded padding.
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
     ) {
-        Image(
-            painter = painterResource(id = R.drawable.breed_error),
-            contentDescription = null,
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(116f / 105f)
-        )
-        Spacer(Modifier.height(16.dp))
-        Text(
-            text = "검색 결과가 없어요",
-            style = emptyResultStyle(),
-            color = Gray600,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center,
-            maxLines = 1
-        )
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.breed_error),
+                contentDescription = null,
+                // Give the image a reasonable, fixed size that works on most screens
+                modifier = Modifier.size(96.dp)
+            )
+            Text(
+                text = "검색 결과가 없어요",
+                style = emptyResultStyle(),
+                color = Gray600,
+                textAlign = TextAlign.Center,
+            )
+        }
     }
 }
-
-@Composable
-private fun headerStyle(): TextStyle =
-    MaterialTheme.typography.titleLarge.copy(
-        fontSize = 22.sp,
-        fontWeight = FontWeight.SemiBold,
-        lineHeight = 22.sp
-    )
 
 @Composable
 private fun emptyResultStyle(): TextStyle =
@@ -280,8 +275,3 @@ private fun nextButtonTextStyle(): TextStyle =
         fontSize = 18.sp,
         fontWeight = FontWeight.SemiBold
     )
-
-private val Gray900 = Color(0xFF333D4B)
-private val Gray600 = Color(0xFF6B7684)
-private val GrayCheck = Color(0xFFD1D6DA)
-private val Blue = Color(0xFF3182F6)

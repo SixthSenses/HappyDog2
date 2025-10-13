@@ -31,9 +31,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.pet_project_frontend.R
 import com.example.pet_project_frontend.core.components.TopBar
 import com.example.pet_project_frontend.presentation.mypage.common.GestureBar
 import com.example.pet_project_frontend.presentation.mypage.common.UiColors
@@ -83,7 +86,8 @@ fun GenderSelectScreen(
                 text = "반려견의 성별을 선택해 주세요",
                 style = MaterialTheme.typography.headlineSmall,
                 color = UiColors.TitleText,
-                fontWeight = FontWeight.SemiBold,
+                fontFamily = FontFamily(Font(R.font.pretendard_medium)),
+                fontWeight = FontWeight(600),
                 modifier = Modifier.padding(start = 10.dp)
             )
             Spacer(Modifier.height(24.dp))

@@ -2,10 +2,10 @@
 
 package com.example.pet_project_frontend.presentation.mypage.profile.breed
 
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
@@ -20,7 +20,6 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.shape.RoundedCornerShape
 
 @Composable
 fun BreedSearchBar(
@@ -57,14 +56,15 @@ fun BreedSearchBar(
                         imageVector = Icons.Filled.Close,
                         contentDescription = null,
                         tint = Gray500,
-                        modifier = Modifier.size(16.dp) // ⬅ 16dp 고정
+                        modifier = Modifier.size(16.dp)
                     )
                 }
             }
         },
         textStyle = inputTextStyle(),
         modifier = modifier
-            .heightIn(min = 56.dp) // ⬅ 잘림 방지 (46dp 대신)
+            .fillMaxWidth()
+            .heightIn(min = 46.dp)
             .onFocusChanged { focused = it.isFocused },
         shape = RoundedCornerShape(12.dp),
         colors = TextFieldDefaults.colors(
@@ -94,7 +94,7 @@ private fun inputTextStyle(): TextStyle =
     MaterialTheme.typography.bodyLarge.copy(
         fontSize = 17.sp,
         fontWeight = FontWeight.Medium, // 500
-        lineHeight = 17.sp,
+        lineHeight = 24.sp,
         letterSpacing = (-0.17).sp
     )
 
@@ -103,7 +103,7 @@ private fun placeholderStyle(): TextStyle =
     MaterialTheme.typography.bodyLarge.copy(
         fontSize = 17.sp,
         fontWeight = FontWeight.Medium,
-        lineHeight = 17.sp,
+        lineHeight = 24.sp,
         letterSpacing = (-0.17).sp
     )
 
@@ -113,4 +113,3 @@ private val Gray600 = Color(0xFF6B7684)
 private val Gray500 = Color(0xFF8B95A1)
 private val Gray100 = Color(0xFFF2F4F6)
 private val TextPrimary = Color(0xFF191F28)
-
