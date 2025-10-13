@@ -89,6 +89,29 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun withdraw(): AppResult<Unit> {
+        Log.d(TAG, "Attempting account withdrawal")
+        val accessToken = getAccessToken()
+        if (accessToken == null) {
+            Log.e(TAG, "Withdrawal failed: Access token is null.")
+            return AppResult.Error(code = 401, message = "Access token not found.")
+        }
+
+        val apiResult: AppResult<Unit> = SafeApi.response { authApi.withdraw("Bearer $accessToken") }
+
+        when (apiResult) {
+            is AppResult.Success -> Log.d(TAG, "Withdrawal API call successful")
+            is AppResult.Error -> Log.e(TAG, "Withdrawal API call failed. Code: ${apiResult.code}, Error: ${apiResult.message}")
+            is AppResult.Exception -> Log.e(TAG, "Exception during withdrawal API call", apiResult.throwable)
+        }
+
+        // 서버 API 호출 결과와 관계없이 로컬 데이터 정리
+        clearTokens()
+        clearUserInfo()
+
+        return apiResult
+    }
+
     override suspend fun saveTokens(accessToken: String, refreshToken: String) {
         Log.d(TAG, "Saving tokens")
         tokenManager.saveTokens(accessToken, refreshToken)

@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -24,16 +25,24 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.pet_project_frontend.R
 import com.example.pet_project_frontend.core.components.TopBar
+import com.example.pet_project_frontend.presentation.mypage.common.CommonAlertDialog
 
 @Composable
 fun WithdrawalScreen(
@@ -42,15 +51,21 @@ fun WithdrawalScreen(
     viewModel: WithdrawalViewModel = hiltViewModel()
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
+    var showConfirmDialog by rememberSaveable { mutableStateOf(false) }
+
+    val screenHeight = LocalConfiguration.current.screenHeightDp.dp
+    val topMargin = screenHeight * (10f / 917f)
+    val headerBottomMargin = screenHeight * (20f / 917f)
+    val bulletMargin = screenHeight * (11f / 917f)
 
     Scaffold(
         topBar = { TopBar(title = {}, onNavigateBack = onBack) }
-    ) { innerPadding ->
+    ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF5F7FA))
-                .padding(innerPadding)
+                .background(Color.White)
+                .padding(paddingValues)
         ) {
             Column(
                 modifier = Modifier
@@ -59,7 +74,7 @@ fun WithdrawalScreen(
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 Column {
-                    Spacer(Modifier.height(32.dp))
+                    Spacer(Modifier.height(topMargin))
 
                     Text(
                         text = "탈퇴하기",
@@ -67,11 +82,11 @@ fun WithdrawalScreen(
                         color = Color(0xFF191F28)
                     )
 
-                    Spacer(Modifier.height(20.dp))
+                    Spacer(Modifier.height(headerBottomMargin))
 
-                    BulletText("회원 탈퇴 이후에는 복구가 불가능해요")
-                    Spacer(Modifier.height(11.dp))
-                    BulletText("법령에서 정한 기간을 제외하고 모든 개인정보가 삭제돼요")
+                    BulletText("회원 탈퇴는 행복하개의 모든 사용자가 진행할 수\n있어요.")
+                    Spacer(Modifier.height(bulletMargin))
+                    BulletText("회원 탈퇴 시, 사용자의 개인정보는 법령에서 정한\n기간동안 보관이 요구되는 정보를 제외하고 모두\n파기돼요. 따라서 행복하개에서 관리했던 사용자의\n모든 개인정보를 다시 볼 수 없어요.")
 
                     if (!ui.errorMessage.isNullOrEmpty()) {
                         Spacer(Modifier.height(16.dp))
@@ -85,7 +100,7 @@ fun WithdrawalScreen(
 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Button(
-                        onClick = { viewModel.onClickWithdraw() },
+                        onClick = { showConfirmDialog = true },
                         enabled = !ui.isProcessing,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -112,6 +127,18 @@ fun WithdrawalScreen(
                 }
             }
 
+            if (showConfirmDialog) {
+                CommonAlertDialog(
+                    onDismissRequest = { showConfirmDialog = false },
+                    onConfirmation = {
+                        showConfirmDialog = false
+                        viewModel.onClickWithdraw()
+                    },
+                    title = "회원 탈퇴",
+                    text = "탈퇴 시 모든 정보가 삭제되며, 복구할 수 없습니다. 정말로 탈퇴하시겠습니까?"
+                )
+            }
+
             if (ui.showCompleted) {
                 CompletionDialog(
                     onConfirm = {
@@ -126,12 +153,12 @@ fun WithdrawalScreen(
 
 @Composable
 private fun BulletText(text: String) {
-    androidx.compose.foundation.layout.Row(
+    Row(
         verticalAlignment = Alignment.Top
     ) {
         Text("•", color = Color(0xFF4E5968), style = MaterialTheme.typography.bodyLarge)
         Spacer(Modifier.width(8.dp))
-        Text(text, color = Color(0xFF4E5968), style = MaterialTheme.typography.bodyLarge)
+        Text(text, color = Color(0xFF4E5968), style = bulletTextStyle())
     }
 }
 
@@ -155,7 +182,7 @@ private fun CompletionDialog(onConfirm: () -> Unit) {
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("탈퇴 완료", style = dialogTitleStyle(), color = Color(0xFF191F28))
-                    Text("탈퇴 처리가 완료되었어요", style = dialogBodyStyle(), color = Color(0xFF4E5968))
+                    Text("탈퇴 처리가 성공적으로 완료되었습니다.", style = dialogBodyStyle(), color = Color(0xFF4E5968))
                 }
                 Button(
                     onClick = onConfirm,
@@ -177,24 +204,41 @@ private fun CompletionDialog(onConfirm: () -> Unit) {
 
 @Composable
 private fun headerStyle(): TextStyle =
-    MaterialTheme.typography.titleLarge.copy(
+    TextStyle(
         fontSize = 26.sp,
-        fontWeight = FontWeight.SemiBold,
-        lineHeight = 36.sp
+        lineHeight = 36.4.sp,
+        fontFamily = FontFamily(Font(R.font.pretendard_medium)),
+        fontWeight = FontWeight(600),
+        color = Color(0xFF191F28)
+    )
+
+@Composable
+private fun bulletTextStyle(): TextStyle =
+    TextStyle(
+        fontSize = 15.sp,
+        lineHeight = 23.2.sp,
+        fontFamily = FontFamily(Font(R.font.pretendard_regular)),
+        fontWeight = FontWeight(300),
+        color = Color(0xFF4E5968)
     )
 
 @Composable
 private fun ctaTextStyle(): TextStyle =
-    MaterialTheme.typography.titleMedium.copy(
+    TextStyle(
         fontSize = 18.sp,
-        fontWeight = FontWeight.SemiBold
+        lineHeight = 18.sp,
+        fontFamily = FontFamily(Font(R.font.pretendard_regular)),
+        fontWeight = FontWeight(600)
     )
 
 @Composable
 private fun backTextStyle(): TextStyle =
-    MaterialTheme.typography.bodyLarge.copy(
+    TextStyle(
         fontSize = 18.sp,
-        fontWeight = FontWeight.Medium
+        lineHeight = 18.sp,
+        fontFamily = FontFamily(Font(R.font.pretendard_regular)),
+        fontWeight = FontWeight(600),
+        color = Color(0xFF4E5968)
     )
 
 @Composable
