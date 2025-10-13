@@ -13,11 +13,11 @@ import androidx.compose.ui.unit.dp
 import com.example.pet_project_frontend.core.theme.MyPageColors
 
 @Composable
-fun ProfileInfoSection(  // 이름 변경
+fun ProfileInfoSection(
     name: String,
-    birthDate: String,
-    gender: String,
-    breed: String,
+    birthDate: String?,
+    gender: String?,
+    breed: String?,
     onNameClick: () -> Unit,
     onBirthdateClick: () -> Unit,
     onGenderClick: () -> Unit,
@@ -33,35 +33,10 @@ fun ProfileInfoSection(  // 이름 변경
         Column(
             modifier = Modifier.padding(horizontal = 26.dp)
         ) {
-            ProfileInfoItem(
-                label = "이름",
-                value = name,
-                onClick = onNameClick
-            )
-
-            Divider(color = MyPageColors.Background)
-
-            ProfileInfoItem(
-                label = "생년월일",
-                value = birthDate,
-                onClick = onBirthdateClick
-            )
-
-            Divider(color = MyPageColors.Background)
-
-            ProfileInfoItem(
-                label = "성별",
-                value = gender,
-                onClick = onGenderClick
-            )
-
-            Divider(color = MyPageColors.Background)
-
-            ProfileInfoItem(
-                label = "견종",
-                value = breed,
-                onClick = onBreedClick
-            )
+            ProfileInfoItem(label = "이름", value = name, onClick = onNameClick)
+            ProfileInfoItem(label = "생년월일", value = birthDate ?: "-", onClick = onBirthdateClick)
+            ProfileInfoItem(label = "성별", value = gender ?: "-", onClick = onGenderClick)
+            ProfileInfoItem(label = "견종", value = breed ?: "-", onClick = onBreedClick)
         }
     }
 }

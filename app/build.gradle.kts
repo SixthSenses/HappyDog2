@@ -142,6 +142,9 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
+    // uCrop 최신 (원형 디밍 레이어 지원) - 마이페이지 프로필 설정
+    implementation("com.github.yalantis:ucrop:2.2.11")
+
     // JSON Parsing
     implementation("com.google.code.gson:gson:2.10.1")
 

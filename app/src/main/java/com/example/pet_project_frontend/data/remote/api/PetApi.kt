@@ -21,7 +21,8 @@ interface PetApi {
     @GET("api/pets/profile")
     suspend fun getMyPetProfile(): Response<PetViewBasedResponse>
     
-    @PUT("api/pets/{petId}")
+    // OpenAPI에 따라 PATCH를 사용하여 부분 업데이트
+    @retrofit2.http.PATCH("api/pets/{petId}")
     suspend fun updatePetProfile(
         @retrofit2.http.Path("petId") petId: String,
         @Body request: com.example.pet_project_frontend.data.remote.dto.request.PetUpdateRequest
