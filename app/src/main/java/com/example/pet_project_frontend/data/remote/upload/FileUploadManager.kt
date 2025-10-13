@@ -23,6 +23,7 @@ import javax.inject.Singleton
  */
 enum class UploadType(val value: String) {
     USER_PROFILE("user_profile"),
+    PET_PROFILE("pet_profile"),
     PET_NOSE_PRINT("pet_nose_print"),
     EYE_ANALYSIS("eye_analysis"),
     POST_IMAGE("post_image"),

@@ -1,8 +1,6 @@
 package com.example.pet_project_frontend.presentation.mypage.main.components
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -29,7 +27,7 @@ fun SettingsSection(
             modifier = Modifier.padding(horizontal = 26.dp)
         ) {
             SettingsItemRow(
-                label = "알림 설정",
+                label = "알림",
                 onClick = onNotificationClick
             )
 
