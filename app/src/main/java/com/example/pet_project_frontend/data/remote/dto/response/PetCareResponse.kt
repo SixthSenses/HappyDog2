@@ -41,20 +41,32 @@ data class RecordsMeta(
     val nextCursor: String?
 )
 
-// 펫 케어 설정 관련
+// 일일 기록 응답 (DailyRecordsResponseSchema)
+data class DailyRecordsResponse(
+    @SerializedName("date")
+    val date: String,
+    @SerializedName("records")
+    val records: List<CareRecordResponse>,
+    @SerializedName("summary")
+    val summary: Map<String, String>? = null
+)
+
+// 펫 케어 설정 관련 - API 스키마에 정확히 맞춤!
 data class PetCareSettings(
-    @SerializedName("goalWeight")
-    val goalWeight: Float,
-    @SerializedName("waterBowlCapacity")
-    val waterBowlCapacity: Int,
-    @SerializedName("waterIncrementAmount")
-    val waterIncrementAmount: Int,
-    @SerializedName("goalActivityMinutes")
-    val goalActivityMinutes: Int,
-    @SerializedName("activityIncrementMinutes")
-    val activityIncrementMinutes: Int,
-    @SerializedName("goalMealCount")
-    val goalMealCount: Int,
-    @SerializedName("mealIncrementCount")
-    val mealIncrementCount: Int
+    @SerializedName("target_weight")
+    val targetWeight: Double,
+    @SerializedName("target_daily_meal_count")
+    val targetDailyMealCount: Int,
+    @SerializedName("target_daily_activity_sessions")  // 1일 목표 활동 횟수 (예: 3회)
+    val targetDailyActivitySessions: Int,
+    @SerializedName("activity_session_minutes")  // 1회 활동 시간 (예: 30분)
+    val activitySessionMinutes: Int,
+    @SerializedName("target_daily_activity_minutes")  // 1일 총 목표 활동 시간 (서버 계산, 예: 90분)
+    val targetDailyActivityMinutes: Int,
+    @SerializedName("daily_meal_count")
+    val dailyMealCount: Int? = null,
+    @SerializedName("pet_id")
+    val petId: String,
+    @SerializedName("updated_at")
+    val updatedAt: String
 )
