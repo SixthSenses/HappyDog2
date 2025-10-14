@@ -22,11 +22,12 @@ import com.example.pet_project_frontend.core.theme.MyPageColors
  */
 @Composable
 fun FeedCareCard(
-    currentCount: Int = 2,
-    targetCount: Int = 3,
+    currentFeedCount: Int = 0,
+    targetFeedCount: Int? = null, // null이면 목표없음 상태
     onDetailClick: () -> Unit = {},
     onPlusClick: () -> Unit = {},
     onMinusClick: () -> Unit = {},
+    enableButtons: Boolean = true, // 버튼 활성화 여부
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -81,20 +82,31 @@ fun FeedCareCard(
                     .padding(end = 16.dp)
             ) {
                 // 사료 횟수를 한 줄로 표시
-                Row(
-                    verticalAlignment = Alignment.Bottom
-                ) {
+                if (targetFeedCount == null) {
+                    // 목표없음 상태
                     Text(
-                        text = "${currentCount}회",
+                        text = "목표없음",
                         fontSize = 28.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MyPageColors.Orange500
-                    )
-                    Text(
-                        text = "/${targetCount}회",
-                        fontSize = 15.sp,
                         color = MyPageColors.Grey500
                     )
+                } else {
+                    // 정상 상태
+                    Row(
+                        verticalAlignment = Alignment.Bottom
+                    ) {
+                        Text(
+                            text = "${currentFeedCount}회",
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MyPageColors.Orange500
+                        )
+                        Text(
+                            text = "/${targetFeedCount}회",
+                            fontSize = 15.sp,
+                            color = MyPageColors.Grey500
+                        )
+                    }
                 }
                 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -106,9 +118,13 @@ fun FeedCareCard(
                 ) {
                     // 프로그래스바
                     CircularProgressIndicator(
-                        progress = { (currentCount.toFloat() / targetCount.toFloat()).coerceIn(0f, 1f) },
+                        progress = { 
+                            if (targetFeedCount == null) 0.01f // 목표없음 상태에서 1% 진행
+                            else (currentFeedCount.toFloat() / targetFeedCount.toFloat()).coerceIn(0f, 1f) 
+                        },
                         modifier = Modifier.size(72.dp),
                         color = MyPageColors.Orange600,
+                        trackColor = MyPageColors.Grey200, // 전체 바 형태가 보이도록 track 색상 추가
                         strokeWidth = 12.dp,
                         strokeCap = StrokeCap.Round
                     )
@@ -123,7 +139,8 @@ fun FeedCareCard(
                             contentDescription = "추가",
                             modifier = Modifier
                                 .size(32.dp)
-                                .clickable { onPlusClick() }
+                                .clickable(enabled = enableButtons) { onPlusClick() },
+                            alpha = if (targetFeedCount == null || !enableButtons) 0.3f else 1f
                         )
                         
                         // - 버튼
@@ -132,7 +149,8 @@ fun FeedCareCard(
                             contentDescription = "제거",
                             modifier = Modifier
                                 .size(32.dp)
-                                .clickable { onMinusClick() }
+                                .clickable(enabled = enableButtons) { onMinusClick() },
+                            alpha = if (targetFeedCount == null || !enableButtons) 0.3f else 1f
                         )
                     }
                 }

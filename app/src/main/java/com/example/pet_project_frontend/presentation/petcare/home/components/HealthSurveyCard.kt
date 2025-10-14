@@ -46,7 +46,7 @@ fun HealthSurveyCard(
             ) {
                 Text(
                     text = "건강 설문지",
-                    fontSize = 14.sp, // 크기 줄임 (16sp -> 14sp)
+                    fontSize = 19.sp, // 크기 줄임 (16sp -> 14sp)
                     fontWeight = FontWeight.ExtraBold, // 두께 굵게 (Bold -> ExtraBold)
                     color = MyPageColors.Blue800
                 )
@@ -55,7 +55,7 @@ fun HealthSurveyCard(
                 
                 Text(
                     text = "작성하기",
-                    fontSize = 14.sp, // 크기 줄임 (16sp -> 14sp)
+                    fontSize = 19.sp, // 크기 줄임 (16sp -> 14sp)
                     fontWeight = FontWeight.ExtraBold, // 두께 굵게 (Bold -> ExtraBold)
                     color = MyPageColors.Blue800
                 )

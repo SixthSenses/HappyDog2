@@ -21,6 +21,9 @@ import com.example.pet_project_frontend.core.theme.MyPageColors
  */
 @Composable
 fun WeightCareCard(
+    currentWeight: Float? = null,
+    currentWeightText: String? = null,  // 몸무게 텍스트 (예: "50kg")
+    targetWeight: Float? = null,
     onDetailClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -67,6 +70,31 @@ fun WeightCareCard(
                     .size(10.dp)
                     .clickable { onDetailClick() }
             )
+            
+            // 하단: 오늘 기록된 몸무게 정보 표시
+            if (currentWeightText == null) {
+                // 오늘 몸무게 기록이 없는 경우
+                Text(
+                    text = "기록없음",
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MyPageColors.Grey500,
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(bottom = 8.dp)
+                )
+            } else {
+                // 오늘 기록된 몸무게 텍스트 표시 (예: "50kg")
+                Text(
+                    text = currentWeightText,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MyPageColors.Grey800,
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(bottom = 8.dp)
+                )
+            }
         }
     }
 }

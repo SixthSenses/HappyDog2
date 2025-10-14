@@ -11,16 +11,34 @@ import androidx.compose.ui.unit.dp
  */
 @Composable
 fun CareItemsGrid(
+    // 사료 관련
+    currentFeedCount: Int = 0,
+    targetFeedCount: Int? = null,
     onFeedDetailClick: () -> Unit = {},
     onFeedPlusClick: () -> Unit = {},
     onFeedMinusClick: () -> Unit = {},
+    // 활동 관련
+    currentActivityMinutes: Int = 0,
+    targetActivityMinutes: Int? = null,
+    activitySessionMinutes: Int = 30, // 1회 활동 시간
     onActivityDetailClick: () -> Unit = {},
     onActivityPlusClick: () -> Unit = {},
     onActivityMinusClick: () -> Unit = {},
+    // 몸무게 관련
+    currentWeight: Float? = null,
+    currentWeightText: String? = null,  // 몸무게 텍스트 (예: "50kg")
+    targetWeight: Float? = null,
     onWeightClick: () -> Unit = {},
+    // 대변 관련
+    poopRecords: List<String> = emptyList(),
+    latestPoopRecord: String? = null,  // 대변 상세 정보 (예: "초록색, 점액 섞임")
     onPoopClick: () -> Unit = {},
+    // 구토 관련
+    vomitRecords: List<String> = emptyList(),
+    latestVomitRecord: String? = null,  // 구토 상세 정보 (예: "노란색")
     onVomitClick: () -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enableButtons: Boolean = true // 버튼 활성화/비활성화 제어
 ) {
     Column(
         modifier = modifier
@@ -34,17 +52,24 @@ fun CareItemsGrid(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             FeedCareCard(
+                currentFeedCount = currentFeedCount,
+                targetFeedCount = targetFeedCount,
                 onDetailClick = onFeedDetailClick,
                 onPlusClick = onFeedPlusClick,
                 onMinusClick = onFeedMinusClick,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                enableButtons = enableButtons
             )
             
             ActivityCareCard(
+                currentActivityMinutes = currentActivityMinutes,
+                targetActivityMinutes = targetActivityMinutes,
+                activitySessionMinutes = activitySessionMinutes,
                 onDetailClick = onActivityDetailClick,
                 onPlusClick = onActivityPlusClick,
                 onMinusClick = onActivityMinusClick,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                enableButtons = enableButtons
             )
         }
         
@@ -54,11 +79,16 @@ fun CareItemsGrid(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             WeightCareCard(
+                currentWeight = currentWeight,
+                currentWeightText = currentWeightText,  // 몸무게 텍스트 전달
+                targetWeight = targetWeight,
                 onDetailClick = onWeightClick,
                 modifier = Modifier.weight(1f)
             )
             
             PoopCareCard(
+                records = poopRecords,
+                latestRecord = latestPoopRecord,  // 상세 정보 전달
                 onDetailClick = onPoopClick,
                 modifier = Modifier.weight(1f)
             )
@@ -70,6 +100,8 @@ fun CareItemsGrid(
             horizontalArrangement = Arrangement.Start
         ) {
             VomitCareCard(
+                records = vomitRecords,
+                latestRecord = latestVomitRecord,  // 상세 정보 전달
                 onDetailClick = onVomitClick,
                 modifier = Modifier.weight(0.48f) // 다른 카드들과 같은 크기
             )

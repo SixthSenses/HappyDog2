@@ -22,12 +22,14 @@ import com.example.pet_project_frontend.core.theme.MyPageColors
  */
 @Composable
 fun ActivityCareCard(
-    currentMinutes: Int = 45,
-    targetMinutes: Int = 60,
+    currentActivityMinutes: Int = 0,
+    targetActivityMinutes: Int? = null, // null이면 목표없음 상태
+    activitySessionMinutes: Int = 30, // 1회 활동 시간 (버튼 증감값)
     onDetailClick: () -> Unit = {},
     onPlusClick: () -> Unit = {},
     onMinusClick: () -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enableButtons: Boolean = true
 ) {
     Card(
         modifier = modifier.aspectRatio(0.9f),
@@ -81,20 +83,31 @@ fun ActivityCareCard(
                     .padding(end = 16.dp)
             ) {
                 // 활동 시간을 한 줄로 표시
-                Row(
-                    verticalAlignment = Alignment.Bottom
-                ) {
+                if (targetActivityMinutes == null) {
+                    // 목표없음 상태
                     Text(
-                        text = "${currentMinutes}분",
+                        text = "목표없음",
                         fontSize = 28.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MyPageColors.Green500
-                    )
-                    Text(
-                        text = "/${targetMinutes}분",
-                        fontSize = 15.sp,
                         color = MyPageColors.Grey500
                     )
+                } else {
+                    // 정상 상태
+                    Row(
+                        verticalAlignment = Alignment.Bottom
+                    ) {
+                        Text(
+                            text = "${currentActivityMinutes}분",
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MyPageColors.Green500
+                        )
+                        Text(
+                            text = "/${targetActivityMinutes}분",
+                            fontSize = 15.sp,
+                            color = MyPageColors.Grey500
+                        )
+                    }
                 }
                 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -106,9 +119,13 @@ fun ActivityCareCard(
                 ) {
                     // 프로그래스바
                     CircularProgressIndicator(
-                        progress = { (currentMinutes.toFloat() / targetMinutes.toFloat()).coerceIn(0f, 1f) },
+                        progress = { 
+                            if (targetActivityMinutes == null) 0.01f // 목표없음 상태에서 1% 진행
+                            else (currentActivityMinutes.toFloat() / targetActivityMinutes.toFloat()).coerceIn(0f, 1f) 
+                        },
                         modifier = Modifier.size(72.dp),
                         color = MyPageColors.Green,
+                        trackColor = MyPageColors.Grey200, // 전체 바 형태가 보이도록 track 색상 추가
                         strokeWidth = 12.dp,
                         strokeCap = StrokeCap.Round
                     )
@@ -123,7 +140,8 @@ fun ActivityCareCard(
                             contentDescription = "추가",
                             modifier = Modifier
                                 .size(32.dp)
-                                .clickable { onPlusClick() }
+                                .clickable(enabled = enableButtons) { onPlusClick() },
+                            alpha = if (targetActivityMinutes == null || !enableButtons) 0.3f else 1f
                         )
                         
                         // - 버튼
@@ -132,7 +150,8 @@ fun ActivityCareCard(
                             contentDescription = "제거",
                             modifier = Modifier
                                 .size(32.dp)
-                                .clickable { onMinusClick() }
+                                .clickable(enabled = enableButtons) { onMinusClick() },
+                            alpha = if (targetActivityMinutes == null || !enableButtons) 0.3f else 1f
                         )
                     }
                 }

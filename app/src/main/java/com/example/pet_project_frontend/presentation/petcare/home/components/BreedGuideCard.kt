@@ -46,7 +46,7 @@ fun BreedGuideCard(
             ) {
                 Text(
                     text = "견종",
-                    fontSize = 14.sp, // 크기 줄임 (16sp -> 14sp)
+                    fontSize = 19.sp, // 크기 줄임 (16sp -> 14sp)
                     fontWeight = FontWeight.ExtraBold, // 두께 굵게 (Bold -> ExtraBold)
                     color = MyPageColors.Orange800
                 )
@@ -54,8 +54,8 @@ fun BreedGuideCard(
                 Spacer(modifier = Modifier.height(4.dp))
                 
                 Text(
-                    text = "가이드북",
-                    fontSize = 14.sp, // 크기 줄임 (16sp -> 14sp)
+                    text = "백과사전",
+                    fontSize = 19.sp, // 크기 줄임 (16sp -> 14sp)
                     fontWeight = FontWeight.ExtraBold, // 두께 굵게 (Bold -> ExtraBold)
                     color = MyPageColors.Orange800
                 )
