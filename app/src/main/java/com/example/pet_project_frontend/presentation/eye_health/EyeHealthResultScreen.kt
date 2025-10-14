@@ -50,19 +50,19 @@ import com.example.pet_project_frontend.domain.model.EyeAnalysis
 private data class RiskColorPair(val text: Color, val background: Color)
 
 private object RiskColors {
-    // 낮은 위험도 (0-33%)
+    // 낮은 위험도 (0-40%)
     val LowRisk = RiskColorPair(
         text = MyPageColors.Green700,     // 초록색 텍스트
         background = MyPageColors.Green50 // 연한 초록색 배경
     )
     
-    // 중간 위험도 (34-66%)
+    // 중간 위험도 (41-70%)
     val MediumRisk = RiskColorPair(
         text = MyPageColors.Orange700,    // 주황색 텍스트
         background = MyPageColors.Yellow50 // 연한 노란색 배경
     )
     
-    // 높은 위험도 (67-100%)
+    // 높은 위험도 (71-100%)
     val HighRisk = RiskColorPair(
         text = MyPageColors.Red700,      // 빨간색 텍스트
         background = MyPageColors.Red50  // 연한 빨간색 배경
@@ -84,15 +84,6 @@ data class DiseaseInfo(
 
 // 질환 정보 매핑
 private val diseaseInfoMap = mapOf(
-    "정상" to DiseaseInfo(
-        name = "정상",
-        description = "건강한 눈 상태로 특별한 문제가 발견되지 않았어요.\n정기적인 안구 검진을 통해 건강을 유지하세요.",
-        symptoms = listOf(
-            "맑고 투명한 눈동자",
-            "적절한 눈물 분비",
-            "정상적인 눈 깜빡임"
-        )
-    ),
     "안검내반증" to DiseaseInfo(
         name = "안검내반증",
         description = "속눈썹이 눈을 찔러 불편함을 유발하는 질환이에요.\n다음과 같은 증상이 있다면 안검내반증일 수 있어요.",
@@ -134,8 +125,8 @@ private val diseaseInfoMap = mapOf(
 // 확률에 따른 색상 반환 함수
 private fun getRiskColors(percentage: Int): RiskColorPair {
     return when {
-        percentage <= 33 -> RiskColors.LowRisk
-        percentage <= 66 -> RiskColors.MediumRisk
+        percentage <= 40 -> RiskColors.LowRisk
+        percentage <= 70 -> RiskColors.MediumRisk
         else -> RiskColors.HighRisk
     }
 }
@@ -162,9 +153,13 @@ fun EyeAnalysisResultScreen(
             percentage = prediction.probabilityPercent
         )
     }.sortedByDescending { it.percentage }
-    
-    // API에서 받은 정상 여부 사용
-    val isNormal = analysis.isNormal
+
+    // 1. 가장 높은 확률 값을 찾습니다. 예측값이 하나도 없으면 0으로 간주합니다.
+    val maxProbability = diseaseResults.maxByOrNull { it.percentage }?.percentage ?: 0
+
+    // 2. 가장 높은 확률이 40% 미만이면 '정상'으로 간주합니다.
+    val isConsideredNormal = maxProbability < 40
+
 
     Scaffold(
         containerColor = Color.White
@@ -204,7 +199,7 @@ fun EyeAnalysisResultScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             // 상태에 따른 메시지
-            if (isNormal) {
+            if (isConsideredNormal) {
                 Text(
                     text = "특별한 문제가 발견되지 않았어요",
                     fontSize = 24.sp,

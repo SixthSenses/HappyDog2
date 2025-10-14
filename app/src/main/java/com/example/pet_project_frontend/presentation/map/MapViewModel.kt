@@ -52,7 +52,7 @@ enum class DetailedPlaceCategory(
 ) {
 	// --- 반려의료 ---
 	ANIMAL_HOSPITAL("동물병원", PlaceCategory.HOSPITAL, R.drawable.hospital, R.drawable.hospital),
-	ANIMAL_PHARMACY("동물약국", PlaceCategory.HOSPITAL, R.drawable.map_marker, R.drawable.map_marker),
+	ANIMAL_PHARMACY("동물약국", PlaceCategory.HOSPITAL, R.drawable.pharmacy, R.drawable.pharmacy),
 
 	// --- 반려동물 동반가능 ---
 	ART_MUSEUM("미술관", PlaceCategory.PET_FACILITY, R.drawable.art_gallery, R.drawable.art_gallery),

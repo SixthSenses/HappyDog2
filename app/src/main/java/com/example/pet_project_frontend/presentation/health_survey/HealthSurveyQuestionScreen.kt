@@ -18,7 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.pet_project_frontend.R
 import com.example.pet_project_frontend.core.theme.MyPageColors
-
+import androidx.compose.ui.draw.clip
 /**
  * 설문지 질문 화면
  * 개별 질문과 예/아니오 답변 버튼
@@ -64,9 +64,10 @@ fun HealthSurveyQuestionScreen(
                 progress = { questionNumber.toFloat() / totalQuestions.toFloat() },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(8.dp),
-                color = MyPageColors.Blue500,
-                trackColor = MyPageColors.Grey200,
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(16.dp)),
+            trackColor = MyPageColors.Grey200,
+            color = MyPageColors.Blue500,
             )
             
             Spacer(modifier = Modifier.height(24.dp))

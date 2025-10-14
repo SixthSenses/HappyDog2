@@ -93,7 +93,8 @@ fun EyeHealthMainContent(
                 fontWeight = FontWeight.Bold,
                 color = MyPageColors.Grey900,
                 textAlign = TextAlign.Start,
-                lineHeight = 32.sp
+                lineHeight = 32.sp,
+                modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(24.dp))
 
