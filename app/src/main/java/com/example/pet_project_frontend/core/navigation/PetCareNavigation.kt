@@ -2,6 +2,8 @@ package com.example.pet_project_frontend.core.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -24,6 +26,21 @@ import com.example.pet_project_frontend.presentation.eye_health.EyeHealthScreen
 import com.example.pet_project_frontend.presentation.eye_health.EyeHealthHistoryScreen
 import com.example.pet_project_frontend.presentation.eye_health.ImageViewerScreen
 import com.example.pet_project_frontend.presentation.breed_guide.BreedGuideListScreen
+import com.example.pet_project_frontend.presentation.breed_guide.BreedGuidebookScreen
+import com.example.pet_project_frontend.presentation.care_management.FeedManagementScreen
+import com.example.pet_project_frontend.presentation.care_management.ActivityManagementScreen
+import com.example.pet_project_frontend.presentation.care_management.WeightManagementScreen
+import com.example.pet_project_frontend.presentation.care_management.PoopManagementScreen
+import com.example.pet_project_frontend.presentation.care_management.VomitManagementScreen
+import com.example.pet_project_frontend.presentation.care_record.FeedRecordScreen
+import com.example.pet_project_frontend.presentation.care_record.ActivityRecordScreen
+import com.example.pet_project_frontend.presentation.care_record.WeightRecordScreen
+import com.example.pet_project_frontend.presentation.care_record.WeightLogScreen
+import com.example.pet_project_frontend.presentation.care_record.PoopRecordScreen
+import com.example.pet_project_frontend.presentation.care_record.VomitRecordScreen
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.pet_project_frontend.presentation.petcare.home.PetCareHomeViewModel
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun PetCareNavHost(
@@ -56,7 +73,12 @@ fun PetCareNavHost(
 
 		// 펫케어 메인 화면 (새로운 홈화면)
 		composable(Screen.PetCare.route) {
+			// ViewModel을 여기서 가져와서 선택된 날짜 사용
+			val viewModel: PetCareHomeViewModel = hiltViewModel()
+			val uiState by viewModel.uiState.collectAsState()
+			
 			PetCareHomeScreen(
+				viewModel = viewModel,
 				onNotificationClick = { /* TODO: 알림 화면으로 네비게이션 */ },
 				onHealthSurveyClick = { 
 					navController.navigate(Screen.HealthSurvey.route)
@@ -67,11 +89,23 @@ fun PetCareNavHost(
 				onEyeCheckClick = { 
 					navController.navigate(Screen.EyeHealth.route)
 				},
-				onFeedClick = { /* TODO: 사료 기록 화면으로 네비게이션 */ },
-				onActivityClick = { /* TODO: 활동 기록 화면으로 네비게이션 */ },
-				onWeightClick = { /* TODO: 몸무게 기록 화면으로 네비게이션 */ },
-				onPoopClick = { /* TODO: 대변 기록 화면으로 네비게이션 */ },
-				onVomitClick = { /* TODO: 구토 기록 화면으로 네비게이션 */ }
+				onFeedClick = {
+					val dateString = uiState.selectedDate.format(DateTimeFormatter.ISO_LOCAL_DATE)
+					navController.navigate(Screen.FeedManagement.createRoute(dateString))
+				},
+				onActivityClick = {
+					val dateString = uiState.selectedDate.format(DateTimeFormatter.ISO_LOCAL_DATE)
+					navController.navigate(Screen.ActivityManagement.createRoute(dateString))
+				},
+				onWeightClick = { 
+					navController.navigate(Screen.WeightManagement.route)
+				},
+				onPoopClick = { date ->
+					navController.navigate(Screen.PoopManagement.createRoute(date))
+				},
+				onVomitClick = { date ->
+					navController.navigate(Screen.VomitManagement.createRoute(date))
+				}
 			)
 		}
 
@@ -146,13 +180,145 @@ fun PetCareNavHost(
 			)
 		}
 
-		// 견종 가이드북 화면
+		// 견종 가이드북 리스트 화면
 		composable(Screen.BreedGuide.route) {
 			BreedGuideListScreen(
 				onBackClick = { navController.popBackStack() },
 				onBreedClick = { breedName ->
-					// TODO: 견종 상세 화면으로 네비게이션 (필요 시 구현)
+					navController.navigate(Screen.BreedGuidebook.createRoute(breedName))
 				}
+			)
+		}
+
+		// 케어 관리 화면들 (중간 단계)
+		composable(
+			route = Screen.FeedManagement.route,
+			arguments = listOf(
+				navArgument("date") {
+					type = NavType.StringType
+					nullable = true
+					defaultValue = null
+				}
+			)
+		) { backStackEntry ->
+			// 1. ViewModel 인스턴스를 가져옵니다.
+			val viewModel: PetCareHomeViewModel = hiltViewModel()
+			// 2. ViewModel의 상태에서 현재 선택된 petId를 가져옵니다.
+			// 'by'를 사용하므로, .value를 제거합니다.
+			val uiState by viewModel.uiState.collectAsState()
+			val petId = uiState.selectedPetId
+
+			val dateParam = backStackEntry.arguments?.getString("date")
+			FeedManagementScreen(
+				navController = navController,
+				selectedDate = dateParam,
+				//petId = petId, // petId 전달
+			)
+		}
+
+		composable(
+			route = Screen.ActivityManagement.route,
+			arguments = listOf(
+				navArgument("date") {
+					type = NavType.StringType
+					nullable = true
+					defaultValue = null
+				}
+			)
+		) { backStackEntry ->
+			val dateParam = backStackEntry.arguments?.getString("date")
+			ActivityManagementScreen(
+				navController = navController,
+				selectedDate = dateParam
+			)
+		}
+
+		composable(Screen.WeightManagement.route) {
+			WeightManagementScreen(
+				navController = navController
+			)
+		}
+
+		composable(
+			route = Screen.PoopManagement.route,
+			arguments = listOf(
+				navArgument("date") {
+					type = NavType.StringType
+					nullable = true
+					defaultValue = null
+				}
+			)
+		) { backStackEntry ->
+			val dateParam = backStackEntry.arguments?.getString("date")
+			PoopManagementScreen(
+				navController = navController,
+				selectedDate = dateParam
+			)
+		}
+
+		composable(
+			route = Screen.VomitManagement.route,
+			arguments = listOf(
+				navArgument("date") {
+					type = NavType.StringType
+					nullable = true
+					defaultValue = null
+				}
+			)
+		) { backStackEntry ->
+			val dateParam = backStackEntry.arguments?.getString("date")
+			VomitManagementScreen(
+				navController = navController,
+				selectedDate = dateParam
+			)
+		}
+
+		// 케어 기록 화면들 (실제 입력 화면)
+		composable(Screen.FeedRecord.route) {
+			FeedRecordScreen(
+				onBackClick = { navController.popBackStack() }
+			)
+		}
+
+		composable(Screen.ActivityRecord.route) {
+			ActivityRecordScreen(
+				onBackClick = { navController.popBackStack() }
+			)
+		}
+
+		composable(Screen.WeightRecord.route) {
+			WeightRecordScreen(
+				onBackClick = { navController.popBackStack() }
+			)
+		}
+
+		composable(Screen.WeightLog.route) {
+			WeightLogScreen(
+				onBackClick = { navController.popBackStack() }
+			)
+		}
+
+		composable(Screen.PoopRecord.route) {
+			PoopRecordScreen(
+				onBackClick = { navController.popBackStack() }
+			)
+		}
+
+		composable(Screen.VomitRecord.route) {
+			VomitRecordScreen(
+				onBackClick = { navController.popBackStack() }
+			)
+		}
+		
+		// 품종 가이드북 상세 화면
+		composable(
+			route = Screen.BreedGuidebook.route,
+			arguments = listOf(navArgument("breedName") { type = NavType.StringType })
+		) { backStackEntry ->
+			val breedName = backStackEntry.arguments?.getString("breedName") ?: ""
+			BreedGuidebookScreen(
+				breedName = breedName,
+				onBackClick = { navController.popBackStack() }
 			)
 		}
 	}
