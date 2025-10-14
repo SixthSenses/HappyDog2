@@ -20,12 +20,15 @@ object MyPageColors {
     // 펫케어 화면
     val Blue100: Color = Color(0xFFC9E2FF)
     val Blue800: Color = Color(0xFF1957C2)
+    val Blue50: Color = Color(0xFFE8F3FF)
+    val Blue200: Color = Color(0xFF90C2FF)
     val Yellow100: Color = Color(0xFFFFEFBF)
     val Yellow50: Color = Color(0xFFFFF9E7)
     val Orange800: Color = Color(0xFFFB8800)
     val Orange600: Color = Color(0xFFED6700)
     val Orange500: Color = Color(0xFFFE9800)
     val Orange700: Color = Color(0xFFF57800)
+    val Orange100: Color = Color(0xFFFFE0B0)
     val Green600: Color = Color(0xFF02A262)
     val Green500: Color = Color(0xFF03B26C)
     val Green700: Color = Color(0xFF029359)
@@ -44,10 +47,16 @@ object MyPageColors {
     val GreyOpacity600: Color = Color(0x94132B00) // 58%
     val GreyOpacity200: Color = Color(0x1A1B3700) // 10%
     val GreyOpacity100: Color = Color(0x0D022047) // 5%
+    val GreyOpacity400: Color = Color(0x0019364F) // 31%
     val Blue500: Color = Color(0xFF3182F6)
     val White: Color = Color(0xFFFFFFFF)
     val Black: Color = Color(0xFF000000)
     val Red50: Color = Color(0xFFFFEEEE)
     val Red700: Color = Color(0xFFD22030)
+    val Red100: Color = Color(0xFFFFD4D6)
+    val Red400: Color = Color(0xFFF66570)
+    val Red500: Color = Color(0xFFE73E52) // 구토 카드용
+    val Red600: Color = Color(0xFFE42939)
+    val Brown500: Color = Color(0xFF8B4513) // 대변 카드용
 
 }

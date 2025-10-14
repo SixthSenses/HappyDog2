@@ -13,16 +13,23 @@
 - Only expose `suspend`/`Flow` from Data/Domain. Launch coroutines in ViewModel with `viewModelScope`.
 - State collection pattern: Use `collectAsStateWithLifecycle()` in UI, `stateIn(scope, SharingStarted.WhileSubscribed(5000), initial)` in ViewModels
 
+**Critical StateFlow Pattern**
+- ALL ViewModels must expose state via `stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), initialValue)`
+- Example from `MainViewModel.kt`: `val isLoggedIn: StateFlow<Boolean> = userRepository.getAccessToken().map { !it.isNullOrBlank() }.stateIn(scope = viewModelScope, started = SharingStarted.WhileSubscribed(5000), initialValue = false)`
+- UI collection: `val uiState by viewModel.uiState.collectAsStateWithLifecycle()` in all Composables
+- Never expose MutableStateFlow to UI; always use StateFlow/immutable data classes
+
 **Navigation System**
 - Sealed class routes in `core/navigation/NavigationRoutes.kt`: `Screen.Login`, `Screen.PetCare`, `Screen.EyeHealth`, etc.
 - Navigation logic in `MainActivity.kt`: `!isLoggedIn -> Screen.Login.route`, `!hasPet -> Screen.PetRegistration.route`, else `Screen.PetCare.route`
-- Deep links: Register constants in `core/navigation/DeepLinks.kt` and use in `PetCareNavigation.kt`
+- Single-pet policy enforced in navigation: `LaunchedEffect(hasPet, currentRoute, isLoggedIn)` redirects to registration if no pet exists
 - Bottom nav routes: `Screen.PetCare`, `Screen.Map`, `Screen.Community`, `Screen.Translator`, `Screen.MyPage`
+- Deep links: Register constants in `core/navigation/DeepLinks.kt` and routes in `core/navigation/Routes.kt`
 
 **Networking, Auth, and Idempotency**
 - Retrofit + OkHttp; APIs under `app/data/remote/api/*Api.kt`; provided via Hilt in `NetworkModule.kt`
 - Bearer auth: `AuthInterceptor` injects token; `TokenAuthenticator` refreshes on 401 using empty JSON `{}` body
-- Idempotency: Write requests (POST/PUT/PATCH) add `X-Idempotency-Key` (UUIDv4). Auto-injection via `IdempotencyInterceptor`. Treat `Idempotent-Replay: true` as success replay
+- **Idempotency (Critical)**: ALL write requests (POST/PUT/PATCH) auto-inject `X-Idempotency-Key` (UUIDv4) via `IdempotencyInterceptor`. Treat response headers `Idempotent-Replay: true` or `Idempotency-Replay: true` as success replay. Apply to DELETE for specific endpoints (cartoon jobs). See `docs/DEEPLINKS_AND_IDEMPOTENCY.md`
 - DTOs use Gson `@SerializedName` (`app/data/remote/dto/**`); map to domain in `app/data/mapper/**`
 - Align with `docs/openapi_pretty.json` and `docs/api/*` documentation
 
@@ -42,6 +49,13 @@
 - Tests: `gradlew.bat test`; Device tests: `gradlew.bat connectedAndroidTest`
 - Backend setup: Use appropriate conda env from `pet_project_backend/envs/` (Windows CPU/CUDA, macOS CPU)
 
+**Navigation Architecture Patterns**
+- `PetCareNavigation.kt` defines all screen routes in `NavHost` with proper argument handling
+- Two-tier routing: Management screens (`*Management.route`) → Record screens (`*Record.route`)
+- Example: `FeedManagement` → `FeedRecord`, `ActivityManagement` → `ActivityRecord`
+- Deep link support via `navDeepLink` with URI patterns from `DeepLinks.kt`
+- Screen arguments use `navArgument` with proper types and nullability
+
 **Critical Component Patterns**
 - ViewModel state: Single `StateFlow<UiState>` exposed via `stateIn(WhileSubscribed(5000))` - see `MainViewModel.kt`
 - UI collection: `collectAsStateWithLifecycle()` - see `MainActivity.kt` branching on `isLoggedIn`/`hasPet`
@@ -53,15 +67,17 @@
 2) Repository: Add contract in `domain/repository/*`, implement `data/repository/*Impl`, bind in `RepositoryModule`
 3) ViewModel: Inject repository, expose single `uiState` via `stateIn(WhileSubscribed(5000))`, handle events
 4) UI: Collect with `collectAsStateWithLifecycle()`, send events to ViewModel, navigate via `Screen.*.route`
+5) Navigation: Add route to `NavigationRoutes.kt`, implement in `PetCareNavigation.kt` composable block
 
 **Critical Don'ts**
 - Don't start coroutines in repository/domain layers - only expose `suspend`/`Flow`
 - Don't leak mutable state to UI - always use StateFlow/immutable data
 - Don't log secrets/tokens. Inject keys only via `BuildConfig`/`manifestPlaceholders`
 - Don't attempt to edit corrupted files with duplicate imports - delete and recreate instead
+- Don't bypass idempotency for write operations - let `IdempotencyInterceptor` handle automatically
 
 **Key Reference Files**
 - Navigation: `core/navigation/NavigationRoutes.kt`, `PetCareNavigation.kt`, `MainActivity.kt`
 - State patterns: `MainViewModel.kt` (WhileSubscribed), `MainActivity.kt` (lifecycle collection)
 - Network setup: `NetworkModule.kt`, `data/remote/interceptors/`, `TokenAuthenticator.kt`
-- Policies: `docs/DEEPLINKS_AND_IDEMPOTENCY.md`
+- Idempotency: `data/remote/interceptors/IdempotencyInterceptor.kt`, `docs/DEEPLINKS_AND_IDEMPOTENCY.md`
