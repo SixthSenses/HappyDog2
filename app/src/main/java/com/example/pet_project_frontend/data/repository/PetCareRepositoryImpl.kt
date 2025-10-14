@@ -10,6 +10,10 @@ import com.example.pet_project_frontend.data.remote.api.PetCareApi
 import com.example.pet_project_frontend.data.remote.dto.request.CareRecordCreateRequest
 import com.example.pet_project_frontend.data.remote.dto.response.CareRecordResponse
 import com.example.pet_project_frontend.data.remote.dto.response.CareRecordsResponse
+import com.example.pet_project_frontend.data.remote.dto.response.DailyRecordsResponse
+import com.example.pet_project_frontend.data.remote.dto.response.DailySummaryResponse
+import com.example.pet_project_frontend.data.remote.dto.response.RangeSummaryResponse
+import com.example.pet_project_frontend.data.remote.dto.request.PetCareSettingsRequest
 import com.example.pet_project_frontend.data.remote.dto.response.PetCareSettings
 import com.example.pet_project_frontend.data.remote.dto.request.CareRecordUpdateRequest
 import com.example.pet_project_frontend.domain.repository.PetCareRepository
@@ -26,6 +30,54 @@ class PetCareRepositoryImpl @Inject constructor(
         private const val TAG = "PetCareRepositoryImpl"
     }
 
+    override suspend fun getDailyRecords(
+        petId: String,
+        date: String?
+    ): AppResult<DailyRecordsResponse> {
+        return SafeApi.body {
+            Log.d(TAG, "Getting daily care records for pet: $petId, date: $date")
+            val response = petCareApi.getDailyRecords(
+                petId = petId,
+                date = date
+            )
+            Log.d(TAG, "Daily care records fetched successfully: ${response.records.size} records")
+            response
+        }
+    }
+
+    override suspend fun getDailySummary(
+        petId: String,
+        date: String?
+    ): AppResult<DailySummaryResponse> {
+        return SafeApi.body {
+            Log.d(TAG, "Getting daily summary for pet: $petId, date: $date")
+            val response = petCareApi.getDailySummary(
+                petId = petId,
+                date = date
+            )
+            Log.d(TAG, "Daily summary fetched successfully")
+            response
+        }
+    }
+
+    override suspend fun getRangeSummary(
+        petId: String,
+        startDate: String,
+        endDate: String
+    ): AppResult<RangeSummaryResponse> {
+        return SafeApi.body {
+            Log.d(TAG, "Getting range summary for pet: $petId, period: $startDate ~ $endDate")
+            val response = petCareApi.getRangeSummary(
+                petId = petId,
+                startDate = startDate,
+                endDate = endDate
+            )
+            Log.d(TAG, "Range summary fetched successfully: ${response.recordsByDate.size} days")
+            response
+        }
+    }
+
+    // 사용 안하는 것 같음 -> 확인해보기
     override suspend fun getCareRecords(
         petId: String,
         date: String?,
@@ -59,9 +111,8 @@ class PetCareRepositoryImpl @Inject constructor(
         petId: String,
         recordType: String,
         timestamp: Long,
-        data: Any,
-    notes: String?,
-    requestId: String?
+        data: Any, // String 또는 Map<String, Any> 모두 지원
+        memo: String?
     ): AppResult<CareRecordResponse> {
         return SafeApi.body {
             Log.d(TAG, "Creating care record for pet: $petId, type: $recordType")
@@ -69,15 +120,14 @@ class PetCareRepositoryImpl @Inject constructor(
                 recordType = recordType,
                 timestamp = timestamp,
                 data = data,
-                notes = notes,
-                requestId = requestId
+                memo = memo
             )
             val response = petCareApi.createCareRecord(petId = petId, recordRequest = request)
             Log.d(TAG, "Care record created successfully: ${response.logId}")
             response
         }
     }
-
+    // 사용 안하는 것 같음 -> 확인해보기
     override suspend fun getRecordsByType(
         petId: String,
         recordType: String,
@@ -103,12 +153,18 @@ class PetCareRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getPetCareSettings(): AppResult<PetCareSettings> {
-    return SafeApi.body { petCareApi.getPetCareSettings() }
+    override suspend fun getPetCareSettings(petId: String): AppResult<PetCareSettings> {
+        return SafeApi.body { 
+            Log.d(TAG, "Getting pet care settings for pet: $petId")
+            petCareApi.getPetCareSettings(petId) 
+        }
     }
 
-    override suspend fun updatePetCareSettings(settings: PetCareSettings): AppResult<PetCareSettings> {
-    return SafeApi.body { petCareApi.updatePetCareSettings(settings) }
+    override suspend fun updatePetCareSettings(petId: String, settings: PetCareSettingsRequest): AppResult<PetCareSettings> {
+        return SafeApi.body { 
+            Log.d(TAG, "Updating pet care settings for pet: $petId with settings: $settings")
+            petCareApi.updatePetCareSettings(petId, settings) 
+        }
     }
 
     override suspend fun updateCareRecord(
