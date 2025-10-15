@@ -29,9 +29,6 @@ class BreedRepositoryImpl @Inject constructor(
         breedApi.getBreedByName(breedName)
     }
 
-    override suspend fun getGuidebookBreeds(): Result<BreedsResponse> = runCatching {
-        breedApi.getGuidebookBreeds()
-    }
 
     override suspend fun getBreedGuidebook(breedName: String): Result<BreedGuidebookResponse> = runCatching {
         breedApi.getBreedGuidebook(breedName)

@@ -18,10 +18,8 @@ interface BreedRepository {
     ): Result<BreedsResponse>
     
     suspend fun getBreedByName(breedName: String): Result<BreedResponse>
-    
-    // 가이드북이 있는 품종만 조회
-    suspend fun getGuidebookBreeds(): Result<BreedsResponse>
-    
+
     // 특정 품종의 가이드북 정보 조회
     suspend fun getBreedGuidebook(breedName: String): Result<BreedGuidebookResponse>
+
 }

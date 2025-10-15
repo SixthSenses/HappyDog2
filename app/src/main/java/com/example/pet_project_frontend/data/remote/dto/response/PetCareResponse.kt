@@ -51,7 +51,7 @@ data class DailyRecordsResponse(
     val summary: Map<String, String>? = null
 )
 
-// 펫 케어 설정 관련 - API 스키마에 정확히 맞춤!
+// 펫 케어 설정 관련
 data class PetCareSettings(
     @SerializedName("target_weight")
     val targetWeight: Double,
