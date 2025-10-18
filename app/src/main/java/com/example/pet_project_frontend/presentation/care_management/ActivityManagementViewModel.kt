@@ -31,20 +31,23 @@ class ActivityManagementViewModel @Inject constructor(
         val selectedDate: LocalDate = LocalDate.now(),
 
         // '선택된 날짜'의 실제 활동 횟수
-        val selectedDateActivityCount: Int = 0,
-
+        //val selectedDateActivityCount: Int = 0,
         // '선택된 날짜'의 목표 활동 횟수
         val goalActivityCount: Int = 0,
         // '선택된 날짜'의 1회 활동 시간(분)
         val selectedDateSessionMinutes: Int = 0,
 
+            // '선택된 날짜'의 실시간 활동 시간(막대바 위 텍스트)
+        val selectedDateActivityLiveMinutes: Int = 0,
+        val selectedDateAchievementPercentage: Float = 0f,  // 달성률
         // '이전 기록'(선택된 날짜 - 1일)의 실제 활동 횟수
-        val previousDayActivityCount: Int = 0,
+        //val previousDayActivityCount: Int = 0,
         // '이전 기록'(선택된 날짜 - 1일)의 1회 활동 시간(분)
-        val previousDaySessionMinutes: Int = 0,
-
-        val achievementPercentage: Float = 0f,  // 달성률
-        val isAchieved: Boolean = false,  // 목표 달성 여부
+        //val previousDaySessionMinutes: Int = 0,
+            // 선택한 날 전날의 활동 시간(막대바 위 텍스트)
+        val previousDateActivityMinutes: Int = 0,
+        val previousDateAchivementPercentage: Float = 0f, // 선택한 날 전날의 달성률
+        //val isAchieved: Boolean = false,  // 목표 달성 여부
         
         // 캘린더 표시용 달성 날짜 목록
         val achievedDates: Set<LocalDate> = emptySet(),
@@ -72,6 +75,8 @@ class ActivityManagementViewModel @Inject constructor(
                 when (val petResult = petRepository.getMyPetProfile()) {
                     is AppResult.Success -> {
                         currentPetId = petResult.data.id
+                        loadDataForDate(LocalDate.now())
+                        loadAchievedDatesForMonth(YearMonth.now())
                     }
                     else -> {
                         _uiState.value = _uiState.value.copy(
@@ -96,7 +101,17 @@ class ActivityManagementViewModel @Inject constructor(
         val petId = currentPetId ?: return
 
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null, selectedDate = date)
+            // 날짜 변경 시 이전 데이터 초기화 (중요!)
+            _uiState.value = _uiState.value.copy(
+                isLoading = true, 
+                error = null, 
+                selectedDate = date,
+                selectedDateActivityLiveMinutes = 0,
+                goalActivityCount = 0,
+                previousDateActivityMinutes = 0,
+                previousDateAchivementPercentage = 0f,
+                selectedDateAchievementPercentage = 0f
+            )
 
             try {
                 // 1. 선택된 날짜(date)의 데이터 요청
@@ -111,26 +126,32 @@ class ActivityManagementViewModel @Inject constructor(
                     val previousSummary = previousDateResult.data
 
                     // --- 선택된 날짜의 데이터 추출 ---
-                    val currentActualCount = (currentSummary.recordCounts["activity"] as? Number)?.toInt() ?: 0
+                    //val currentActualCount = (currentSummary.recordCounts["activity"] as? Number)?.toInt() ?: 0
                     val currentGoalSessions = currentSummary.goalProgress?.achievements?.activity?.detail?.sessions ?: 0
                     val currentSessionMinutes = currentSummary.goalProgress?.achievements?.activity?.detail?.minutesPerSession ?: 0
-
+                    val selectedDateActivityLiveMinutes = currentSummary.goalProgress?.achievements?.activity?.actual ?: 0
+                    //선택한 날짜의 달성률
+                    val selectedDatePercentage = currentSummary.goalProgress?.achievements?.activity?.percentage ?: 0f
                     // --- 그 전날의 데이터 추출 ---
-                    val previousActualCount = (previousSummary.recordCounts["activity"] as? Number)?.toInt() ?: 0
+                    val previousDateActivityMinutes = previousSummary.goalProgress?.achievements?.activity?.actual ?: 0f
+                    // 선택한 날짜 전날의 달성률
+                    val previousDatePercentage = previousSummary.goalProgress?.achievements?.activity?.percentage ?: 0f
                     // 이전 날의 세션 시간은 목표 설정에서 가져옴 (목표가 없으면 0)
-                    val previousSessionMinutes = previousSummary.goalProgress?.achievements?.activity?.detail?.minutesPerSession ?: 0
+                    //val previousSessionMinutes = previousSummary.goalProgress?.achievements?.activity?.detail?.minutesPerSession ?: 0
 
-                    val percentage = currentSummary.goalProgress?.achievements?.activity?.percentage ?: 0f
+
 
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        selectedDateActivityCount = currentActualCount,
+                        //selectedDateActivityCount = currentActualCount,
                         goalActivityCount = currentGoalSessions,
                         selectedDateSessionMinutes = currentSessionMinutes,
-                        previousDayActivityCount = previousActualCount,
-                        previousDaySessionMinutes = previousSessionMinutes,
-                        achievementPercentage = percentage,
-                        isAchieved = currentGoalSessions > 0 && currentActualCount >= currentGoalSessions
+                        selectedDateActivityLiveMinutes = (selectedDateActivityLiveMinutes as? Number)?.toInt() ?: 0,
+                        previousDateActivityMinutes = (previousDateActivityMinutes as? Number)?.toInt() ?: 0,
+                        //previousDaySessionMinutes = previousSessionMinutes,
+                        previousDateAchivementPercentage = previousDatePercentage,
+                        selectedDateAchievementPercentage = selectedDatePercentage,
+                        //isAchieved = currentGoalSessions > 0 && currentActualCount >= currentGoalSessions
                     )
                 } else {
                     _uiState.value = _uiState.value.copy(isLoading = false, error = "데이터를 가져오는 데 실패했습니다.")
@@ -161,6 +182,7 @@ class ActivityManagementViewModel @Inject constructor(
                     is AppResult.Success -> {
                         // 성공 후 현재 선택된 날짜의 데이터 다시 로드
                         loadDataForDate(_uiState.value.selectedDate)
+                        loadAchievedDatesForMonth(YearMonth.from(_uiState.value.selectedDate))
                     }
                     is AppResult.Error -> {
                         _uiState.value = _uiState.value.copy(
@@ -205,6 +227,7 @@ class ActivityManagementViewModel @Inject constructor(
                                 is AppResult.Success -> {
                                     // 성공 후 데이터 다시 로드
                                     loadDataForDate(_uiState.value.selectedDate)
+                                    loadAchievedDatesForMonth(YearMonth.from(_uiState.value.selectedDate))
                                 }
                                 else -> {
                                     _uiState.value = _uiState.value.copy(
@@ -246,40 +269,32 @@ class ActivityManagementViewModel @Inject constructor(
             try {
                 val startDate = yearMonth.atDay(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
                 val endDate = yearMonth.atEndOfMonth().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-                
                 android.util.Log.d("ActivityManagementVM", "Loading achieved dates for period: $startDate ~ $endDate")
-                
+
                 when (val result = petCareRepository.getRangeSummary(petId, startDate, endDate)) {
                     is AppResult.Success -> {
                         val summary = result.data
-                        android.util.Log.d("ActivityManagementVM", "Range summary: goal_tracking=${summary.goalTracking}")
-                        
-                        // goal_tracking.days_achieved.activity에서 총 달성 일수 가져오기
-                        val daysAchieved = summary.goalTracking?.get("days_achieved") as? Map<*, *>
-                        val activityDaysAchieved = when (val activityValue = daysAchieved?.get("activity")) {
+                        android.util.Log.d("ActivityManagementVM", "Range summary response: goal_tracking=${summary.goalTracking}")
+
+                        // --- ▼▼▼ [수정 1] 'meal' -> 'activity'로 변경 ▼▼▼ ---
+                        val daysAchievedData = summary.goalTracking?.get("days_achieved") as? Map<*, *>
+                        val activityDaysAchieved = when (val activityValue = daysAchievedData?.get("activity")) {
                             is Number -> activityValue.toInt()
                             is String -> activityValue.toIntOrNull() ?: 0
                             else -> 0
                         }
-                        
+
                         android.util.Log.d("ActivityManagementVM", "Activity days achieved: $activityDaysAchieved")
-                        
-                        // records_by_date에서 walk_count 기록이 있는 날짜 찾기
-                        val achievedDateStrings = mutableSetOf<String>()
-                        summary.recordsByDate.forEach { (dateStr, records) ->
-                            // records가 List<Map> 형태
-                            if (records is List<*>) {
-                                val hasActivityRecord = records.any { record ->
-                                    (record as? Map<*, *>)?.get("record_type") == "walk_count"
-                                }
-                                if (hasActivityRecord) {
-                                    achievedDateStrings.add(dateStr)
-                                }
-                            }
-                        }
-                        
-                        // String 날짜를 LocalDate로 변환
-                        val achievedDates = achievedDateStrings.mapNotNull { dateStr ->
+
+                        // --- ▼▼▼ [수정 2] 'meal' -> 'activity'로 변경 ▼▼▼ ---
+                        val achievementDatesMap = summary.goalTracking?.get("achievement_dates") as? Map<*, *>
+                        val activityDateStrings = (achievementDatesMap?.get("activity") as? List<*>)
+                            ?.mapNotNull { it as? String }
+                            ?: emptyList()
+
+                        android.util.Log.d("ActivityManagementVM", "Activity achievement dates from server: $activityDateStrings")
+
+                        val achievedDates = activityDateStrings.mapNotNull { dateStr ->
                             try {
                                 LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
                             } catch (e: Exception) {
@@ -287,6 +302,7 @@ class ActivityManagementViewModel @Inject constructor(
                                 null
                             }
                         }.toSet()
+                        
 
                         // 1. 월별 요약 텍스트 생성 (활동 기준)
                         val summaryText = "${yearMonth.monthValue}월에는 목표를 ${activityDaysAchieved}번 채웠네요"
@@ -307,7 +323,7 @@ class ActivityManagementViewModel @Inject constructor(
                                 else "조금만 더 힘내세요!"
                             }
                             isPastMonth -> {
-                                if (activityDaysAchieved == 0) "아직 목표를 채우지 못했어요"
+                                if (activityDaysAchieved == 0) "다음에 더 노력해봐요"
                                 else if (achievementRate >= 50) "정말 대단해요!"
                                 else "다음에 더 노력해봐요" // mealDaysAchieved가 0이 아닌 과거 월은 이 메시지가 나옴
                             }

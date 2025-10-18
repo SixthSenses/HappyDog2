@@ -20,7 +20,9 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.height
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -67,8 +69,10 @@ fun ActivityManagementScreen(
 
     //val feedCount = summaryUiState.currentFeedCount
     val targetMinutes = summaryUiState.selectedDateSessionMinutes
-    val progressPercentage = summaryUiState.achievementPercentage
-
+    val todayProgressPercentage = summaryUiState.selectedDateAchievementPercentage
+    //val previousProgressPercentage = summaryUiState.previousDateActivityMinutes
+    val goalActivityCount = summaryUiState.goalActivityCount
+    
     // 선택된 날짜 데이터 로드
     LaunchedEffect(currentSelectedDate) {
         android.util.Log.d("ActivityManagement", "Loading data for date: $currentSelectedDate")
@@ -144,7 +148,7 @@ fun ActivityManagementScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "목표를 ${progressPercentage.toInt()}% 달성했어요",
+                        text = "목표를 ${todayProgressPercentage.toInt()}% 달성했어요",
                         fontSize = 23.sp,
                         color = MyPageColors.Grey900, // 수정
                         fontWeight = FontWeight.Medium
@@ -155,12 +159,12 @@ fun ActivityManagementScreen(
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
                     val uiState = summaryUiState
-                    val selectedDateMinutes = uiState.selectedDateActivityCount * uiState.selectedDateSessionMinutes
-                    val previousDayMinutes = uiState.previousDayActivityCount * uiState.previousDaySessionMinutes
-                    val goalMinutes = uiState.goalActivityCount * uiState.selectedDateSessionMinutes
-                    val maxMinutes = if (goalMinutes > 0) goalMinutes.toFloat() else maxOf(selectedDateMinutes, previousDayMinutes, 60).toFloat()
-                    val currentProgress = if (maxMinutes > 0) selectedDateMinutes / maxMinutes else 0f
-                    val previousProgress = if (maxMinutes > 0) previousDayMinutes / maxMinutes else 0f
+                    val selectedDateMinutes = uiState.selectedDateActivityLiveMinutes
+                    val previousDayMinutes = uiState.previousDateActivityMinutes
+                    //val goalMinutes = uiState.goalActivityCount * uiState.selectedDateSessionMinutes
+                    //val maxMinutes = if (goalMinutes > 0) goalMinutes.toFloat() else maxOf(selectedDateMinutes, previousDayMinutes, 60).toFloat()
+                    val currentProgress = uiState.selectedDateAchievementPercentage / 100f
+                    val previousProgress = uiState.previousDateAchivementPercentage / 100f
 
                     BarChartView(
                         currentProgress = currentProgress,
@@ -179,7 +183,7 @@ fun ActivityManagementScreen(
                         Button(
                             onClick = {
                                 if (isToday && selectedDateMinutes >= uiState.selectedDateSessionMinutes) {
-                                    homeViewModel.removeActivityRecord(uiState.selectedDateSessionMinutes)
+                                    summaryViewModel.removeActivityRecord(uiState.selectedDateSessionMinutes)
                                 }
                             },
                             enabled = isToday && selectedDateMinutes >= uiState.selectedDateSessionMinutes,
@@ -203,7 +207,7 @@ fun ActivityManagementScreen(
                         Button(
                             onClick = {
                                 if (isToday) {
-                                    homeViewModel.addActivityRecord(uiState.selectedDateSessionMinutes)
+                                    summaryViewModel.addActivityRecord(uiState.selectedDateSessionMinutes)
                                 }
                             },
                             enabled = isToday,
@@ -283,7 +287,7 @@ fun ActivityManagementScreen(
                             )
                             Spacer(modifier = Modifier.weight(1f))
                             Text(
-                                text = "${targetMinutes}회",
+                                text = "${goalActivityCount}회",
                                 fontSize = 18.sp,
                                 color = MyPageColors.Blue500, // 수정
                                 fontWeight = FontWeight.Medium
@@ -386,6 +390,7 @@ fun ActivityManagementScreen(
         }
     }
 }
+/*
 
 @Composable
 fun BarChartView(
@@ -397,7 +402,7 @@ fun BarChartView(
     previousBarLabel: String
 ) {
     val graphMaxHeight = 128.dp
-    val minGraphHeightForText = 24.dp
+    val minGraphHeightForText = 30.dp
     val minBarProgress = 0.02f // 2%
 
     Column(
@@ -407,7 +412,8 @@ fun BarChartView(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(graphMaxHeight + minGraphHeightForText),
+                .height(graphMaxHeight + minGraphHeightForText)
+                .graphicsLayer { clip = false },
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.Bottom
         ) {
@@ -419,12 +425,12 @@ fun BarChartView(
                     modifier = Modifier
                         .width(60.dp)
                         .height(graphMaxHeight)
-                        .graphicsLayer { clip = false }
+                        //.graphicsLayer { clip = false }
                 ) {
                     val previousProgressToShow = maxOf(previousProgress, minBarProgress)
                     val previousBarHeight = graphMaxHeight * previousProgressToShow.coerceIn(0f, 1f)
-                    val textPaddingBottom = maxOf(graphMaxHeight * previousProgress.coerceIn(0f, 1f), minGraphHeightForText)
-
+                    //val textPaddingBottom = maxOf(graphMaxHeight * previousProgress.coerceIn(0f, 1f), minGraphHeightForText)
+                    val textPaddingBottom = previousBarHeight + minGraphHeightForText
                     Text(
                         text = previousBarText,
                         fontSize = 13.sp,
@@ -455,12 +461,12 @@ fun BarChartView(
                     modifier = Modifier
                         .width(60.dp)
                         .height(graphMaxHeight)
-                        .graphicsLayer { clip = false }
+                        //.graphicsLayer { clip = false }
                 ) {
                     val currentProgressToShow = maxOf(currentProgress, minBarProgress)
                     val currentBarHeight = graphMaxHeight * currentProgressToShow.coerceIn(0f, 1f)
-                    val textPaddingBottom = maxOf(graphMaxHeight * currentProgress.coerceIn(0f, 1f), minGraphHeightForText)
-
+                    //val textPaddingBottom = maxOf(graphMaxHeight * currentProgress.coerceIn(0f, 1f), minGraphHeightForText)
+                    val textPaddingBottom = currentBarHeight + minGraphHeightForText
                     Text(
                         text = currentBarText,
                         fontSize = 13.sp,
@@ -517,6 +523,139 @@ fun BarChartView(
         }
     }
 }
+*/
+
+@Composable
+fun BarChartView(
+    currentProgress: Float,
+    previousProgress: Float,
+    currentBarText: String,
+    previousBarText: String,
+    currentBarLabel: String,
+    previousBarLabel: String
+) {
+    // [수정 1] 이제 텍스트 높이는 BoxWithConstraints가 관리하므로, 별도 계산이 필요 없습니다.
+    val graphMaxHeight = 128.dp
+    val minBarProgress = 0.02f // 데이터가 0일 때 보여줄 최소 막대 높이
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // [수정 2] Row는 자식의 컨텐츠 크기에 맞춰 높이가 자동으로 조절되도록 합니다.
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.Bottom // 자식들을 아래쪽 기준으로 정렬
+        ) {
+            // '어제' 막대
+            BarItem(
+                progress = previousProgress,
+                barText = previousBarText,
+                barColor = MyPageColors.Grey200,
+                textColor = MyPageColors.Grey500,
+                graphMaxHeight = graphMaxHeight,
+                minBarProgress = minBarProgress
+            )
+
+            // '오늘' 막대
+            BarItem(
+                progress = currentProgress,
+                barText = currentBarText,
+                barColor = MyPageColors.Blue500,
+                textColor = MyPageColors.Blue500,
+                graphMaxHeight = graphMaxHeight,
+                minBarProgress = minBarProgress
+            )
+        }
+
+        // --- (아래 Divider, Spacer, Label Row는 기존 코드와 동일하게 유지) ---
+        Divider(
+            modifier = Modifier.fillMaxWidth(),
+            thickness = 1.dp,
+            color = MyPageColors.Grey100
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceAround
+        ) {
+            Text(
+                text = previousBarLabel,
+                fontSize = 13.sp,
+                color = MyPageColors.Grey700,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.width(60.dp),
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = currentBarLabel,
+                fontSize = 13.sp,
+                color = MyPageColors.Grey700,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.width(60.dp),
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+/**
+ * [핵심 수정] 막대와 텍스트를 그리는 단일 아이템입니다.
+ * BoxWithConstraints를 사용하여 텍스트 위치를 고정하고, 막대 높이만 동적으로 변경합니다.
+ */
+/**
+ * [핵심 수정] 막대와 텍스트를 그리는 단일 아이템입니다.
+ * BoxWithConstraints 대신 일반 Box를 사용하여 코드를 최적화합니다.
+ */
+@Composable
+private fun BarItem(
+    progress: Float,
+    barText: String,
+    barColor: Color,
+    textColor: Color,
+    graphMaxHeight: Dp,
+    minBarProgress: Float
+) {
+    // [수정 1] BoxWithConstraints를 일반 Box로 변경합니다.
+    Box(
+        // 자식들을 아래쪽 중앙에 정렬합니다.
+        contentAlignment = Alignment.BottomCenter,
+        modifier = Modifier
+            .width(60.dp)
+            // 전체 높이를 '막대 최대 높이 + 텍스트를 위한 여유 공간'으로 고정합니다.
+            .height(graphMaxHeight + 32.dp) // 32dp는 텍스트와 여백을 위한 공간
+    ) { // [수정 2] BoxWithConstraints의 scope 파라미터가 더 이상 필요 없으므로 제거합니다.
+        // 보여줄 진행률과 막대의 실제 높이를 계산합니다.
+        val progressToShow = maxOf(progress, minBarProgress)
+        val currentBarHeight = graphMaxHeight * progressToShow.coerceIn(0f, 1f)
+
+        // 1. 막대를 그립니다.
+        // contentAlignment이 BottomCenter이므로 이 Box는 항상 맨 아래에 그려집니다.
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(currentBarHeight) // 높이는 progress에 따라 동적으로 변경됩니다.
+                .background(
+                    color = barColor,
+                    shape = RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)
+                )
+        )
+
+        // 2. 텍스트를 그립니다.
+        // 텍스트의 아래쪽 여백을 '막대 높이'로 지정합니다.
+        // 이렇게 하면 텍스트는 항상 막대 바로 위에 위치하게 됩니다.
+        Text(
+            text = barText,
+            fontSize = 13.sp,
+            color = textColor,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.padding(bottom = currentBarHeight + 4.dp) // 막대 높이 + 약간의 여백
+        )
+    }
+}
+
+
 
 @Composable
 private fun CalendarGrid(
@@ -556,15 +695,19 @@ private fun CalendarGrid(
                             CalendarDayItem(
                                 date = date,
                                 isSelected = date == selectedDate,
-                                isRecorded = recordedDates.contains(date)
+                                isAchieved = recordedDates.contains(date)
                             )
                         } else {
                             // 날짜가 null인 경우 (달의 시작 부분 빈 칸)
-                            Spacer(modifier = Modifier.weight(1f).aspectRatio(1f))
+                            Spacer(modifier = Modifier
+                                .weight(1f)
+                                .aspectRatio(1f))
                         }
                     } else {
                         // week의 크기를 벗어나는 경우 (달의 마지막 부분 빈 칸)
-                        Spacer(modifier = Modifier.weight(1f).aspectRatio(1f))
+                        Spacer(modifier = Modifier
+                            .weight(1f)
+                            .aspectRatio(1f))
                     }
                 }
                 // --- ▲▲▲ 수정 완료 ▲▲▲ ---
@@ -578,7 +721,7 @@ private fun CalendarGrid(
 private fun RowScope.CalendarDayItem(
     date: LocalDate,
     isSelected: Boolean,
-    isRecorded: Boolean
+    isAchieved: Boolean
 ) {
     val today = LocalDate.now()
     val isPastOrToday = !date.isAfter(today)
@@ -606,6 +749,15 @@ private fun RowScope.CalendarDayItem(
             fontSize = 14.sp,
             fontWeight = FontWeight.Normal
         )
+        if (isAchieved) {
+            Icon(
+                painter = painterResource(id = R.drawable.selected_day),
+                contentDescription = "목표 달성",
+                modifier = Modifier
+                    .size(30.dp), // 아이콘 크기 조절
+                tint = Color.Unspecified
+            )
+        }
     }
     // --- ▲▲▲ 수정 완료 ▲▲▲ ---
 }
