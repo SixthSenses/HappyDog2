@@ -106,6 +106,9 @@ fun PetCareHomeScreen(
             
             item {
                 // 케어 항목 그리드
+                // 오늘 날짜일 때만 +/- 버튼 활성화
+                val isToday = uiState.selectedDate == LocalDate.now()
+                
                 CareItemsGrid(
                     // 사료 관련 데이터 (목표값과 현재값 표시하고 버튼 활성화)
                     currentFeedCount = uiState.currentFeedCount,
@@ -133,7 +136,7 @@ fun PetCareHomeScreen(
                     vomitRecords = uiState.vomitRecords,
                     latestVomitRecord = uiState.todayLatestVomitRecord,  // 상세 정보 (예: "노란색")
                     onVomitClick = { onVomitClick(uiState.selectedDate.toString()) }, // 선택된 날짜 전달
-                    enableButtons = true // 홈 화면에서도 버튼 활성화
+                    enableButtons = isToday // 오늘 날짜일 때만 버튼 활성화
                 )
             }
             
