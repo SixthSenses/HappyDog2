@@ -9,21 +9,57 @@ import com.google.gson.annotations.SerializedName
 data class DailySummaryResponse(
     @SerializedName("date")
     val date: String,
-    
-    @SerializedName("records")
-    val records: List<CareRecordResponse>,  // CareRecord → CareRecordResponse
-    
-    @SerializedName("record_counts")
-    val recordCounts: Map<String, Any>,  // 각 타입별 기록 개수
 
-    @SerializedName("meal_count")
-    val meal_count: Any?,
+    @SerializedName("goal_progress")
+    val goalProgress: GoalProgress?, // 목표 설정이 없는 날도 있으므로 Nullable
 
     @SerializedName("meta")
-    val meta: Map<String, Any>,  // 메타 정보
-    
-    @SerializedName("goal_progress")
-    val goalProgress: GoalProgress?  // 목표 진행률
+    val meta: Meta, // Map 대신 명확한 Meta 클래스 사용
+
+    @SerializedName("record_counts")
+    val recordCounts: RecordCounts, // Map 대신 명확한 RecordCounts 클래스 사용
+
+    @SerializedName("records")
+    val records: List<CareRecordResponse>
+)
+
+// meta 객체를 위한 명확한 데이터 클래스
+data class Meta(
+    @SerializedName("activity_minutes")
+    val activityMinutes: Int?, // 값이 없을 수 있으므로 Nullable
+
+    @SerializedName("bcs")
+    val bcs: Int?,
+
+    @SerializedName("meal_count")
+    val mealCount: Int?, // 값이 없을 수 있으므로 Nullable
+
+    @SerializedName("stool")
+    val stool: String?,
+
+    @SerializedName("vomit")
+    val vomit: String?,
+
+    @SerializedName("weight")
+    val weight: Float?
+)
+
+// record_counts 객체를 위한 명확한 데이터 클래스
+data class RecordCounts(
+    @SerializedName("activity")
+    val activity: Int?,
+
+    @SerializedName("meal_count")
+    val mealCount: Int?,
+
+    @SerializedName("stool")
+    val stool: Int?,
+
+    @SerializedName("vomit")
+    val vomit: Int?,
+
+    @SerializedName("weight")
+    val weight: Int?
 )
 
 /**
@@ -32,7 +68,6 @@ data class DailySummaryResponse(
 data class GoalProgress(
     @SerializedName("achievements")
     val achievements: Achievements?,
-    
     @SerializedName("date")
     val date: String?
 )
@@ -43,10 +78,8 @@ data class GoalProgress(
 data class Achievements(
     @SerializedName("meal")
     val meal: AchievementInfo?,
-    
     @SerializedName("activity")
     val activity: ActivityAchievementInfo?,
-    
     @SerializedName("weight")
     val weight: WeightAchievementInfo?
 )
@@ -55,17 +88,18 @@ data class Achievements(
  * 일반 달성 정보 (식사)
  */
 data class AchievementInfo(
+    // 서버에서 숫자가 올 수도, 다른 타입이 올 수도 있으므로 Number 타입 사용
     @SerializedName("actual")
-    val actual: Any,  // 현재 값
-    
+    val actual: Number,
+
     @SerializedName("goal")
-    val goal: Any,  // 목표 값
-    
+    val goal: Int,
+
     @SerializedName("percentage")
-    val percentage: Float?,  // 달성률
-    
+    val percentage: Float?,
+
     @SerializedName("achieved")
-    val achieved: Boolean?  // 목표 달성 여부
+    val achieved: Boolean?
 )
 
 /**
@@ -73,19 +107,19 @@ data class AchievementInfo(
  */
 data class ActivityAchievementInfo(
     @SerializedName("actual")
-    val actual: Any,  // 현재 활동 시간
-    
+    val actual: Number,
+
     @SerializedName("goal")
-    val goal: Any,  // 목표 시간
-    
+    val goal: Int,
+
     @SerializedName("percentage")
-    val percentage: Float?,  // 달성률
-    
+    val percentage: Float?,
+
     @SerializedName("achieved")
-    val achieved: Boolean?,  // 목표 달성 여부
-    
+    val achieved: Boolean?,
+
     @SerializedName("detail")
-    val detail: ActivityDetail?  // 활동 상세 정보
+    val detail: ActivityDetail?
 )
 
 /**
@@ -93,13 +127,11 @@ data class ActivityAchievementInfo(
  */
 data class ActivityDetail(
     @SerializedName("derived_goal_minutes")
-    val derivedGoalMinutes: Int?,  // 계산된 목표 시간
-    
+    val derivedGoalMinutes: Int?,
     @SerializedName("minutes_per_session")
-    val minutesPerSession: Int?,  // 1회 활동 시간
-    
+    val minutesPerSession: Int?,
     @SerializedName("sessions")
-    val sessions: Int?  // 목표 횟수
+    val sessions: Int?
 )
 
 /**
@@ -107,14 +139,14 @@ data class ActivityDetail(
  */
 data class WeightAchievementInfo(
     @SerializedName("actual")
-    val actual: Any,  // 현재 몸무게
-    
+    val actual: Float,
+
     @SerializedName("goal")
-    val goal: Any,  // 목표 몸무게
-    
+    val goal: Float,
+
     @SerializedName("at_goal")
-    val atGoal: Boolean?,  // 목표 달성 여부
-    
+    val atGoal: Boolean?,
+
     @SerializedName("diff")
-    val diff: Float?  // 차이
+    val diff: Float?
 )
