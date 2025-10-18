@@ -179,9 +179,20 @@ class PetCareRepositoryImpl @Inject constructor(
     }
 
     override suspend fun deleteCareRecord(petId: String, logId: String): AppResult<Unit> {
-    return SafeApi.responseUnit {
+        return SafeApi.responseUnit {
             Log.d(TAG, "Deleting care record: pet=$petId log=$logId")
             petCareApi.deleteCareRecord(petId, logId)
+        }
+    }
+
+    override suspend fun getWeightMonthlyAnalysis(
+        petId: String
+    ): AppResult<com.example.pet_project_frontend.data.remote.dto.response.WeightMonthlyAnalysisResponse> {
+        return SafeApi.body {
+            Log.d(TAG, "Getting weight monthly analysis for pet: $petId")
+            val response = petCareApi.getWeightMonthlyAnalysis(petId)
+            Log.d(TAG, "Weight monthly analysis fetched successfully")
+            response
         }
     }
 }

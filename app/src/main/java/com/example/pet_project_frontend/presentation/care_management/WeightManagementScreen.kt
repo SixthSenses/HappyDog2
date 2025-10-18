@@ -24,7 +24,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.example.pet_project_frontend.R
 import com.example.pet_project_frontend.core.navigation.Screen
+import com.example.pet_project_frontend.core.theme.MyPageColors
 import com.example.pet_project_frontend.presentation.care_management.WeightManagementViewModel
+import com.example.pet_project_frontend.presentation.mypage.main.MyPageScreen
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import kotlin.math.abs
@@ -35,9 +37,23 @@ import kotlin.text.format
 @Composable
 fun WeightManagementScreen(
     navController: NavController,
+    selectedDate: String? = null,
     viewModel: WeightManagementViewModel = hiltViewModel()
 ) {
+    // 파라미터로 받은 날짜 파싱
+    val initialDate = remember(selectedDate) {
+        try {
+            if (selectedDate != null) LocalDate.parse(selectedDate) else LocalDate.now()
+        } catch (e: Exception) {
+            LocalDate.now()
+        }
+    }
+    
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    
+    LaunchedEffect(initialDate) {
+        viewModel.loadDataForDate(initialDate)
+    }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -80,29 +96,31 @@ fun WeightManagementScreen(
             }
             // 상단 분석 텍스트
             item {
+                // 선택된 날짜가 오늘일때 사용하는 변수들
                 val targetWeight = uiState.targetWeight
-                val todayWeight = uiState.todayWeight
-                val selectedDateWeight = uiState.selectedDateWeight // ViewModel에 이 상태가 있다고 가정
+                val selectedDateWeight = uiState.selectedDateWeight
+                val weightDiff = uiState.weightDiff
                 val selectedDate = uiState.selectedDate // ViewModel에 이 상태가 있다고 가정
                 val isTodaySelected = selectedDate == LocalDate.now()
+                val todayWeight = uiState.todayWeight
 
                 // 1. 상단 텍스트 경우의 수 로직
-                val topText = remember(targetWeight, todayWeight, selectedDateWeight, isTodaySelected) {
+                val topText = remember(targetWeight, selectedDateWeight, isTodaySelected) {
                     when {
                         // 1-1. 목표가 없을 때 (오늘 선택 시)
                         isTodaySelected && targetWeight == null ->
                             "몸무게를 기록하기 위해선\n목표를 먼저 설정해주세요"
 
                         // 1-2. 목표는 있는데 오늘 기록이 없을 때 (오늘 선택 시)
-                        isTodaySelected && targetWeight != null && todayWeight == null ->
+                        isTodaySelected && targetWeight != null && selectedDateWeight == null ->
                             "오늘의 몸무게를\n아직 기록하지 않았어요"
 
                         // 1-3. 목표도 있고 오늘 기록도 있을 때 (오늘 선택 시)
-                        isTodaySelected && targetWeight != null && todayWeight != null -> {
-                            val diff = (todayWeight - targetWeight).let { (it * 10).roundToInt() / 10.0 }
+                        isTodaySelected && targetWeight != null && selectedDateWeight != null -> {
                             when {
-                                diff > 0 -> "목표를 달성하려면\n${abs(diff)}kg을 더 감량해야 해요"
-                                diff < 0 -> "목표보다\n${abs(diff)}kg 더 가벼워요!"
+                                weightDiff == null -> "목표와의 차이를 계산 중입니다." // 예외 처리
+                                weightDiff > 0 -> "목표를 달성하려면\n${abs(weightDiff)}kg을 더 감량해야 해요"
+                                weightDiff < 0 -> "목표보다\n${abs(weightDiff)}kg 더 가벼워요!"
                                 else -> "축하해요!\n목표 몸무게를 달성했어요"
                             }
                         }
@@ -132,9 +150,9 @@ fun WeightManagementScreen(
                         Text(
                             text = line,
                             fontSize = 23.sp,
-                            color = Color(0xFF212121), // Grey900
+                            color = MyPageColors.Grey900,
                             fontWeight = FontWeight.Medium,
-                            lineHeight = 30.sp // 줄 간격 추가
+                            lineHeight = 30.sp
                         )
                     }
                 }
@@ -143,11 +161,19 @@ fun WeightManagementScreen(
 
             item {
                 // WeightBarChart를 호출할 때 ViewModel의 uiState 값을 전달합니다.
+                // 선택한 날짜를 "9월 19일" 형식으로 포맷
+                val formattedSelectedDate = if (uiState.selectedDate != LocalDate.now()) {
+                    uiState.selectedDate.format(DateTimeFormatter.ofPattern("M월 d일"))
+                } else {
+                    null
+                }
+                
                 WeightBarChart(
                     todayWeight = uiState.todayWeight,
                     targetWeight = uiState.targetWeight,
                     selectedDateWeight = uiState.selectedDateWeight,
-                    isTodaySelected = uiState.selectedDate == LocalDate.now()
+                    isTodaySelected = uiState.selectedDate == LocalDate.now(),
+                    selectedDate = formattedSelectedDate
                 )
             }
             // 기록하기 버튼(경우의 수에 따라 비활성화, 활성화, 텍스트 수정)
@@ -181,15 +207,15 @@ fun WeightManagementScreen(
                             .fillMaxWidth()
                             .height(56.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF4A90E2), // Blue500
-                            disabledContainerColor = Color(0xFFE0E0E0) // 비활성화 색상 (Grey300)
+                            containerColor = MyPageColors.Blue500,
+                            disabledContainerColor = MyPageColors.Blue200
                         ),
                         shape = RoundedCornerShape(28.dp)
                     ) {
                         Text(
                             text = buttonText, // 계산된 텍스트 적용
                             fontSize = 16.sp,
-                            color = if (isButtonEnabled) Color.White else Color(0xFFBDBDBD), // 비활성화 시 텍스트 색상 (Grey400)
+                            color = if (isButtonEnabled) Color.White else Color.White,
                             fontWeight = FontWeight.Medium
                         )
                     }
@@ -201,7 +227,7 @@ fun WeightManagementScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(
-                            color = Color(0xFFF5F5F5), // Grey100
+                            color = MyPageColors.Grey100,
                             shape = RoundedCornerShape(12.dp)
                         )
                         .padding(16.dp)
@@ -210,7 +236,7 @@ fun WeightManagementScreen(
                         Text(
                             text = "목표",
                             fontSize = 18.sp,
-                            color = Color(0xFF424242), // Grey800
+                            color = MyPageColors.Grey800,
                             fontWeight = FontWeight.Medium
                         )
 
@@ -221,17 +247,17 @@ fun WeightManagementScreen(
                             Text(
                                 text = "목표 몸무게",
                                 fontSize = 18.sp,
-                                color = Color(0xFF616161) // Grey700
+                                color = MyPageColors.Grey700,
                             )
                             Spacer(modifier = Modifier.weight(1f)) // 공간 채우기
                             Text(
                                 text = if (uiState.targetWeight != null) {
                                     "${uiState.targetWeight}kg"
                                 } else {
-                                    "설정 안됨"
+                                    "미설정"
                                 },
                                 fontSize = 18.sp,
-                                color = Color(0xFF4A90E2), // Blue500
+                                color = MyPageColors.Blue500,
                                 fontWeight = FontWeight.Medium
                             )
                             Spacer(modifier = Modifier.width(8.dp))
@@ -239,7 +265,7 @@ fun WeightManagementScreen(
                                 onClick = { navController.navigate(Screen.WeightRecord.route) }
                             ) {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.arrow), // arrow.png
+                                    painter = painterResource(id = R.drawable.arrow),
                                     contentDescription = "설정하기",
                                     modifier = Modifier.size(24.dp)
                                 )
@@ -255,7 +281,7 @@ fun WeightManagementScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(17.dp)
-                        .background(Color(0xFFF5F5F5)) // Grey100
+                        .background(MyPageColors.Grey100)
                 )
             }
 
@@ -264,23 +290,24 @@ fun WeightManagementScreen(
                     Text(
                         text = "월간 분석",
                         fontSize = 16.sp,
-                        color = Color(0xFF9E9E9E), // Grey500
+                        color = MyPageColors.Grey500
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    // 7. 월간 분석 텍스트 수정 (줄바꿈)
+                    // API에서 받은 월간 분석 텍스트 표시
                     Text(
-                        text = "6개월 전 보다\n몸무게가 늘었어요",
+                        text = uiState.monthlyAnalysisText,
                         fontSize = 23.sp,
-                        color = Color(0xFF212121), // Grey900
+                        color = MyPageColors.Grey900,
                         fontWeight = FontWeight.Medium,
                         lineHeight = 28.sp
                     )
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    SixMonthWeightChart()
+                    // API에서 받은 월간 데이터로 그래프 표시
+                    SixMonthWeightChart(monthlyWeights = uiState.monthlyWeights)
                 }
             }
         }
@@ -292,13 +319,14 @@ private fun WeightBarChart(
     todayWeight: Float?,
     targetWeight: Float?,
     selectedDateWeight: Float?,
-    isTodaySelected: Boolean
+    isTodaySelected: Boolean,
+    selectedDate: String?
 ) {
     // 1. 경우의 수에 따라 왼쪽/오른쪽 막대에 표시될 값과 라벨을 결정합니다.
     val (leftWeight, leftLabel) = if (isTodaySelected) {
         todayWeight to "오늘"
     } else {
-        selectedDateWeight to "선택" // '선택한 날'을 줄여서 '선택'으로
+        selectedDateWeight to "$selectedDate" // '선택한 날'을 줄여서 '선택'으로
     }
 
     val (rightWeight, rightLabel) = if (isTodaySelected) {
@@ -324,7 +352,7 @@ private fun WeightBarChart(
                 weight = leftWeight,
                 // 비율에 맞게 높이를 동적으로 계산합니다.
                 height = (maxHeight.value * (leftWeight ?: 0f) / maxValue).roundToInt().dp,
-                color = Color(0xFF4A90E2) // 왼쪽은 항상 활성/주요 색상(파랑)
+                color = MyPageColors.Blue500
             )
 
             // 오른쪽 막대 (목표 or 오늘)
@@ -332,7 +360,7 @@ private fun WeightBarChart(
                 weight = rightWeight,
                 // 비율에 맞게 높이를 동적으로 계산합니다.
                 height = (maxHeight.value * (rightWeight ?: 0f) / maxValue).roundToInt().dp,
-                color = Color(0xFFE0E0E0) // 오른쪽은 항상 보조 색상(회색)
+                color = MyPageColors.Grey200
             )
         }
 
@@ -340,7 +368,7 @@ private fun WeightBarChart(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(1.dp)
-                .background(Color(0xFFE0E0E0)) // Grey300
+                .background(MyPageColors.Grey300)
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -350,8 +378,8 @@ private fun WeightBarChart(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            Text(text = leftLabel, fontSize = 13.sp, color = Color(0xFF616161))
-            Text(text = rightLabel, fontSize = 13.sp, color = Color(0xFF616161))
+            Text(text = leftLabel, fontSize = 13.sp, color = MyPageColors.Grey700, modifier = Modifier.offset(x = (-7).dp) )
+            Text(text = rightLabel, fontSize = 13.sp, color = MyPageColors.Grey700, modifier = Modifier.offset(x = (-4).dp) )
         }
     }
 }
@@ -371,7 +399,7 @@ private fun Bar(
         Text(
             text = if (weight != null) "${weight}kg" else "-", // 값이 없으면 "-" 표시
             fontSize = 13.sp,
-            color = Color(0xFF9E9E9E), // Grey500
+            color = MyPageColors.Grey500
         )
         Box(
             modifier = Modifier
@@ -385,46 +413,66 @@ private fun Bar(
     }
 }
 @Composable
-private fun SixMonthWeightChart() {
+private fun SixMonthWeightChart(
+    monthlyWeights: List<com.example.pet_project_frontend.presentation.care_management.WeightManagementViewModel.MonthlyWeightData>
+) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.fillMaxWidth()
     ) {
-        // 9. 11월 -> 이번 달로 수정
-        val monthlyWeights = listOf(
-            "6월" to 30.5f,
-            "7월" to 31.2f,
-            "8월" to 32.0f,
-            "9월" to 32.8f,
-            "10월" to 33.5f,
-            "이번 달" to 33.8f
-        )
-
-        val maxWeight = monthlyWeights.maxOf { it.second }
         val maxHeight = 128.dp
+        
+        // 데이터가 없으면 더미 데이터 생성 (6개월치)
+        val displayData = if (monthlyWeights.isEmpty()) {
+            // 더미 데이터: 현재 월부터 6개월 전까지
+            val currentMonth = java.time.YearMonth.now()
+            List(6) { index ->
+                val month = currentMonth.minusMonths(5 - index.toLong())
+                val monthLabel = if (index == 5) "이번 달" else "${month.monthValue}월"
+                monthLabel to null // null은 데이터 없음 표시
+            }
+        } else {
+            // API에서 받은 label과 weight 사용 (weight가 null이면 그대로 null 유지)
+            monthlyWeights.map { data ->
+                data.month to data.weight.takeIf { it > 0f }
+            }
+        }
+
+        val maxWeight = displayData.mapNotNull { it.second }.maxOfOrNull { it } ?: 50f
+        
+        // 랜덤 높이 패턴 (각 인덱스별로 고정)
+        val randomHeights = listOf(60.dp, 80.dp, 45.dp, 70.dp, 55.dp, 90.dp)
 
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.Bottom
         ) {
-            monthlyWeights.forEach { (month, weight) ->
+            displayData.forEachIndexed { index, (month, weight) ->
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    // weight가 null이면 "?", 있으면 몸무게 표시
                     Text(
-                        text = "${weight}kg",
+                        text = if (weight == null) "?" else "${weight}kg",
                         fontSize = 13.sp,
-                        color = Color(0xFF9E9E9E),
+                        color = MyPageColors.Grey500,
                         modifier = Modifier.padding(bottom = 4.dp)
                     )
+                    
+                    // weight가 null이면 랜덤 높이, 있으면 실제 비율 계산
+                    val barHeight = if (weight == null) {
+                        randomHeights[index % randomHeights.size]
+                    } else {
+                        ((maxHeight.value * weight / maxWeight).roundToInt().dp).coerceAtLeast(1.dp)
+                    }
+                    
                     Box(
                         modifier = Modifier
                             .width(40.dp)
-                            .height((maxHeight.value * weight / maxWeight).roundToInt().dp)
+                            .height(barHeight)
                             .background(
-                                // 9. 색상 조건도 함께 수정
-                                color = if (month == "이번 달") Color(0xFF4A90E2) else Color(0xFFE0E0E0),
+                                color = if (month == "이번 달" || month.contains("10월")) MyPageColors.Blue500 else MyPageColors.Grey200,
                                 shape = RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp)
                             )
                     )
@@ -432,14 +480,11 @@ private fun SixMonthWeightChart() {
             }
         }
 
-        // 8. Spacer 제거하여 막대와 선이 맞닿도록 함
-        // Spacer(modifier = Modifier.height(8.dp))
-
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(1.dp)
-                .background(Color(0xFFE0E0E0)) // Grey300
+                .background(MyPageColors.Grey300)
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -448,11 +493,11 @@ private fun SixMonthWeightChart() {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            monthlyWeights.forEach { (month, _) ->
+            displayData.forEach { (month, _) ->
                 Text(
                     text = month,
                     fontSize = 13.sp,
-                    color = Color(0xFF616161),
+                    color = MyPageColors.Grey700,
                     modifier = Modifier.width(40.dp),
                     textAlign = TextAlign.Center
                 )

@@ -97,8 +97,9 @@ fun PetCareNavHost(
 					val dateString = uiState.selectedDate.format(DateTimeFormatter.ISO_LOCAL_DATE)
 					navController.navigate(Screen.ActivityManagement.createRoute(dateString))
 				},
-				onWeightClick = { 
-					navController.navigate(Screen.WeightManagement.route)
+				onWeightClick = {
+					val dateString = uiState.selectedDate.format(DateTimeFormatter.ISO_LOCAL_DATE)
+					navController.navigate(Screen.WeightManagement.createRoute(dateString))
 				},
 				onPoopClick = { date ->
 					navController.navigate(Screen.PoopManagement.createRoute(date))
@@ -233,9 +234,21 @@ fun PetCareNavHost(
 			)
 		}
 
-		composable(Screen.WeightManagement.route) {
+		composable(
+			// 이전 답변에서 수정한 NavigationRoutes.kt의 경로를 사용합니다.
+			route = Screen.WeightManagement.route,
+			arguments = listOf(
+				navArgument("date") {
+					type = NavType.StringType
+					nullable = true
+					defaultValue = null
+				}
+			)
+		) { backStackEntry ->
+			val dateParam = backStackEntry.arguments?.getString("date")
 			WeightManagementScreen(
-				navController = navController
+				navController = navController,
+				selectedDate = dateParam
 			)
 		}
 

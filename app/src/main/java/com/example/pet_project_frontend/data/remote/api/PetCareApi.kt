@@ -94,4 +94,10 @@ interface PetCareApi {
         @Path("pet_id") petId: String,
         @Path("log_id") logId: String
     ): Response<Unit>
+
+    // 몸무게 월간 분석 조회
+    @GET("api/pet-care/{pet_id}/weight/monthly-analysis")
+    suspend fun getWeightMonthlyAnalysis(
+        @Path("pet_id") petId: String
+    ): com.example.pet_project_frontend.data.remote.dto.response.WeightMonthlyAnalysisResponse
 }

@@ -76,4 +76,7 @@ interface PetCareRepository {
         petId: String,
         logId: String
     ): AppResult<Unit>
+
+    // 몸무게 월간 분석
+    suspend fun getWeightMonthlyAnalysis(petId: String): AppResult<com.example.pet_project_frontend.data.remote.dto.response.WeightMonthlyAnalysisResponse>
 }
