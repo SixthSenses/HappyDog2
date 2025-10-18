@@ -89,7 +89,18 @@ class FeedManagementViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null, selectedDate = date) }
+            // 날짜 변경 시 이전 데이터 초기화 (중요!)
+            _uiState.update { 
+                it.copy(
+                    isLoading = true, 
+                    error = null, 
+                    selectedDate = date,
+                    currentFeedCount = 0,
+                    goalFeedCount = 0,
+                    achievementPercentage = 0f,
+                    isAchieved = false
+                ) 
+            }
 
             try {
                 val dateString = date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
@@ -146,14 +157,16 @@ class FeedManagementViewModel @Inject constructor(
 
                 when (petCareRepository.createCareRecord(
                     petId = petId,
-                    recordType = "meal",
+                    recordType = "meal_count",
                     timestamp = timestamp,
-                    data = "급여",
+                    data = 1,
                     memo = null
+
                 )) {
                     is AppResult.Success -> {
                         // 성공 후 현재 선택된 날짜의 데이터 다시 로드
                         loadDataForDate(_uiState.value.selectedDate)
+                        loadAchievedDatesForMonth(YearMonth.from(_uiState.value.selectedDate))
                     }
                     is AppResult.Error -> {
                         _uiState.update { it.copy(error = "사료 기록 추가에 실패했습니다.") }
@@ -183,7 +196,7 @@ class FeedManagementViewModel @Inject constructor(
                     is AppResult.Success -> {
                         // meal 타입 기록 중 가장 최근 것 찾기
                         val latestMealRecord = result.data.records
-                            .filter { it.recordType == "meal" }
+                            .filter { it.recordType == "meal_count" }
                             .maxByOrNull { it.timestamp }
 
                         if (latestMealRecord != null) {
@@ -192,6 +205,7 @@ class FeedManagementViewModel @Inject constructor(
                                 is AppResult.Success -> {
                                     // 성공 후 데이터 다시 로드
                                     loadDataForDate(_uiState.value.selectedDate)
+                                    loadAchievedDatesForMonth(YearMonth.from(_uiState.value.selectedDate))
                                 }
                                 else -> {
                                     _uiState.update { it.copy(error = "사료 기록 삭제에 실패했습니다.") }
@@ -247,20 +261,25 @@ class FeedManagementViewModel @Inject constructor(
 
                         android.util.Log.d("FeedManagementVM", "Meal days achieved: $mealDaysAchieved")
 
-                        val achievedDateStrings = mutableSetOf<String>()
-                        summary.recordsByDate.forEach { (dateStr, records) ->
-                            if (records is List<*>) {
-                                if (records.any { (it as? Map<*, *>)?.get("record_type") == "meal_count" }) {
-                                    achievedDateStrings.add(dateStr)
-                                }
-                            }
-                        }
+                        // 1. goal_tracking 객체에서 "achievement_dates" 맵을 가져옵니다.
+                        val achievementDatesMap = summary.goalTracking?.get("achievement_dates") as? Map<*, *>
 
-                        val achievedDates = achievedDateStrings.mapNotNull { dateStr ->
-                            try { LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("yyyy-MM-dd")) }
-                            catch (e: Exception) {
+                        // 2. "achievement_dates" 맵에서 "meal" 키에 해당하는 리스트(List<String>)를 가져옵니다.
+                        //    타입이 다를 수 있으므로 안전하게 캐스팅합니다.
+                        val mealDateStrings = (achievementDatesMap?.get("meal") as? List<*>)
+                            ?.mapNotNull { it as? String } // 리스트의 각 요소를 String으로 변환
+                            ?: emptyList() // "meal" 키가 없거나 리스트가 아니면 빈 리스트를 사용
+
+                        android.util.Log.d("FeedManagementVM", "Meal achievement dates from server: $mealDateStrings")
+
+                        // 3. 문자열 리스트를 LocalDate 객체의 Set으로 변환합니다.
+                        //    이렇게 변환된 Set이 캘린더에 아이콘을 표시하는 데 사용됩니다.
+                        val achievedDates = mealDateStrings.mapNotNull { dateStr ->
+                            try {
+                                LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                            } catch (e: Exception) {
                                 android.util.Log.e("FeedManagementVM", "Failed to parse date: $dateStr", e)
-                                null
+                                null // 파싱 실패 시 null을 반환하여 리스트에서 제외
                             }
                         }.toSet()
 
@@ -285,7 +304,7 @@ class FeedManagementViewModel @Inject constructor(
                                 else "조금만 더 힘내세요!"
                             }
                             isPastMonth -> {
-                                if (mealDaysAchieved == 0) "아직 목표를 채우지 못했어요"
+                                if (mealDaysAchieved == 0) "다음에 더 노력해봐요"
                                 else if (achievementRate >= 50) "정말 대단해요!"
                                 else "다음에 더 노력해봐요" // mealDaysAchieved가 0이 아닌 과거 월은 이 메시지가 나옴
                             }

@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.pet_project_frontend.R
 import com.example.pet_project_frontend.core.navigation.Screen
@@ -69,6 +70,7 @@ fun FeedManagementScreen(
     val feedCount = summaryUiState.currentFeedCount
     val targetCount = summaryUiState.goalFeedCount
     val progressPercentage = summaryUiState.achievementPercentage
+
 
     // 선택된 날짜 데이터 로드
     LaunchedEffect(currentSelectedDate) {
@@ -175,7 +177,7 @@ fun FeedManagementScreen(
                     Button(
                         onClick = {
                             if (isToday && feedCount > 0) {
-                                homeViewModel.removeFeedRecord()
+                                summaryViewModel.removeFeedRecord()
                             }
                         },
                         enabled = isToday && feedCount > 0,
@@ -198,7 +200,7 @@ fun FeedManagementScreen(
                     Button(
                         onClick = {
                             if (isToday) {
-                                homeViewModel.addFeedRecord()
+                                summaryViewModel.addFeedRecord()
                             }
                         },
                         enabled = isToday,
@@ -439,15 +441,19 @@ private fun CalendarGrid(
                             CalendarDayItem(
                                 date = date,
                                 isSelected = date == selectedDate,
-                                isRecorded = recordedDates.contains(date)
+                                isAchieved = recordedDates.contains(date)
                             )
                         } else {
                             // 날짜가 null인 경우 (달의 시작 부분 빈 칸)
-                            Spacer(modifier = Modifier.weight(1f).aspectRatio(1f))
+                            Spacer(modifier = Modifier
+                                .weight(1f)
+                                .aspectRatio(1f))
                         }
                     } else {
                         // week의 크기를 벗어나는 경우 (달의 마지막 부분 빈 칸)
-                        Spacer(modifier = Modifier.weight(1f).aspectRatio(1f))
+                        Spacer(modifier = Modifier
+                            .weight(1f)
+                            .aspectRatio(1f))
                     }
                 }
                 // --- ▲▲▲ 수정 완료 ▲▲▲ ---
@@ -461,7 +467,7 @@ private fun CalendarGrid(
 private fun RowScope.CalendarDayItem(
     date: LocalDate,
     isSelected: Boolean,
-    isRecorded: Boolean
+    isAchieved: Boolean
 ) {
     val today = LocalDate.now()
     val isPastOrToday = !date.isAfter(today)
@@ -489,6 +495,15 @@ private fun RowScope.CalendarDayItem(
             fontSize = 14.sp,
             fontWeight = FontWeight.Normal
         )
+        if (isAchieved) {
+            Icon(
+                painter = painterResource(id = R.drawable.selected_day),
+                contentDescription = "목표 달성",
+                modifier = Modifier
+                    .size(30.dp), // 아이콘 크기 조절
+                tint = Color.Unspecified
+            )
+        }
     }
     // --- ▲▲▲ 수정 완료 ▲▲▲ ---
 }
