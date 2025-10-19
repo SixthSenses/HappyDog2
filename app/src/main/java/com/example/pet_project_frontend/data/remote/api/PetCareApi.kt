@@ -28,22 +28,22 @@ interface PetCareApi {
     @GET("api/pet-care/{pet_id}/records/daily")
     suspend fun getDailyRecords(
         @Path("pet_id") petId: String,
-        @Query("date") date: String? = null // yyyy-MM-dd 형식, 없으면 오늘
+        @Query("date") date: String? = null
     ): DailyRecordsResponse
 
     // 일일 요약 + 목표 진행률 조회
     @GET("api/pet-care/{pet_id}/records/daily/summary")
     suspend fun getDailySummary(
         @Path("pet_id") petId: String,
-        @Query("date") date: String? = null // yyyy-MM-dd 형식, 없으면 오늘
+        @Query("date") date: String? = null
     ): DailySummaryResponse
 
     // 기간 요약 + 트렌드 + 목표 추적 조회
     @GET("api/pet-care/{pet_id}/records/summary/range")
     suspend fun getRangeSummary(
         @Path("pet_id") petId: String,
-        @Query("start_date") startDate: String, // yyyy-MM-dd 형식
-        @Query("end_date") endDate: String // yyyy-MM-dd 형식
+        @Query("start_date") startDate: String,
+        @Query("end_date") endDate: String
     ): RangeSummaryResponse
 
     // 케어 기록 조회: GET 메서드로 변경 (레거시, 필요시 사용) -> 사용 안하는 것 같음

@@ -25,7 +25,6 @@ import com.example.pet_project_frontend.R
 fun ProfileHeader(
     petName: String,
     petImageUrl: String? = null,
-    onNotificationClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -74,18 +73,6 @@ fun ProfileHeader(
                 color = MaterialTheme.colorScheme.onSurface
             )
         }
-        
-        // 오른쪽: 알림 아이콘
-        IconButton(
-            onClick = onNotificationClick,
-            modifier = Modifier.size(48.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Notifications,
-                contentDescription = "알림",
-                tint = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.size(24.dp)
-            )
-        }
+
     }
 }

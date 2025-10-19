@@ -16,7 +16,6 @@ import java.time.LocalDate
 @Composable
 fun PetCareHomeScreen(
     viewModel: PetCareHomeViewModel = hiltViewModel(),
-    onNotificationClick: () -> Unit = {},
     onHealthSurveyClick: () -> Unit = {},
     onBreedGuideClick: () -> Unit = {},
     onEyeCheckClick: () -> Unit = {},
@@ -71,7 +70,6 @@ fun PetCareHomeScreen(
                 ProfileHeader(
                     petName = uiState.petName,
                     petImageUrl = uiState.petImageUrl,
-                    onNotificationClick = onNotificationClick
                 )
             }
             

@@ -42,7 +42,6 @@ class PetCareHomeViewModel @Inject constructor(
                         
                         // 반려동물 ID를 사용해서 케어 설정과 오늘 기록 로딩
                         val petId = pet.id
-                        loadCareSettings(petId)
                         loadCareDataForDate(_uiState.value.selectedDate, petId)
                     }
                     else -> {
@@ -73,7 +72,6 @@ class PetCareHomeViewModel @Inject constructor(
                         loadCareDataForDate(date, petId)
                     }
                     else -> {
-                        // 기본 petId 사용 - 실제로는 등록된 펫이 있어야 함
                         _uiState.value = _uiState.value.copy(
                             errorMessage = "반려동물 정보를 찾을 수 없습니다."
                         )
@@ -94,69 +92,50 @@ class PetCareHomeViewModel @Inject constructor(
     }
 
     /**
-     * 특정 날짜의 케어 데이터 로딩 (summary api 호출로 설정값과 기록 한 번에 조회])
-     */
-    /**
      * 특정 날짜의 케어 데이터 로딩 (summary api 호출로 설정값과 기록 한 번에 조회)
      */
     private fun loadCareDataForDate(date: LocalDate, petId: String) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true) // 데이터 로딩 시작
+            _uiState.value = _uiState.value.copy(isLoading = true)
             try {
                 val dateString = date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
                 android.util.Log.d("PetCareViewModel", "Loading care data for date: $dateString, petId: $petId")
 
-                // 변경된 getDailySummary API 호출
                 when (val result = petCareRepository.getDailySummary(petId, dateString)) {
                     is AppResult.Success -> {
                         val summaryData = result.data
-                        // 1. meta 객체에서 직접 데이터 추출 (실제 기록 값)
                         val meta = summaryData.meta
 
-                        // --- ▼▼▼ 핵심 수정 부분 ▼▼▼ ---
                         val feedCount: Int = meta.mealCount ?: 0// meal_count -> mealCount 로 수정
                         val activityMinutes: Int = meta.activityMinutes ?: 0 // activity_minutes -> activityMinutes 로 수정
-                        // --- ▲▲▲ 수정 완료 ▲▲▲ ---
 
                         val currentWeight = meta.weight?.toFloat()
                         val latestPoopRecord = meta.stool
                         val latestVomitRecord = meta.vomit
-
-                        // 2. goal_progress 객체에서 목표 관련 데이터 추출
                         val goalProgress = summaryData.goalProgress
-
-                        // --- ▼▼▼ 추가 수정 권장 (목표값도 camelCase로) ▼▼▼ ---
                         val targetFeed = goalProgress?.achievements?.meal?.goal
                         val targetActivity = goalProgress?.achievements?.activity?.goal
                         val targetWeightValue = goalProgress?.achievements?.weight?.goal
-                        // --- ▲▲▲ 수정 완료 ▲▲▲ ---
-                        // 3. 몸무게 텍스트 포맷 (예: "45.0kg")
                         val weightText = currentWeight?.let {
                             String.format("%.1fkg", it)
                         }
 
                         _uiState.value = _uiState.value.copy(
-                            // meta에서 가져온 실제 기록 값 업데이트
                             currentFeedCount = feedCount,
                             currentActivityMinutes = activityMinutes,
                             currentWeight = currentWeight,
                             weightText = weightText,
                             todayLatestPoopRecord = latestPoopRecord,
                             todayLatestVomitRecord = latestVomitRecord,
-
-                            // goal_progress에서 가져온 목표 값 업데이트
                             targetFeedCount = targetFeed,
                             targetDailyActivityMinutes = targetActivity,
                             targetWeight = targetWeightValue,
-
                             isLoading = false,
                             errorMessage = null // 성공 시 에러 메시지 초기화
                         )
                         android.util.Log.d("PetCareViewModel", "UI State updated - Activity: $activityMinutes, Feed: $feedCount")
-                        // --- ▲▲▲ 수정 완료 ▲▲▲ ---
                     }
                     is AppResult.Error -> {
-                        // API 호출은 성공했으나, 서버에서 에러를 반환한 경우 (예: 기록이 아예 없는 날)
                         _uiState.value = _uiState.value.copy(
                             currentFeedCount = 0,
                             currentActivityMinutes = 0,
@@ -164,14 +143,12 @@ class PetCareHomeViewModel @Inject constructor(
                             weightText = null,
                             todayLatestPoopRecord = null,
                             todayLatestVomitRecord = null,
-                            // 목표는 유지될 수 있으므로 초기화하지 않음
                             isLoading = false,
                             errorMessage = null
                         )
                         android.util.Log.w("PetCareViewModel", "Error from getDailySummary: ${result.message}")
                     }
                     is AppResult.Exception -> {
-                        // 네트워크 오류 등 API 호출 자체를 실패한 경우
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,
                             errorMessage = "케어 데이터를 불러오는 중 오류가 발생했습니다: ${result.throwable.message}"
@@ -188,56 +165,7 @@ class PetCareHomeViewModel @Inject constructor(
         }
     }
 
-    /**
-     * 케어 설정 로딩
-     */
-    private fun loadCareSettings(petId: String) {
-        viewModelScope.launch {
-            try {
-                // petId 유효성 검사 추가
-                if (petId.isBlank()) {
-                    _uiState.value = _uiState.value.copy(
-                        errorMessage = "반려동물 ID가 유효하지 않습니다."
-                    )
-                    return@launch
-                }
-                
-                // 실제 API 호출로 케어 설정 가져오기
-                when (val result = petCareRepository.getPetCareSettings(petId)) {
-                    is AppResult.Success -> {
-                        val settings = result.data
-                        _uiState.value = _uiState.value.copy(
-                            targetFeedCount = settings.targetDailyMealCount,
-                            targetDailyActivitySessions = settings.targetDailyActivitySessions,  // 1일 목표 활동 횟수
-                            activitySessionMinutes = settings.activitySessionMinutes,  // 1회 활동 시간
-                            targetDailyActivityMinutes = settings.targetDailyActivityMinutes,  // 1일 총 목표 활동 시간 (서버 계산)
-                            targetWeight = settings.targetWeight.toFloat()
-                        )
-                    }
-                    is AppResult.Error -> {
-                        // 설정이 없는 경우 기본값 유지 (null로 목표없음 상태)
-                        _uiState.value = _uiState.value.copy(
-                            targetFeedCount = null,
-                            targetDailyActivitySessions = null,
-                            activitySessionMinutes = null,
-                            targetDailyActivityMinutes = null,
-                            targetWeight = null
-                        )
-                    }
-                    is AppResult.Exception -> {
-                        // 네트워크 오류 등의 경우 기본값 유지
-                        _uiState.value = _uiState.value.copy(
-                            errorMessage = "케어 설정을 불러올 수 없습니다: ${result.throwable.message}"
-                        )
-                    }
-                }
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    errorMessage = "케어 설정을 불러오는 중 오류가 발생했습니다: ${e.message}"
-                )
-            }
-        }
-    }
+
     /**
      * 현재 데이터를 다시 로드 (설정 변경 후 호출)
      */
@@ -247,7 +175,6 @@ class PetCareHomeViewModel @Inject constructor(
                 when (val petResult = petRepository.getMyPetProfile()) {
                     is AppResult.Success -> {
                         val petId = petResult.data.id
-                        loadCareSettings(petId)
                         loadCareDataForDate(_uiState.value.selectedDate, petId)
                     }
                     else -> {
@@ -285,11 +212,10 @@ class PetCareHomeViewModel @Inject constructor(
                             petId = petId,
                             recordType = "meal_count",
                             timestamp = timestamp,
-                            data = 1, // 1회 급여
+                            data = 1,
                             memo = null
                         )) {
                             is AppResult.Success -> {
-                                // 성공 시 데이터 다시 로드
                                 loadCareDataForDate(_uiState.value.selectedDate, petId)
                             }
                             is AppResult.Error -> {
@@ -329,12 +255,10 @@ class PetCareHomeViewModel @Inject constructor(
                         val petId = petResult.data.id
                         val dateString = _uiState.value.selectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
 
-                        // 오늘의 사료 기록 조회
                         when (val recordsResult = petCareRepository.getDailyRecords(petId, dateString)) {
                             is AppResult.Success -> {
                                 val feedRecords = recordsResult.data.records.filter { it.recordType == "meal_count" }
                                 if (feedRecords.isNotEmpty()) {
-                                    // 가장 최근 기록 삭제
                                     val latestRecord = feedRecords.maxByOrNull { it.timestamp }
                                     latestRecord?.let { record ->
                                         when (petCareRepository.deleteCareRecord(petId, record.logId)) {
@@ -384,18 +308,16 @@ class PetCareHomeViewModel @Inject constructor(
                     is AppResult.Success -> {
                         val petId = petResult.data.id
                         val timestamp = System.currentTimeMillis()
-                        
-                        // activity 타입은 data에 직접 숫자(분)를 넣음
+
                         when (val result = petCareRepository.createCareRecord(
                             petId = petId,
                             recordType = "activity",
                             timestamp = timestamp,
-                            data = minutes,  // Map이 아닌 직접 숫자로 전달
+                            data = minutes,
                             memo = null
                         )) {
                             is AppResult.Success -> {
                                 android.util.Log.d("PetCareViewModel", "Activity record created successfully")
-                                // 성공 시 데이터 다시 로드
                                 loadCareDataForDate(_uiState.value.selectedDate, petId)
                             }
                             is AppResult.Error -> {
@@ -444,20 +366,16 @@ class PetCareHomeViewModel @Inject constructor(
                         val petId = petResult.data.id
                         val dateString = _uiState.value.selectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
 
-                        // 오늘의 활동 기록 조회
                         when (val recordsResult = petCareRepository.getDailyRecords(petId, dateString)) {
                             is AppResult.Success -> {
                                 val activityRecords = recordsResult.data.records.filter { it.recordType == "activity" }
                                 if (activityRecords.isNotEmpty()) {
-                                    // 가장 최근 기록 차감 또는 삭제
                                     val latestRecord = activityRecords.maxByOrNull { it.timestamp }
                                     latestRecord?.let { record ->
                                         try {
-                                            // activity 타입은 data가 직접 숫자
                                             val currentMinutes = when (val data = record.data) {
                                                 is Number -> data.toInt()
                                                 is Map<*, *> -> {
-                                                    // 하위 호환성: Map 형식도 지원
                                                     val dataMap = data as? Map<String, Any>
                                                     (dataMap?.get("minutes") as? Number)?.toInt() ?: 0
                                                 }
@@ -467,7 +385,6 @@ class PetCareHomeViewModel @Inject constructor(
                                             android.util.Log.d("PetCareViewModel", "Removing $minutes from current $currentMinutes")
 
                                             if (currentMinutes > minutes) {
-                                                // 시간 차감 - data에 직접 숫자 전달
                                                 val updateData = currentMinutes - minutes
                                                 val updateRequest = CareRecordUpdateRequest(data = updateData, notes = record.notes)
                                                 when (petCareRepository.updateCareRecord(petId, record.logId, updateRequest)) {
@@ -483,7 +400,6 @@ class PetCareHomeViewModel @Inject constructor(
                                                     }
                                                 }
                                             } else {
-                                                // 기록 삭제
                                                 when (petCareRepository.deleteCareRecord(petId, record.logId)) {
                                                     is AppResult.Success -> {
                                                         android.util.Log.d("PetCareViewModel", "Activity record deleted successfully")
@@ -506,7 +422,6 @@ class PetCareHomeViewModel @Inject constructor(
                                         }
                                     }
                                 } else {
-                                    // 삭제할 기록이 없음
                                     _uiState.value = _uiState.value.copy(isLoading = false)
                                 }
                             }
@@ -544,21 +459,21 @@ class PetCareHomeViewModel @Inject constructor(
         
         // 케어 설정 (목표값들)
         val targetFeedCount: Int? = null,
-        val targetDailyActivitySessions: Int? = null,  // 1일 목표 활동 횟수 (예: 3회)
-        val activitySessionMinutes: Int? = null,  // 1회 활동 시간 (예: 30분)
-        val targetDailyActivityMinutes: Int? = null,  // 1일 총 목표 활동 시간 (서버 계산, 예: 90분)
+        val targetDailyActivitySessions: Int? = null,
+        val activitySessionMinutes: Int? = null,
+        val targetDailyActivityMinutes: Int? = null,
         val targetWeight: Float? = null,
         
         // 현재 기록된 데이터
         val currentFeedCount: Int = 0,
         val currentActivityMinutes: Int = 0,
         val currentWeight: Float? = null,
-        val weightText: String? = null,  // 몸무게 텍스트 (예: "50kg")
+        val weightText: String? = null,
         val poopRecords: List<String> = emptyList(),
         val vomitRecords: List<String> = emptyList(),
         
         // 오늘의 최신 기록 (홈 화면 카드 표시용)
-        val todayLatestPoopRecord: String? = null,  // 대변 상세 정보 (예: "초록색, 점액 섞임")
-        val todayLatestVomitRecord: String? = null  // 구토 상세 정보 (예: "노란색")
+        val todayLatestPoopRecord: String? = null,
+        val todayLatestVomitRecord: String? = null
     )
 }

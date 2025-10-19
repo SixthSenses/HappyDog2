@@ -19,8 +19,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -44,7 +47,6 @@ fun FeedManagementScreen(
     navController: NavController,
     selectedDate: String? = null,
     summaryViewModel: FeedManagementViewModel = hiltViewModel(),
-    homeViewModel: PetCareHomeViewModel = hiltViewModel()
 ) {
     // 파라미터로 받은 날짜 파싱
     val initialDate = remember(selectedDate) {
@@ -64,7 +66,6 @@ fun FeedManagementScreen(
     val monthFormatter = DateTimeFormatter.ofPattern("yyyy년 M월", Locale.KOREAN)
 
     val summaryUiState by summaryViewModel.uiState.collectAsStateWithLifecycle()
-    val homeUiState by homeViewModel.uiState.collectAsStateWithLifecycle()
 
     val isToday = currentSelectedDate == LocalDate.now()
     val feedCount = summaryUiState.currentFeedCount
@@ -77,13 +78,6 @@ fun FeedManagementScreen(
         android.util.Log.d("FeedManagement", "Loading data for date: $currentSelectedDate")
         summaryViewModel.loadDataForDate(currentSelectedDate)
     }
-
-    // +/- 버튼 클릭 후 데이터 다시 로드
-    LaunchedEffect(homeUiState.currentFeedCount) {
-        android.util.Log.d("FeedManagement", "Feed record changed, reloading summary")
-        summaryViewModel.loadDataForDate(currentSelectedDate)
-    }
-
 
     // 월 변경 시 달성 날짜 로드
     LaunchedEffect(selectedMonth) {
@@ -141,7 +135,7 @@ fun FeedManagementScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text = if (isToday) "오늘 현재까지" else "${currentSelectedDate.monthValue}월 ${currentSelectedDate.dayOfMonth}일에",
+                        text = if (isToday) "오늘 현재까지" else "${currentSelectedDate.year}년 ${currentSelectedDate.monthValue}월 ${currentSelectedDate.dayOfMonth}일에",
                         fontSize = 23.sp,
                         color = MyPageColors.Grey900,
                         fontWeight = FontWeight.Medium
@@ -323,10 +317,36 @@ fun FeedManagementScreen(
                         color = MyPageColors.Grey500,
                     )
                     Spacer(modifier = Modifier.height(8.dp))
+                    // 월간 달성 횟수 표시 (숫자 부분만 파란색으로 변경)
+                    val summaryText = summaryUiState.monthlySummaryText
+                    val annotatedSummaryText = buildAnnotatedString {
+                        // 정규식을 사용하여 "숫자 + 번" 패턴을 찾습니다. (예: "0번", "15번")
+                        val pattern = "(\\d+번)".toRegex()
+                        val matchResult = pattern.find(summaryText)
 
+                        if (matchResult != null) {
+                            val match = matchResult.groups[1]!!
+                            val startIndex = match.range.first
+                            val endIndex = match.range.last + 1
+
+                            // 1. 숫자 앞부분 텍스트 (기본 색상)
+                            append(summaryText.substring(0, startIndex))
+
+                            // 2. 숫자 부분 텍스트 (파란색, 굵게)
+                            withStyle(style = SpanStyle(color = MyPageColors.Blue500, fontWeight = FontWeight.Bold)) {
+                                append(summaryText.substring(startIndex, endIndex))
+                            }
+
+                            // 3. 숫자 뒷부분 텍스트 (기본 색상)
+                            append(summaryText.substring(endIndex))
+                        } else {
+                            // 패턴을 찾지 못하면 전체 텍스트를 기본 스타일로 표시
+                            append(summaryText)
+                        }
+                    }
                     // 월간 달성 횟수  표시
                     Text(
-                        text = summaryUiState.monthlySummaryText,
+                        text = annotatedSummaryText,
                         fontSize = 23.sp,
                         color = MyPageColors.Grey900,
                         fontWeight = FontWeight.Medium,
@@ -364,7 +384,6 @@ fun FeedManagementScreen(
     }
 }
 
-// CircularProgressChart, CalendarGrid, CalendarDayItem 함수는 수정사항 없음 (기존 코드 유지)
 
 @Composable
 private fun CircularProgressChart(
@@ -401,7 +420,6 @@ private fun CircularProgressChart(
 
     }
 }
-// in FeedManagementScreen.kt
 
 @Composable
 private fun CalendarGrid(
@@ -422,7 +440,7 @@ private fun CalendarGrid(
                 Text(
                     text = day,
                     fontSize = 12.sp,
-                    color = Color(0xFF9E9E9E),
+                    color = MyPageColors.Grey500,
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center
                 )
@@ -431,32 +449,25 @@ private fun CalendarGrid(
 
         calendarDays.chunked(7).forEach { week ->
             Row {
-                // --- ▼▼▼ 이 부분을 수정합니다 ▼▼▼ ---
-                // 항상 7칸을 그리도록 for-loop로 변경
                 for (i in 0..6) {
-                    // week 리스트에 현재 인덱스(i)에 해당하는 날짜가 있는지 확인
                     if (i < week.size) {
                         val date = week[i]
                         if (date != null) {
                             CalendarDayItem(
                                 date = date,
-                                isSelected = date == selectedDate,
                                 isAchieved = recordedDates.contains(date)
                             )
                         } else {
-                            // 날짜가 null인 경우 (달의 시작 부분 빈 칸)
                             Spacer(modifier = Modifier
                                 .weight(1f)
                                 .aspectRatio(1f))
                         }
                     } else {
-                        // week의 크기를 벗어나는 경우 (달의 마지막 부분 빈 칸)
                         Spacer(modifier = Modifier
                             .weight(1f)
                             .aspectRatio(1f))
                     }
                 }
-                // --- ▲▲▲ 수정 완료 ▲▲▲ ---
             }
         }
     }
@@ -466,23 +477,19 @@ private fun CalendarGrid(
 @Composable
 private fun RowScope.CalendarDayItem(
     date: LocalDate,
-    isSelected: Boolean,
     isAchieved: Boolean
 ) {
     val today = LocalDate.now()
     val isPastOrToday = !date.isAfter(today)
     val textColor = if(isPastOrToday) {
-        Color(0xFF757575)
+        MyPageColors.Grey600
     } else {
-            Color(0xFFBDBDBD)
+        MyPageColors.Grey400
     }
 
-    // --- ▼▼▼ Box의 modifier를 수정합니다 ▼▼▼ ---
     Box(
-        // weight(1f)가 부모 Row에 의해 이미 적용되었으므로 여기서는 제거해도 되지만,
-        // 명시적으로 남겨두어 각 아이템이 균등한 너비를 갖도록 보장합니다.
         modifier = Modifier
-            .weight(1f) // <-- 이 weight가 각 날짜 칸의 너비를 1/7로 고정시킵니다.
+            .weight(1f)
             .aspectRatio(1f)
             .padding(2.dp)
             .clip(CircleShape),
@@ -505,5 +512,4 @@ private fun RowScope.CalendarDayItem(
             )
         }
     }
-    // --- ▲▲▲ 수정 완료 ▲▲▲ ---
 }

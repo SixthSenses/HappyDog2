@@ -29,7 +29,6 @@ import com.example.pet_project_frontend.core.theme.MyPageColors
 /**
  * 품종 가이드북 상세 화면
  */
-// 견종 이름(한글)과 이미지 파일 이름(영문)을 매핑하는 Map (Composable 함수 바깥에 추가)
 private val breedImageMap = mapOf(
     "말티즈" to "maltese",
     "푸들 (스탠더드)" to "poodle_standard",

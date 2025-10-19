@@ -1,7 +1,6 @@
 package com.example.pet_project_frontend.core.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -11,16 +10,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import androidx.navigation.NavType
 import androidx.navigation.navDeepLink
-import com.example.pet_project_frontend.core.navigation.DeepLinks
-import com.example.pet_project_frontend.core.navigation.Routes
 import com.example.pet_project_frontend.presentation.auth.LoginScreen
 import com.example.pet_project_frontend.presentation.map.MapScreen
 import com.example.pet_project_frontend.presentation.mypage.main.MyPageScreen
 import com.example.pet_project_frontend.presentation.petcare.PetCareMainScreen
 import com.example.pet_project_frontend.presentation.petcare.home.PetCareHomeScreen
 import com.example.pet_project_frontend.presentation.petregistration.PetRegistrationScreen
-import androidx.navigation.compose.rememberNavController
-import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.pet_project_frontend.presentation.translator.TranslatorScreen
 import com.example.pet_project_frontend.presentation.eye_health.EyeHealthScreen
 import com.example.pet_project_frontend.presentation.eye_health.EyeHealthHistoryScreen
@@ -79,7 +74,6 @@ fun PetCareNavHost(
 			
 			PetCareHomeScreen(
 				viewModel = viewModel,
-				onNotificationClick = { /* TODO: 알림 화면으로 네비게이션 */ },
 				onHealthSurveyClick = { 
 					navController.navigate(Screen.HealthSurvey.route)
 				},
@@ -202,18 +196,10 @@ fun PetCareNavHost(
 				}
 			)
 		) { backStackEntry ->
-			// 1. ViewModel 인스턴스를 가져옵니다.
-			val viewModel: PetCareHomeViewModel = hiltViewModel()
-			// 2. ViewModel의 상태에서 현재 선택된 petId를 가져옵니다.
-			// 'by'를 사용하므로, .value를 제거합니다.
-			val uiState by viewModel.uiState.collectAsState()
-			val petId = uiState.selectedPetId
-
 			val dateParam = backStackEntry.arguments?.getString("date")
 			FeedManagementScreen(
 				navController = navController,
 				selectedDate = dateParam,
-				//petId = petId, // petId 전달
 			)
 		}
 
@@ -235,7 +221,6 @@ fun PetCareNavHost(
 		}
 
 		composable(
-			// 이전 답변에서 수정한 NavigationRoutes.kt의 경로를 사용합니다.
 			route = Screen.WeightManagement.route,
 			arguments = listOf(
 				navArgument("date") {

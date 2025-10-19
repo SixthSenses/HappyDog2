@@ -3,21 +3,6 @@ package com.example.pet_project_frontend.data.remote.dto.response
 import com.google.gson.annotations.SerializedName
 
 /**
- * 날짜별 기록 요약의 상세 정보.
- * `records_by_date` 객체 내부의 각 날짜별 값에 해당합니다. (From OpenAPI Spec)
- */
-data class DailyRecordSummary(
-    @SerializedName("total_calories")
-    val totalCalories: Double? = null,
-
-    @SerializedName("total_feed_amount")
-    val totalFeedAmount: Int? = null,
-
-    @SerializedName("total_water_intake")
-    val totalWaterIntake: Int? = null
-)
-
-/**
  * 기간 요약 + 트렌드 + 목표 추적 응답 (From OpenAPI Spec)
  */
 data class RangeSummaryResponse(

@@ -25,11 +25,7 @@ interface BreedApi {
     suspend fun getBreedByName(
         @Query("breed_name") breedName: String
     ): BreedResponse
-    
-    // 가이드북이 있는 품종만 조회
-    @GET("api/breeds/guide")
-    suspend fun getGuidebookBreeds(): BreedsResponse
-    
+
     // 특정 품종의 가이드북 정보 조회
     @GET("api/breeds/guide/{breed_name}")
     suspend fun getBreedGuidebook(

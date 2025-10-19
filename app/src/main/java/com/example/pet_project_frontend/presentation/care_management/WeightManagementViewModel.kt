@@ -96,7 +96,7 @@ class WeightManagementViewModel @Inject constructor(
                         }
                         
                         // API에서 제공하는 분석 텍스트 사용
-                        val analysisText = data.analysis.title
+                        val analysisText = data.analysis.description
                         
                         _uiState.update { 
                             it.copy(
@@ -131,16 +131,6 @@ class WeightManagementViewModel @Inject constructor(
         }
     }
 
-    // 더 이상 사용하지 않음 (API에서 분석 텍스트 제공)
-    @Deprecated("API에서 분석 텍스트를 제공합니다")
-    private fun generateAnalysisText(sixMonthsAgo: Float?, currentMonth: Float?): String {
-        return when {
-            sixMonthsAgo == null || currentMonth == null -> "6개월간 몸무게 데이터가 부족해요"
-            currentMonth > sixMonthsAgo -> "6개월 전보다\n몸무게가 늘었어요"
-            currentMonth < sixMonthsAgo -> "6개월 전보다\n몸무게가 줄었어요"
-            else -> "6개월간\n몸무게가 비슷해요"
-        }
-    }
 
     fun loadDataForDate(selectedDate: LocalDate) {
         viewModelScope.launch {
@@ -227,9 +217,28 @@ class WeightManagementViewModel @Inject constructor(
                     android.util.Log.d("WeightManagementVM", "Weight record saved successfully")
                     // 즉시 success 상태 반영
                     _uiState.update { it.copy(isLoading = false, isSaveSuccess = true) }
-                    // 백그라운드에서 데이터 재로드
+
+                    // 1) 즉시 선택한 날짜 / 오늘 데이터 갱신
                     loadDataForDate(date)
-                    loadMonthlyAnalysis()
+
+                    // 2) 월간분석은 즉시 + 백오프 재시도로 UI의 막대그래프를 확실히 최신 데이터로 갱신합니다.
+                    //    이유: 백엔드가 월간 집계를 비동기적으로 처리하거나 캐시 때문에 
+                    //          첫 응답에 최신 데이터가 없을 수 있어 재시도가 필요함.
+                    viewModelScope.launch {
+                        // 첫 시도: 즉시 호출
+                        loadMonthlyAnalysis()
+                        android.util.Log.d("WeightManagementVM", "Triggered immediate monthly analysis reload after save.")
+
+                        // 백오프 재시도 1차 (500ms 후) - API가 최신 데이터를 반영할 시간 제공
+                        kotlinx.coroutines.delay(500)
+                        loadMonthlyAnalysis()
+                        android.util.Log.d("WeightManagementVM", "Retry monthly analysis after 500ms delay.")
+
+                        // 백오프 재시도 2차 (1.5초 후) - 최종 확인
+                        kotlinx.coroutines.delay(1500)
+                        loadMonthlyAnalysis()
+                        android.util.Log.d("WeightManagementVM", "Final retry monthly analysis after 1.5s delay.")
+                    }
                 }
                 is AppResult.Error -> _uiState.update { it.copy(isLoading = false, error = result.message ?: "기록에 실패했습니다.") }
                 is AppResult.Exception -> _uiState.update { it.copy(isLoading = false, error = "기록 중 오류가 발생했습니다.") }

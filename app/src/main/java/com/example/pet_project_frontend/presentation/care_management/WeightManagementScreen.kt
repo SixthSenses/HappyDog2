@@ -207,7 +207,11 @@ fun WeightManagementScreen(
                             .fillMaxWidth()
                             .height(56.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MyPageColors.Blue500,
+                            containerColor = if (buttonText == "수정하기") {
+                                MyPageColors.Blue50 // '수정하기'일 때 Blue50
+                            } else {
+                                MyPageColors.Blue500 // '기록하기'일 때 Blue500
+                            },
                             disabledContainerColor = MyPageColors.Blue200
                         ),
                         shape = RoundedCornerShape(28.dp)
@@ -215,7 +219,7 @@ fun WeightManagementScreen(
                         Text(
                             text = buttonText, // 계산된 텍스트 적용
                             fontSize = 16.sp,
-                            color = if (isButtonEnabled) Color.White else Color.White,
+                            color = if (isButtonEnabled && buttonText == "수정하기") MyPageColors.Blue800 else Color.White,
                             fontWeight = FontWeight.Medium
                         )
                     }
@@ -337,6 +341,7 @@ private fun WeightBarChart(
     // 2. 두 값 중 더 큰 값을 기준으로 최대값을 설정합니다. (0으로 나누기 방지 포함)
     val maxValue = maxOf(leftWeight ?: 0f, rightWeight ?: 0f, 1f)
     val maxHeight = 128.dp
+    val minHeightValue = maxHeight.value * 0.02f
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -351,7 +356,9 @@ private fun WeightBarChart(
             Bar(
                 weight = leftWeight,
                 // 비율에 맞게 높이를 동적으로 계산합니다.
-                height = (maxHeight.value * (leftWeight ?: 0f) / maxValue).roundToInt().dp,
+                height = ((maxHeight.value * (leftWeight ?: 0f) / maxValue)
+                    .coerceAtLeast(if (leftWeight == null) minHeightValue else 0f)
+                        ).roundToInt().dp,
                 color = MyPageColors.Blue500
             )
 
@@ -359,7 +366,9 @@ private fun WeightBarChart(
             Bar(
                 weight = rightWeight,
                 // 비율에 맞게 높이를 동적으로 계산합니다.
-                height = (maxHeight.value * (rightWeight ?: 0f) / maxValue).roundToInt().dp,
+                height = ((maxHeight.value * (rightWeight ?: 0f) / maxValue)
+                    .coerceAtLeast(if (leftWeight == null) minHeightValue else 0f)
+                        ).roundToInt().dp,
                 color = MyPageColors.Grey200
             )
         }
@@ -397,7 +406,7 @@ private fun Bar(
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Text(
-            text = if (weight != null) "${weight}kg" else "-", // 값이 없으면 "-" 표시
+            text = if (weight != null) "${weight}kg" else "?", // 값이 없으면 "-" 표시
             fontSize = 13.sp,
             color = MyPageColors.Grey500
         )
@@ -412,67 +421,66 @@ private fun Bar(
         )
     }
 }
+/**
+ * 지난 6개월간의 몸무게 데이터를 시각화하는 차트 컴포저블입니다.
+ * ViewModel로부터 받은 데이터를 그대로 사용하여 모든 UI 요구사항을 처리합니다.
+ */
 @Composable
 private fun SixMonthWeightChart(
-    monthlyWeights: List<com.example.pet_project_frontend.presentation.care_management.WeightManagementViewModel.MonthlyWeightData>
+    monthlyWeights: List<WeightManagementViewModel.MonthlyWeightData>
 ) {
+    // 데이터가 없으면 차트를 그리지 않고 종료
+    if (monthlyWeights.isEmpty()) {
+        return
+    }
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.fillMaxWidth()
     ) {
         val maxHeight = 128.dp
-        
-        // 데이터가 없으면 더미 데이터 생성 (6개월치)
-        val displayData = if (monthlyWeights.isEmpty()) {
-            // 더미 데이터: 현재 월부터 6개월 전까지
-            val currentMonth = java.time.YearMonth.now()
-            List(6) { index ->
-                val month = currentMonth.minusMonths(5 - index.toLong())
-                val monthLabel = if (index == 5) "이번 달" else "${month.monthValue}월"
-                monthLabel to null // null은 데이터 없음 표시
-            }
-        } else {
-            // API에서 받은 label과 weight 사용 (weight가 null이면 그대로 null 유지)
-            monthlyWeights.map { data ->
-                data.month to data.weight.takeIf { it > 0f }
-            }
+
+        // [요구사항 반영 1] 마지막 라벨을 "이번 달"로 변경하여 UI에 표시할 최종 데이터 생성
+        val displayData = monthlyWeights.mapIndexed { index, data ->
+            val finalLabel = if (index == monthlyWeights.lastIndex) "이번달" else data.month
+            // Triple: (라벨, 몸무게, 이번달 여부) -> 몸무게가 0f이면 null로 취급
+            Triple(finalLabel, data.weight.takeIf { it > 0f }, index == monthlyWeights.lastIndex)
         }
 
+        // [요구사항 반영 2] 유효한(null이 아닌) 몸무게 값 중에서 최대값 찾기
         val maxWeight = displayData.mapNotNull { it.second }.maxOfOrNull { it } ?: 50f
-        
-        // 랜덤 높이 패턴 (각 인덱스별로 고정)
-        val randomHeights = listOf(60.dp, 80.dp, 45.dp, 70.dp, 55.dp, 90.dp)
+        val randomHeights = remember { listOf(60.dp, 80.dp, 45.dp, 70.dp, 55.dp, 90.dp) }
 
+        // 막대그래프 Row
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.Bottom
         ) {
-            displayData.forEachIndexed { index, (month, weight) ->
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    // weight가 null이면 "?", 있으면 몸무게 표시
+            displayData.forEachIndexed { index, (label, weight, isCurrentMonth) ->
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    // [요구사항 반영 3] 막대 위 텍스트: weight가 null이면 "?", 아니면 값 표시
                     Text(
-                        text = if (weight == null) "?" else "${weight}kg",
+                        text = if (weight == null) "?" else String.format("%.1fkg", weight),
                         fontSize = 13.sp,
                         color = MyPageColors.Grey500,
                         modifier = Modifier.padding(bottom = 4.dp)
                     )
-                    
-                    // weight가 null이면 랜덤 높이, 있으면 실제 비율 계산
+
+                    // [요구사항 반영 4] 막대 높이: weight가 null이면 랜덤, 아니면 계산된 높이
                     val barHeight = if (weight == null) {
                         randomHeights[index % randomHeights.size]
                     } else {
                         ((maxHeight.value * weight / maxWeight).roundToInt().dp).coerceAtLeast(1.dp)
                     }
-                    
+
+                    // 막대 색상은 이번달 여부(isCurrentMonth)로 결정
                     Box(
                         modifier = Modifier
                             .width(40.dp)
                             .height(barHeight)
                             .background(
-                                color = if (month == "이번 달" || month.contains("10월")) MyPageColors.Blue500 else MyPageColors.Grey200,
+                                color = if (isCurrentMonth) MyPageColors.Blue500 else MyPageColors.Grey200,
                                 shape = RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp)
                             )
                     )
@@ -480,22 +488,23 @@ private fun SixMonthWeightChart(
             }
         }
 
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(1.dp)
-                .background(MyPageColors.Grey300)
+        // 구분선
+        Divider(
+            modifier = Modifier.fillMaxWidth(),
+            thickness = 1.dp,
+            color = MyPageColors.Grey300
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        // [요구사항 반영 5] 하단 라벨 Row
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            displayData.forEach { (month, _) ->
+            displayData.forEach { (label, _, _) ->
                 Text(
-                    text = month,
+                    text = label,
                     fontSize = 13.sp,
                     color = MyPageColors.Grey700,
                     modifier = Modifier.width(40.dp),
@@ -505,3 +514,7 @@ private fun SixMonthWeightChart(
         }
     }
 }
+
+
+
+

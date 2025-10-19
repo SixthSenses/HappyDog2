@@ -17,7 +17,7 @@ sealed class Screen(val route: String) {
     }
     object HealthSurvey : Screen("health_survey") // 건강 설문지 화면
     object BreedGuide : Screen("breed_guide") // 견종 가이드북 리스트 화면
-    object BreedGuidebook : Screen("breed_guidebook/{breedName}") {
+    object BreedGuidebook : Screen("breed_guidebook/{breedName}") { // 견종 가이드북 상세 화면
         fun createRoute(breedName: String) = "breed_guidebook/$breedName"
     }
     
@@ -28,7 +28,7 @@ sealed class Screen(val route: String) {
     object ActivityManagement : Screen("activity_management?date={date}") { // 활동 관리 화면
         fun createRoute(date: String? = null) = if (date != null) "activity_management?date=$date" else "activity_management"
     }
-    object WeightManagement : Screen("weight_management?date={date}") { // <--- 이 부분이 정확한지 확인!
+    object WeightManagement : Screen("weight_management?date={date}") { // 몸무게 관리 화면
         fun createRoute(date: String): String {
             return "weight_management?date=$date"
         }

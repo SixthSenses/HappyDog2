@@ -87,7 +87,6 @@ fun CareItemsGrid(
             )
             
             PoopCareCard(
-                records = poopRecords,
                 latestRecord = latestPoopRecord,  // 상세 정보 전달
                 onDetailClick = onPoopClick,
                 modifier = Modifier.weight(1f)
@@ -100,7 +99,6 @@ fun CareItemsGrid(
             horizontalArrangement = Arrangement.Start
         ) {
             VomitCareCard(
-                records = vomitRecords,
                 latestRecord = latestVomitRecord,  // 상세 정보 전달
                 onDetailClick = onVomitClick,
                 modifier = Modifier.weight(0.48f) // 다른 카드들과 같은 크기

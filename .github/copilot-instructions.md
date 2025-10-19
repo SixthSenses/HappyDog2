@@ -59,15 +59,54 @@
 **Critical Component Patterns**
 - ViewModel state: Single `StateFlow<UiState>` exposed via `stateIn(WhileSubscribed(5000))` - see `MainViewModel.kt`
 - UI collection: `collectAsStateWithLifecycle()` - see `MainActivity.kt` branching on `isLoggedIn`/`hasPet`
-- Repository implementation: Return domain models, never throw exceptions to UI layer
-- Error handling: Map to domain errors, convert to `UiState.Error` in ViewModel with user-safe messages
+- Repository implementation: Return domain models wrapped in `AppResult<T>`, never throw exceptions to UI layer
+- Error handling: Map to domain errors via `SafeApi.body { }`, convert to `UiState.Error` in ViewModel with user-safe messages
+- UiState initial loading: ALWAYS start with `isLoading = false` to prevent infinite loading states; only set true during actual operations
+
+**Critical UiState Anti-Pattern (MUST AVOID)**
+❌ NEVER initialize UiState with `isLoading = true`:
+```kotlin
+data class UiState(val isLoading: Boolean = true)  // WRONG - causes infinite loading
+```
+✅ ALWAYS initialize with `isLoading = false`:
+```kotlin
+data class UiState(val isLoading: Boolean = false)  // CORRECT
+```
+- Set `isLoading = true` only when operation starts
+- Immediately reset to `false` after operation completes (both success/error)
+- See `WeightManagementViewModel.kt` for correct pattern
 
 **New Feature Implementation Checklist**
-1) API: Add interface in `data/remote/api/*Api.kt` + provide in `NetworkModule.kt` if needed
-2) Repository: Add contract in `domain/repository/*`, implement `data/repository/*Impl`, bind in `RepositoryModule`
-3) ViewModel: Inject repository, expose single `uiState` via `stateIn(WhileSubscribed(5000))`, handle events
-4) UI: Collect with `collectAsStateWithLifecycle()`, send events to ViewModel, navigate via `Screen.*.route`
-5) Navigation: Add route to `NavigationRoutes.kt`, implement in `PetCareNavigation.kt` composable block
+1) **API Layer**:
+   - Add interface in `data/remote/api/*Api.kt` with Retrofit annotations
+   - Create DTOs in `data/remote/dto/request|response/` with `@SerializedName` annotations
+   - Provide API in `NetworkModule.kt` if creating new service
+   - Align with `docs/openapi_pretty.json` and `docs/api/*` specs
+   
+2) **Repository Layer**:
+   - Define contract in `domain/repository/*Repository.kt` (interface)
+   - Implement in `data/repository/*RepositoryImpl.kt` with `@Singleton`
+   - Wrap all API calls in `SafeApi.body { }` to return `AppResult<T>`
+   - Bind in `RepositoryModule.kt` using `@Binds @Singleton abstract fun`
+   
+3) **ViewModel Layer**:
+   - Inject repository via constructor with `@Inject`
+   - Define nested `data class UiState(val isLoading: Boolean = false, ...)`
+   - Expose single `StateFlow<UiState>` via `stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UiState())`
+   - Handle AppResult: `is Success -> _uiState.update { ... }`, `is Error -> _uiState.update { copy(error = ...) }`
+   - Launch coroutines only in ViewModel, never in repository
+   
+4) **UI Layer**:
+   - Collect state: `val uiState by viewModel.uiState.collectAsStateWithLifecycle()`
+   - Handle loading/error/success states in UI
+   - Send events to ViewModel methods, never manipulate state directly
+   - Navigate via `Screen.*.route` or `Screen.*.createRoute(params)`
+   
+5) **Navigation Layer**:
+   - Add sealed class entry in `NavigationRoutes.kt`: `object ScreenName : Screen("route?param={param}")`
+   - Implement in `PetCareNavigation.kt`: `composable(route, arguments, deepLinks) { }`
+   - Pass date parameters via navigation arguments with proper nullability
+   - Use `hiltViewModel()` to get ViewModels in composable blocks
 
 **Critical Don'ts**
 - Don't start coroutines in repository/domain layers - only expose `suspend`/`Flow`
@@ -75,9 +114,14 @@
 - Don't log secrets/tokens. Inject keys only via `BuildConfig`/`manifestPlaceholders`
 - Don't attempt to edit corrupted files with duplicate imports - delete and recreate instead
 - Don't bypass idempotency for write operations - let `IdempotencyInterceptor` handle automatically
+- Don't initialize UiState with `isLoading = true` - always start with `false`
+- Don't throw exceptions from repository to ViewModel - wrap in `AppResult<T>`
+- Don't call repository methods from composables - only from ViewModels
 
 **Key Reference Files**
 - Navigation: `core/navigation/NavigationRoutes.kt`, `PetCareNavigation.kt`, `MainActivity.kt`
-- State patterns: `MainViewModel.kt` (WhileSubscribed), `MainActivity.kt` (lifecycle collection)
-- Network setup: `NetworkModule.kt`, `data/remote/interceptors/`, `TokenAuthenticator.kt`
+- State patterns: `MainViewModel.kt` (WhileSubscribed), `MainActivity.kt` (lifecycle collection), `WeightManagementViewModel.kt` (correct loading pattern)
+- Network setup: `NetworkModule.kt`, `data/remote/interceptors/`, `data/remote/authenticator/TokenAuthenticator.kt`
 - Idempotency: `data/remote/interceptors/IdempotencyInterceptor.kt`, `docs/DEEPLINKS_AND_IDEMPOTENCY.md`
+- Repository pattern: `data/repository/PetCareRepositoryImpl.kt` (SafeApi.body usage), `core/di/RepositoryModule.kt` (@Binds pattern)
+- DTO examples: `data/remote/dto/response/WeightMonthlyAnalysisResponse.kt` (@SerializedName usage)

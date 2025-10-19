@@ -21,7 +21,6 @@ import com.example.pet_project_frontend.core.theme.MyPageColors
  */
 @Composable
 fun PoopCareCard(
-    records: List<String> = emptyList(),
     latestRecord: String? = null, // 홈 화면용 최신 기록
     onDetailClick: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -85,7 +84,7 @@ fun PoopCareCard(
                 // 대변 상세 정보 표시 (예: "초록색, 점액 섞임")
                 Text(
                     text = latestRecord,
-                    fontSize = 28.sp,  // 긴 텍스트를 위해 폰트 크기 축소
+                    fontSize = 20.sp,  // 긴 텍스트를 위해 폰트 크기 축소
                     fontWeight = FontWeight.Bold,
                     color = MyPageColors.Grey800,
                     modifier = Modifier

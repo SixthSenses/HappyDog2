@@ -21,7 +21,6 @@ import com.example.pet_project_frontend.core.theme.MyPageColors
  */
 @Composable
 fun VomitCareCard(
-    records: List<String> = emptyList(),
     latestRecord: String? = null,  // 구토 상세 정보 (예: "노란색")
     onDetailClick: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -85,7 +84,7 @@ fun VomitCareCard(
                 // 구토 상세 정보 표시 (예: "노란색")
                 Text(
                     text = latestRecord,
-                    fontSize = 28.sp,  // 읽기 좋은 크기
+                    fontSize = 20.sp,  // 읽기 좋은 크기
                     fontWeight = FontWeight.Bold,
                     color = MyPageColors.Grey800,
                     modifier = Modifier

@@ -3,7 +3,6 @@ package com.example.pet_project_frontend.presentation.care_management
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pet_project_frontend.core.common.AppResult
-// 1. DailySummaryResponse를 사용하므로 import 문이 필요합니다.
 import com.example.pet_project_frontend.data.remote.dto.response.DailySummaryResponse
 import com.example.pet_project_frontend.domain.repository.PetCareRepository
 import com.example.pet_project_frontend.domain.repository.PetRepository
@@ -11,10 +10,10 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update // update 확장 함수를 사용하기 위해 추가
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
-import java.time.YearMonth // YearMonth를 사용하므로 추가
+import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
@@ -32,18 +31,14 @@ class FeedManagementViewModel @Inject constructor(
         val isLoading: Boolean = false,
         val error: String? = null,
         val selectedDate: LocalDate = LocalDate.now(),
-
-        // 2. 주석 처리된 필드들을 모두 활성화합니다.
         val currentFeedCount: Int = 0,  // 실제 급여 횟수
         val goalFeedCount: Int = 0,     // 목표 급여 횟수
-
         val achievementPercentage: Float = 0f,  // 달성률
         val isAchieved: Boolean = false,  // 목표 달성 여부
 
         // 캘린더 표시용 달성 날짜 목록
         val achievedDates: Set<LocalDate> = emptySet(),
         val monthlySummaryText: String = "",
-        // 3. 컴파일 오류를 막기 위해 기본값을 할당합니다.
         val monthlyMessage: String = ""
     )
 
@@ -53,29 +48,60 @@ class FeedManagementViewModel @Inject constructor(
     private var currentPetId: String? = null
 
     init {
-        loadPetAndData()
+        loadPetId()
     }
 
-    private fun loadPetAndData() {
+    /**
+     * 펫 ID만 로드 (날짜별 데이터는 화면의 LaunchedEffect에서 로드)
+     */
+    private fun loadPetId() {
+        if (currentPetId != null) return // 이미 로드되어 있으면 스킵
+        
         viewModelScope.launch {
-            // .value를 직접 수정하는 대신, 스레드에 안전한 .update를 사용합니다.
-            _uiState.update { it.copy(isLoading = true, error = null) }
-
             try {
                 when (val petResult = petRepository.getMyPetProfile()) {
                     is AppResult.Success -> {
                         currentPetId = petResult.data.id
-                        // petId를 가져온 후 즉시 오늘 날짜의 데이터를 로드합니다.
-                        loadDataForDate(LocalDate.now())
-                        loadAchievedDatesForMonth(YearMonth.now())
+                        android.util.Log.d("FeedManagementVM", "✅ Pet ID loaded: ${currentPetId}")
                     }
-                    else -> {
-                        _uiState.update { it.copy(isLoading = false, error = "반려동물 정보를 찾을 수 없습니다.") }
+                    is AppResult.Error -> {
+                        _uiState.update { it.copy(error = "반려동물 정보를 찾을 수 없습니다.") }
+                    }
+                    is AppResult.Exception -> {
+                        _uiState.update { it.copy(error = "반려동물 정보를 불러오는 중 오류가 발생했습니다.") }
                     }
                 }
             } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false, error = "데이터를 불러오는 중 오류가 발생했습니다.") }
+                _uiState.update { it.copy(error = "반려동물 정보를 불러오는 중 오류가 발생했습니다.") }
             }
+        }
+    }
+
+    /**
+     * 펫 ID를 동기적으로 로드 (suspend 함수)
+     */
+    private suspend fun ensurePetIdLoaded(): String? {
+        if (currentPetId != null) return currentPetId
+        
+        return try {
+            when (val petResult = petRepository.getMyPetProfile()) {
+                is AppResult.Success -> {
+                    currentPetId = petResult.data.id
+                    android.util.Log.d("FeedManagementVM", "✅ Pet ID loaded: ${currentPetId}")
+                    currentPetId
+                }
+                is AppResult.Error -> {
+                    _uiState.update { it.copy(error = "반려동물 정보를 찾을 수 없습니다.") }
+                    null
+                }
+                is AppResult.Exception -> {
+                    _uiState.update { it.copy(error = "반려동물 정보를 불러오는 중 오류가 발생했습니다.") }
+                    null
+                }
+            }
+        } catch (e: Exception) {
+            _uiState.update { it.copy(error = "반려동물 정보를 불러오는 중 오류가 발생했습니다.") }
+            null
         }
     }
 
@@ -83,22 +109,15 @@ class FeedManagementViewModel @Inject constructor(
      * 특정 날짜의 사료 데이터 로드 (Summary API 사용)
      */
     fun loadDataForDate(date: LocalDate) {
-        val petId = currentPetId ?: run {
-            loadPetAndData()
-            return
-        }
-
         viewModelScope.launch {
-            // 날짜 변경 시 이전 데이터 초기화 (중요!)
+            // petId가 없으면 먼저 로드
+            val petId = ensurePetIdLoaded() ?: return@launch
+
             _uiState.update { 
                 it.copy(
                     isLoading = true, 
                     error = null, 
-                    selectedDate = date,
-                    currentFeedCount = 0,
-                    goalFeedCount = 0,
-                    achievementPercentage = 0f,
-                    isAchieved = false
+                    selectedDate = date
                 ) 
             }
 
@@ -107,33 +126,33 @@ class FeedManagementViewModel @Inject constructor(
 
                 when (val result = petCareRepository.getDailySummary(petId, dateString)) {
                     is AppResult.Success -> {
-                        // result.data의 타입을 명시적으로 DailySummaryResponse로 캐스팅합니다.
                         val summary = result.data as? DailySummaryResponse
                         if (summary?.goalProgress?.achievements?.meal == null) {
                             _uiState.update { it.copy(isLoading = false, error = "요약 데이터의 형식이 올바르지 않습니다.") }
                             return@launch
                         }
 
-                        // 4. 서버 응답의 goal_progress 객체를 직접 사용합니다.
                         val mealAchievement = summary.goalProgress.achievements.meal
 
                         val actualCount = (mealAchievement.actual as? Number)?.toInt() ?: 0
                         val goalCount = (mealAchievement.goal as? Number)?.toInt() ?: 0
-                        val percentage = mealAchievement.percentage ?: 0f // <-- 사용자의 요청: 계산 대신 직접 사용
+                        val percentage = mealAchievement.percentage ?: 0f
                         val achieved = mealAchievement.achieved ?: false
 
-                        android.util.Log.d("FeedManagementVM", "✅ SERVER DATA - Actual: $actualCount, Goal: $goalCount, Percentage: $percentage")
+                        android.util.Log.d("FeedManagementVM", "✅ Loaded data for date=$date: actual=$actualCount, goal=$goalCount, percentage=$percentage")
 
-                        // 5. 모든 주석을 해제하고 UiState를 올바르게 업데이트합니다.
                         _uiState.update {
                             it.copy(
                                 isLoading = false,
                                 currentFeedCount = actualCount,
                                 goalFeedCount = goalCount,
-                                achievementPercentage = percentage, // API에서 받은 percentage 사용
+                                achievementPercentage = percentage,
                                 isAchieved = achieved
                             )
                         }
+
+                        // 월간 데이터도 선택된 날짜 기준으로 로드
+                        loadAchievedDatesForMonth(YearMonth.from(date))
                     }
                     is AppResult.Error -> {
                         _uiState.update { it.copy(isLoading = false, error = result.message) }
@@ -147,7 +166,7 @@ class FeedManagementViewModel @Inject constructor(
             }
         }
     }
-    // ... (addFeedRecord, removeFeedRecord 등 나머지 함수들은 그대로 유지)
+
     fun addFeedRecord() {
         val petId = currentPetId ?: return
 
@@ -164,7 +183,6 @@ class FeedManagementViewModel @Inject constructor(
 
                 )) {
                     is AppResult.Success -> {
-                        // 성공 후 현재 선택된 날짜의 데이터 다시 로드
                         loadDataForDate(_uiState.value.selectedDate)
                         loadAchievedDatesForMonth(YearMonth.from(_uiState.value.selectedDate))
                     }
@@ -191,19 +209,15 @@ class FeedManagementViewModel @Inject constructor(
             try {
                 val dateString = _uiState.value.selectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
 
-                // 현재 날짜의 모든 기록 가져오기
                 when (val result = petCareRepository.getDailyRecords(petId, dateString)) {
                     is AppResult.Success -> {
-                        // meal 타입 기록 중 가장 최근 것 찾기
                         val latestMealRecord = result.data.records
                             .filter { it.recordType == "meal_count" }
                             .maxByOrNull { it.timestamp }
 
                         if (latestMealRecord != null) {
-                            // 기록 삭제
                             when (petCareRepository.deleteCareRecord(petId, latestMealRecord.logId)) {
                                 is AppResult.Success -> {
-                                    // 성공 후 데이터 다시 로드
                                     loadDataForDate(_uiState.value.selectedDate)
                                     loadAchievedDatesForMonth(YearMonth.from(_uiState.value.selectedDate))
                                 }
@@ -229,18 +243,14 @@ class FeedManagementViewModel @Inject constructor(
         loadDataForDate(_uiState.value.selectedDate)
     }
 
-    // ###################### ▼▼▼ 월간 분석 로직 수정 ▼▼▼ ######################
-    /**
-     * 특정 월의 목표 달성 날짜들과 메시지를 로드
-     * @param yearMonth 조회할 연월 (예: 2025-10)
-     */
+
     /**
      * 특정 월의 목표 달성 날짜들과 메시지를 로드
      * @param yearMonth 조회할 연월 (예: 2025-10)
      */
     fun loadAchievedDatesForMonth(yearMonth: YearMonth) {
-        val petId = currentPetId ?: return
         viewModelScope.launch {
+            val petId = ensurePetIdLoaded() ?: return@launch
             try {
                 val startDate = yearMonth.atDay(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
                 val endDate = yearMonth.atEndOfMonth().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
@@ -261,42 +271,31 @@ class FeedManagementViewModel @Inject constructor(
 
                         android.util.Log.d("FeedManagementVM", "Meal days achieved: $mealDaysAchieved")
 
-                        // 1. goal_tracking 객체에서 "achievement_dates" 맵을 가져옵니다.
                         val achievementDatesMap = summary.goalTracking?.get("achievement_dates") as? Map<*, *>
 
-                        // 2. "achievement_dates" 맵에서 "meal" 키에 해당하는 리스트(List<String>)를 가져옵니다.
-                        //    타입이 다를 수 있으므로 안전하게 캐스팅합니다.
                         val mealDateStrings = (achievementDatesMap?.get("meal") as? List<*>)
-                            ?.mapNotNull { it as? String } // 리스트의 각 요소를 String으로 변환
-                            ?: emptyList() // "meal" 키가 없거나 리스트가 아니면 빈 리스트를 사용
+                            ?.mapNotNull { it as? String }
+                            ?: emptyList()
 
                         android.util.Log.d("FeedManagementVM", "Meal achievement dates from server: $mealDateStrings")
 
-                        // 3. 문자열 리스트를 LocalDate 객체의 Set으로 변환합니다.
-                        //    이렇게 변환된 Set이 캘린더에 아이콘을 표시하는 데 사용됩니다.
+
                         val achievedDates = mealDateStrings.mapNotNull { dateStr ->
                             try {
                                 LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
                             } catch (e: Exception) {
                                 android.util.Log.e("FeedManagementVM", "Failed to parse date: $dateStr", e)
-                                null // 파싱 실패 시 null을 반환하여 리스트에서 제외
+                                null
                             }
                         }.toSet()
 
-                        // --- ▼▼▼ 메시지 생성 로직 수정 ▼▼▼ ---
-
-                        // 1. 월별 요약 텍스트 생성 (수정 없음)
                         val summaryText = "${yearMonth.monthValue}월에는 목표를 ${mealDaysAchieved}번 채웠네요"
-
-                        // 2. 월별 분석 메시지 생성 (로직 순서 변경)
                         val today = LocalDate.now()
                         val currentMonth = YearMonth.from(today)
                         val isCurrentMonth = yearMonth == currentMonth
                         val isPastMonth = yearMonth.isBefore(currentMonth)
-
                         val applicableDays = if (isCurrentMonth) today.dayOfMonth else yearMonth.lengthOfMonth()
                         val achievementRate = if (applicableDays > 0) (mealDaysAchieved.toDouble() / applicableDays) * 100 else 0.0
-
                         val analysisMessage = when {
                             isCurrentMonth -> {
                                 if (mealDaysAchieved == 0) "아직 목표를 채우지 못했어요"
@@ -314,7 +313,6 @@ class FeedManagementViewModel @Inject constructor(
                         android.util.Log.d("FeedManagementVM", "Summary Text: $summaryText")
                         android.util.Log.d("FeedManagementVM", "Analysis Message: $analysisMessage")
 
-                        // 3. 두 메시지를 모두 UiState에 업데이트
                         _uiState.update {
                             it.copy(
                                 achievedDates = achievedDates,
