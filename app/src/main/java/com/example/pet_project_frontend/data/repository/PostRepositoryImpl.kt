@@ -122,7 +122,12 @@ class PostRepositoryImpl @Inject constructor(
             val response = postApi.getPostsFeed(limit, cursor)
 
             if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!.toDomain())
+                val feedDto = response.body()!!
+                Log.d(TAG, "getPostsFeed: Received ${feedDto.posts.size} posts")
+                feedDto.posts.forEach { post ->
+                    Log.d(TAG, "Post ${post.postId}: pet=${post.pet?.name}, profileImageUrl=${post.pet?.profileImageUrl}")
+                }
+                Result.success(feedDto.toDomain())
             } else {
                 Result.failure(Exception("피드 조회 실패: ${response.code()}"))
             }

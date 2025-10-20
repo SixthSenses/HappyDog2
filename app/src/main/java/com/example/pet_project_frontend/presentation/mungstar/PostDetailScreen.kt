@@ -480,21 +480,27 @@ fun PostDetailItem(
                     .clickable(onClick = onMoreClick)
             )
         }
-        
-        HorizontalDivider(color = Color(0xFF8B95A1), thickness = 8.dp)
     }
+    
+    // 게시물과 댓글 영역 구분선
+    HorizontalDivider(
+        color = Color(0xFFE4E8EB),
+        thickness = 1.dp,
+        modifier = Modifier.fillMaxWidth()
+    )
 }
 
 @Composable
 fun CommentItem(
     comment: Comment,
     onLikeClick: () -> Unit,
-    onDeleteClick: () -> Unit
+    onDeleteClick: () -> Unit,
+    onReplyClick: () -> Unit = {}
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp)
+            .padding(horizontal = 25.dp, vertical = 16.dp)
     ) {
         // 프로필 이미지
         AsyncImage(
@@ -509,26 +515,41 @@ fun CommentItem(
         Spacer(modifier = Modifier.width(12.dp))
         
         Column(modifier = Modifier.weight(1f)) {
-            // 작성자 정보
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            // 사용자 이름 + 타임스탬프
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                // 사용자 이름
                 Text(
                     text = comment.pet?.name ?: comment.author.displayName,
                     fontFamily = PretendardFont,
-                    fontWeight = FontWeight(400),
-                    fontSize = 14.sp
+                    fontWeight = FontWeight(600),
+                    fontSize = 14.sp,
+                    color = Color(0xFF6B7684)
                 )
                 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(4.dp))
                 
-                comment.pet?.let {
-                    Text(
-                        text = "${it.breed} • ${it.age}살",
-                        fontFamily = PretendardFont,
-                        fontWeight = FontWeight(400),
-                        fontSize = 12.sp,
-                        color = Color.Gray
-                    )
-                }
+                // 점
+                Text(
+                    text = "·",
+                    fontFamily = PretendardFont,
+                    fontWeight = FontWeight(400),
+                    fontSize = 14.sp,
+                    color = Color(0xFF8B95A1)
+                )
+                
+                Spacer(modifier = Modifier.width(4.dp))
+                
+                // 타임스탬프
+                Text(
+                    text = TimeUtil.getRelativeTimeString(comment.createdAt),
+                    fontFamily = PretendardFont,
+                    fontWeight = FontWeight(400),
+                    fontSize = 14.sp,
+                    color = Color(0xFF8B95A1)
+                )
             }
             
             Spacer(modifier = Modifier.height(4.dp))
@@ -538,40 +559,67 @@ fun CommentItem(
                 text = comment.text,
                 fontFamily = PretendardFont,
                 fontWeight = FontWeight(400),
-                fontSize = 14.sp
+                fontSize = 14.sp,
+                color = Color(0xFF333D4B)
             )
             
             Spacer(modifier = Modifier.height(8.dp))
             
-            // 좋아요
+            // 좋아요 & 답글달기
             Row(verticalAlignment = Alignment.CenterVertically) {
+                // 좋아요 아이콘
                 Image(
                     painter = painterResource(
                         id = if (comment.isLiked) R.drawable.favorite else R.drawable.like
                     ),
                     contentDescription = "좋아요",
                     modifier = Modifier
-                        .size(16.dp)
+                        .size(24.dp)
                         .clickable(onClick = onLikeClick)
                 )
                 
                 Spacer(modifier = Modifier.width(4.dp))
                 
+                // 좋아요 개수
                 Text(
                     text = "${comment.likeCount}",
-                    fontSize = 12.sp,
-                    color = Color.Gray
+                    fontFamily = PretendardFont,
+                    fontWeight = FontWeight(500),
+                    fontSize = 15.sp,
+                    color = Color(0xFFB1B8C0)
+                )
+                
+                Spacer(modifier = Modifier.width(20.dp))
+                
+                // 답글달기 아이콘
+                Image(
+                    painter = painterResource(id = R.drawable.comment2),
+                    contentDescription = "답글달기",
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clickable(onClick = onReplyClick)
+                )
+                
+                Spacer(modifier = Modifier.width(4.dp))
+                
+                // 답글달기 텍스트
+                Text(
+                    text = "답글 달기",
+                    fontFamily = PretendardFont,
+                    fontWeight = FontWeight(500),
+                    fontSize = 15.sp,
+                    color = Color(0xFF8B95A1),
+                    modifier = Modifier.clickable(onClick = onReplyClick)
                 )
             }
         }
         
-        // 삭제 버튼 (작성자만)
-        // TODO: 현재 사용자 ID와 비교
+        // More 버튼 (오른쪽 끝, 사용자 이름과 같은 높이)
         Image(
-            painter = painterResource(id = R.drawable.delete),
-            contentDescription = "삭제",
+            painter = painterResource(id = R.drawable.more2),
+            contentDescription = "더보기",
             modifier = Modifier
-                .size(20.dp)
+                .size(24.dp)
                 .clickable(onClick = onDeleteClick)
         )
     }

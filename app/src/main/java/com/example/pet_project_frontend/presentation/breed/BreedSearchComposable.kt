@@ -52,7 +52,7 @@ fun BreedSearchComposable(
         
         // 드롭다운 결과
         if (showDropdown && searchState is BreedSearchState.Success) {
-            val response = (searchState as BreedSearchState.Success).response
+            val breeds = (searchState as BreedSearchState.Success).breeds
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -60,7 +60,7 @@ fun BreedSearchComposable(
                 elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
             ) {
                 LazyColumn {
-                    items(response.breeds) { breed ->
+                    items(breeds) { breed ->
                         BreedSearchItem(
                             breedName = breed.breedName,
                             lifeExpectancy = breed.lifeExpectancy,

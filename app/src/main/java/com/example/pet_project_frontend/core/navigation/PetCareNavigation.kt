@@ -177,6 +177,19 @@ fun PetCareNavHost(
 		composable(Screen.Translator.route) { TranslatorScreen(openNotice = openNotice) }
 
 		// 마이페이지 화면
-		composable(Screen.MyPage.route) { MyPageScreen() }
+		composable(Screen.MyPage.route) { 
+			MyPageScreen(
+				onNameClick = { /* TODO: 이름 수정 화면으로 이동 */ },
+				onBirthdateClick = { /* TODO: 생년월일 수정 화면으로 이동 */ },
+				onGenderClick = { /* TODO: 성별 수정 화면으로 이동 */ },
+				onBreedClick = { /* TODO: 견종 수정 화면으로 이동 */ },
+				onNotificationClick = { /* TODO: 알림 설정 화면으로 이동 */ },
+				onVerificationClick = { /* TODO: 본인 인증 화면으로 이동 */ },
+				onTermsClick = { /* TODO: 이용약관 화면으로 이동 */ },
+				onPrivacyClick = { /* TODO: 개인정보 처리방침 화면으로 이동 */ },
+				onWithdrawClick = { /* TODO: 회원 탈퇴 화면으로 이동 */ },
+				onProfileImageClick = { /* 프로필 이미지 클릭 (ViewModel에서 처리) */ }
+			)
+		}
 	}
 }

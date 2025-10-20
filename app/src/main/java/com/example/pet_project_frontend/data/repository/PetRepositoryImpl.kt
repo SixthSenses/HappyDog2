@@ -104,7 +104,7 @@ class PetRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updatePetProfile(petId: String, request: PetUpdateRequest): AppResult<Pet> {
-        Log.d(TAG, "Updating pet profile: $petId")
+        Log.d(TAG, "Updating pet profile: $petId, request: $request")
         return SafeApi.response { petApi.updatePetProfile(petId, request) }
             .let { res ->
                 when (res) {
@@ -112,8 +112,14 @@ class PetRepositoryImpl @Inject constructor(
                         Log.d(TAG, "Pet profile updated successfully: ${res.data.petId}")
                         AppResult.Success(PetMapper.mapToDomainModel(res.data))
                     }
-                    is AppResult.Error -> res
-                    is AppResult.Exception -> res
+                    is AppResult.Error -> {
+                        Log.e(TAG, "Pet profile update failed: code=${res.code}, message=${res.message}, validation=${res.validation}")
+                        res
+                    }
+                    is AppResult.Exception -> {
+                        Log.e(TAG, "Pet profile update exception: ${res.throwable.message}", res.throwable)
+                        res
+                    }
                 }
             }
     }

@@ -123,6 +123,50 @@ class MyPageViewModel @Inject constructor(
     fun clearError() {
         _uiState.update { it.copy(error = null) }
     }
+    
+    fun deleteProfileImage() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isUploading = true, error = null) }
+            
+            val petId = _uiState.value.petId
+            if (petId.isNullOrBlank()) {
+                _uiState.update { it.copy(isUploading = false, error = "펫 정보를 찾을 수 없습니다") }
+                return@launch
+            }
+            
+            android.util.Log.d("MyPageViewModel", "Deleting profile image for petId: $petId")
+            
+            // profile_image_url을 null로 설정하여 삭제
+            // Gson은 기본적으로 null 필드를 생략하므로, 빈 문자열 사용
+            val updateRequest = com.example.pet_project_frontend.data.remote.dto.request.UpdatePetRequest(
+                profileImageUrl = ""
+            )
+            
+            when (val res = petRepository.updatePetProfile(petId, updateRequest)) {
+                is AppResult.Success -> {
+                    _uiState.update { it.copy(profileImageUrl = null, isUploading = false, error = null) }
+                }
+                is AppResult.Error -> {
+                    val validation = res.validation
+                    val errorMsg = when {
+                        res.code == 403 -> "프로필 사진을 삭제할 권한이 없습니다"
+                        res.code == 404 -> "반려동물 정보를 찾을 수 없습니다"
+                        validation != null -> validation.generalMessage ?: "입력값이 올바르지 않습니다"
+                        else -> res.message ?: "프로필 사진 삭제에 실패했습니다"
+                    }
+                    _uiState.update { it.copy(isUploading = false, error = errorMsg) }
+                }
+                is AppResult.Exception -> {
+                    val errorMsg = when {
+                        res.throwable.message?.contains("403") == true -> "프로필 사진을 삭제할 권한이 없습니다"
+                        res.throwable.message?.contains("network") == true -> "네트워크 연결을 확인해주세요"
+                        else -> "프로필 사진 삭제 중 오류가 발생했습니다"
+                    }
+                    _uiState.update { it.copy(isUploading = false, error = errorMsg) }
+                }
+            }
+        }
+    }
 
     fun uploadAndApplyProfileImage(localFilePath: String) {
         viewModelScope.launch {
@@ -145,7 +189,9 @@ class MyPageViewModel @Inject constructor(
                             _uiState.update { it.copy(profileImageUrl = res.data.profileImageUrl, isUploading = false) }
                         }
                         is AppResult.Error -> {
-                            _uiState.update { it.copy(isUploading = false, error = res.message ?: res.validation?.generalMessage ?: "프로필 갱신 실패") }
+                            val validation = res.validation
+                            val errorMsg = res.message ?: validation?.generalMessage ?: "프로필 갱신 실패"
+                            _uiState.update { it.copy(isUploading = false, error = errorMsg) }
                         }
                         is AppResult.Exception -> {
                             _uiState.update { it.copy(isUploading = false, error = res.throwable.message ?: "프로필 갱신 오류") }
@@ -157,6 +203,147 @@ class MyPageViewModel @Inject constructor(
                 }
                 is AppResult.Exception -> {
                     _uiState.update { it.copy(isUploading = false, error = upload.throwable.message ?: "업로드 오류") }
+                }
+            }
+        }
+    }
+    
+    fun updateName(newName: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            
+            val petId = _uiState.value.petId
+            if (petId.isNullOrBlank()) {
+                _uiState.update { it.copy(isLoading = false, error = "펫 정보를 찾을 수 없습니다") }
+                return@launch
+            }
+            
+            val updateRequest = com.example.pet_project_frontend.data.remote.dto.request.UpdatePetRequest(
+                name = newName
+            )
+            
+            when (val res = petRepository.updatePetProfile(petId, updateRequest)) {
+                is AppResult.Success -> {
+                    _uiState.update { it.copy(petName = newName, isLoading = false) }
+                }
+                is AppResult.Error -> {
+                    _uiState.update { it.copy(isLoading = false, error = res.message ?: "이름 수정 실패") }
+                }
+                is AppResult.Exception -> {
+                    _uiState.update { it.copy(isLoading = false, error = res.throwable.message ?: "이름 수정 오류") }
+                }
+            }
+        }
+    }
+    
+    fun updateBirthDate(birthDate: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            
+            val petId = _uiState.value.petId
+            if (petId.isNullOrBlank()) {
+                _uiState.update { it.copy(isLoading = false, error = "펫 정보를 찾을 수 없습니다") }
+                return@launch
+            }
+            
+            android.util.Log.d("MyPageViewModel", "Updating birthdate: petId=$petId, birthdate=$birthDate")
+            
+            val updateRequest = com.example.pet_project_frontend.data.remote.dto.request.UpdatePetRequest(
+                birthdate = birthDate  // yyyy-MM-dd 형식 문자열
+            )
+            
+            when (val res = petRepository.updatePetProfile(petId, updateRequest)) {
+                is AppResult.Success -> {
+                    // 나이 재계산
+                    val pet = res.data
+                    val ageYears = Period.between(pet.birthDate, LocalDate.now()).years
+                    val ageText = when {
+                        ageYears == 0 -> "1살 미만"
+                        ageYears == 1 -> "1살"
+                        else -> "${ageYears}살"
+                    }
+                    val birthDateText = pet.birthDate.format(DateTimeFormatter.ofPattern("yyyy.MM.dd"))
+                    _uiState.update { it.copy(birthDate = birthDateText, age = ageText, isLoading = false) }
+                }
+                is AppResult.Error -> {
+                    val validation = res.validation
+                    val errorMsg = when {
+                        res.code == 500 -> "생년월일 수정 중 서버 오류가 발생했습니다\n잠시 후 다시 시도해주세요"
+                        validation != null -> validation.generalMessage ?: "날짜 형식이 올바르지 않습니다"
+                        else -> res.message ?: "생년월일 수정에 실패했습니다"
+                    }
+                    _uiState.update { it.copy(isLoading = false, error = errorMsg) }
+                }
+                is AppResult.Exception -> {
+                    val errorMsg = if (res.throwable.message?.contains("500") == true) {
+                        "생년월일 수정 중 서버 오류가 발생했습니다\n잠시 후 다시 시도해주세요"
+                    } else {
+                        "생년월일 수정 중 오류가 발생했습니다"
+                    }
+                    _uiState.update { it.copy(isLoading = false, error = errorMsg) }
+                }
+            }
+        }
+    }
+    
+    fun updateGender(gender: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            
+            val petId = _uiState.value.petId
+            if (petId.isNullOrBlank()) {
+                _uiState.update { it.copy(isLoading = false, error = "펫 정보를 찾을 수 없습니다") }
+                return@launch
+            }
+            
+            // "수컷", "암컷" → "MALE", "FEMALE" 변환
+            val genderEnum = when (gender) {
+                "수컷" -> "MALE"
+                "암컷" -> "FEMALE"
+                else -> return@launch
+            }
+            
+            val updateRequest = com.example.pet_project_frontend.data.remote.dto.request.UpdatePetRequest(
+                gender = genderEnum
+            )
+            
+            when (val res = petRepository.updatePetProfile(petId, updateRequest)) {
+                is AppResult.Success -> {
+                    _uiState.update { it.copy(gender = gender, isLoading = false) }
+                }
+                is AppResult.Error -> {
+                    _uiState.update { it.copy(isLoading = false, error = res.message ?: "성별 수정 실패") }
+                }
+                is AppResult.Exception -> {
+                    _uiState.update { it.copy(isLoading = false, error = res.throwable.message ?: "성별 수정 오류") }
+                }
+            }
+        }
+    }
+    
+    fun updateBreed(breed: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            
+            val petId = _uiState.value.petId
+            if (petId.isNullOrBlank()) {
+                _uiState.update { it.copy(isLoading = false, error = "펫 정보를 찾을 수 없습니다") }
+                return@launch
+            }
+            
+            val updateRequest = com.example.pet_project_frontend.data.remote.dto.request.UpdatePetRequest(
+                breed = breed
+            )
+            
+            when (val res = petRepository.updatePetProfile(petId, updateRequest)) {
+                is AppResult.Success -> {
+                    _uiState.update { it.copy(breed = breed, isLoading = false) }
+                }
+                is AppResult.Error -> {
+                    _uiState.update { it.copy(isLoading = false, error = res.message ?: "견종 수정 실패") }
+                }
+                is AppResult.Exception -> {
+                    _uiState.update { it.copy(isLoading = false, error = res.throwable.message ?: "견종 수정 오류") }
                 }
             }
         }

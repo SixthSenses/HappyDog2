@@ -104,83 +104,91 @@ fun UserPostsScreen(
                 state = listState,
                 modifier = Modifier.fillMaxSize()
             ) {
-                // 사용자 정보 박스 (헤더 아래 28px)
+                // 사용자 정보 앱바 (174dp 높이)
                 item {
-                    Spacer(modifier = Modifier.height(28.dp))
-                    
-                    // 첫 번째 게시물의 작성자 정보를 표시 (모든 게시물이 같은 작성자)
                     uiState.posts.firstOrNull()?.let { firstPost ->
-                        Row(
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                                .height(174.dp)
+                                .background(Color.White)
+                                .padding(horizontal = 25.dp, vertical = 28.dp)
                         ) {
-                            // 사용자 정보 (왼쪽)
-                            Column(modifier = Modifier.weight(1f)) {
-                                // 반려견 이름 (닉네임 - weight 500, #000, 25px)
-                                Text(
-                                    text = firstPost.pet?.name ?: firstPost.author.displayName,
-                                    fontFamily = PretendardFont,
-                                    fontWeight = FontWeight(500),
-                                    fontSize = 25.sp,
-                                    color = Color(0xFF000000)
-                                )
-                                
-                                // 품종과 나이 (weight 400, #8B95A1, 14px)
-                                firstPost.pet?.let {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.Top
+                            ) {
+                                // 왼쪽: 사용자 정보
+                                Column(
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    // 사용자 이름 (#000, 25px, weight 600)
                                     Text(
-                                        text = "${it.breed} • ${it.age}살",
+                                        text = firstPost.pet?.name ?: firstPost.author.displayName,
                                         fontFamily = PretendardFont,
-                                        fontWeight = FontWeight(400),
-                                        fontSize = 14.sp,
-                                        color = Color(0xFF8B95A1)
+                                        fontWeight = FontWeight(600),
+                                        fontSize = 25.sp,
+                                        color = Color(0xFF000000)
                                     )
+                                    
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    
+                                    // 견종과 나이 (#8B95A1, 14px, weight 400)
+                                    firstPost.pet?.let {
+                                        Text(
+                                            text = "${it.breed} • ${it.age}살",
+                                            fontFamily = PretendardFont,
+                                            fontWeight = FontWeight(400),
+                                            fontSize = 14.sp,
+                                            color = Color(0xFF8B95A1)
+                                        )
+                                    }
+                                    
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                    
+                                    // 게시물 정보
+                                    Column {
+                                        // "게시물" 텍스트 (#8B95A1, 14px, weight 500)
+                                        Text(
+                                            text = "게시물",
+                                            fontFamily = PretendardFont,
+                                            fontWeight = FontWeight(500),
+                                            fontSize = 14.sp,
+                                            color = Color(0xFF8B95A1)
+                                        )
+                                        
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        
+                                        // 게시물 개수 (#4E5968, 17px, weight 500)
+                                        Text(
+                                            text = "${uiState.posts.size}",
+                                            fontFamily = PretendardFont,
+                                            fontWeight = FontWeight(500),
+                                            fontSize = 17.sp,
+                                            color = Color(0xFF4E5968)
+                                        )
+                                    }
                                 }
+                                
+                                // 오른쪽: 프로필 사진 (61X61)
+                                AsyncImage(
+                                    model = firstPost.pet?.profileImageUrl ?: firstPost.author.profilePictureUrl,
+                                    contentDescription = "프로필",
+                                    modifier = Modifier
+                                        .size(61.dp)
+                                        .clip(CircleShape),
+                                    contentScale = ContentScale.Crop
+                                )
                             }
-                            
-                            Spacer(modifier = Modifier.width(190.dp))
-                            
-                            // 프로필 사진 (61X61, 오른쪽)
-                            AsyncImage(
-                                model = firstPost.pet?.profileImageUrl ?: firstPost.author.profilePictureUrl,
-                                contentDescription = "프로필",
-                                modifier = Modifier
-                                    .size(61.dp)
-                                    .clip(CircleShape),
-                                contentScale = ContentScale.Crop
-                            )
                         }
                     }
                     
-                    Spacer(modifier = Modifier.height(20.dp))
-                    
-                    // 게시물 카운트 정보
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                    ) {
-                        // "게시물" 텍스트 (#8B95A1, 14px)
-                        Text(
-                            text = "게시물",
-                            fontFamily = PretendardFont,
-                            fontWeight = FontWeight(400),
-                            fontSize = 14.sp,
-                            color = Color(0xFF8B95A1)
-                        )
-                        
-                        // 게시물 개수 (#4E5968, 17px)
-                        Text(
-                            text = "${uiState.posts.size}",
-                            fontFamily = PretendardFont,
-                            fontWeight = FontWeight(400),
-                            fontSize = 17.sp,
-                            color = Color(0xFF4E5968)
-                        )
-                    }
-                    
-                    Spacer(modifier = Modifier.height(26.dp))
+                    // 구분선 (#E4E8EB, 1dp)
+                    HorizontalDivider(
+                        modifier = Modifier.fillMaxWidth(),
+                        thickness = 1.dp,
+                        color = Color(0xFFE4E8EB)
+                    )
                 }
                 
                 // 게시물 목록

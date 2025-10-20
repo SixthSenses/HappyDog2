@@ -1,20 +1,20 @@
 package com.example.pet_project_frontend.domain.repository
 
-import com.example.pet_project_frontend.data.remote.dto.response.BreedsResponse
-import com.example.pet_project_frontend.data.remote.dto.response.BreedResponse
+import com.example.pet_project_frontend.core.common.AppResult
+import com.example.pet_project_frontend.domain.model.Breed
 
+/**
+ * 품종(Breed) Repository 인터페이스
+ */
 interface BreedRepository {
-    suspend fun getAllBreeds(
-        limit: Int? = null,
-        offset: Int? = null,
-        summary: Boolean = false
-    ): Result<BreedsResponse>
+    /**
+     * 모든 품종 목록 조회
+     */
+    suspend fun getAllBreeds(): AppResult<List<Breed>>
     
-    suspend fun searchBreeds(
-        query: String,
-        limit: Int = 10,
-        offset: Int = 0
-    ): Result<BreedsResponse>
-    
-    suspend fun getBreedByName(breedName: String): Result<BreedResponse>
+    /**
+     * 품종 검색
+     * @param query 검색어
+     */
+    suspend fun searchBreeds(query: String): AppResult<List<Breed>>
 }

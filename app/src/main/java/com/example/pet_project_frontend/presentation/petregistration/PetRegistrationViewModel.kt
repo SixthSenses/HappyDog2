@@ -6,13 +6,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.pet_project_frontend.data.remote.dto.response.BreedResponse
 import com.example.pet_project_frontend.core.common.AppResult
 import com.example.pet_project_frontend.core.common.ValidationError
+import com.example.pet_project_frontend.domain.model.Breed
 import com.example.pet_project_frontend.domain.model.Gender
 import com.example.pet_project_frontend.presentation.model.PetUiState
 import com.example.pet_project_frontend.data.local.preferences.TokenManager
-import com.example.pet_project_frontend.data.remote.dto.response.HeightWeightInfo
 import com.example.pet_project_frontend.domain.repository.BreedRepository
 import com.example.pet_project_frontend.domain.usecase.breed.SearchBreedsUseCase
 import com.example.pet_project_frontend.domain.usecase.pet.RegisterPetUseCase
@@ -50,7 +49,7 @@ class PetRegistrationViewModel @Inject constructor(
 
     var selectedGender by mutableStateOf<Gender?>(null)
 
-    var selectedBreed by mutableStateOf<BreedResponse?>(null)
+    var selectedBreed by mutableStateOf<Breed?>(null)
 
     var birthDate by mutableStateOf<LocalDate?>(null)
 
@@ -62,7 +61,7 @@ class PetRegistrationViewModel @Inject constructor(
 
     // Breed search
     var breedSearchQuery by mutableStateOf("")
-    var breedSearchResults by mutableStateOf<List<BreedResponse>>(emptyList())
+    var breedSearchResults by mutableStateOf<List<Breed>>(emptyList())
     var showBreedDialog by mutableStateOf(false)
 
     /**
@@ -83,10 +82,19 @@ class PetRegistrationViewModel @Inject constructor(
     }
 
     suspend fun selectBreed(breedName: String) {
-        val result = breedRepository.searchBreeds(breedName, 1)
-        result.onSuccess { breedResponse ->
-            selectedBreed = breedResponse.breeds[0]
-            clearError()
+        when (val result = breedRepository.searchBreeds(breedName)) {
+            is AppResult.Success -> {
+                if (result.data.isNotEmpty()) {
+                    selectedBreed = result.data[0]
+                    clearError()
+                }
+            }
+            is AppResult.Error -> {
+                // 에러 처리 필요 시 추가
+            }
+            is AppResult.Exception -> {
+                // 예외 처리 필요 시 추가
+            }
         }
     }
 

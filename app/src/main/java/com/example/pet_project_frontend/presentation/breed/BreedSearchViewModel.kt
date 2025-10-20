@@ -2,7 +2,8 @@ package com.example.pet_project_frontend.presentation.breed
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.pet_project_frontend.data.remote.dto.response.BreedsResponse
+import com.example.pet_project_frontend.core.common.AppResult
+import com.example.pet_project_frontend.domain.model.Breed
 import com.example.pet_project_frontend.domain.repository.BreedRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,21 +34,31 @@ class BreedSearchViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             _searchState.value = BreedSearchState.Loading
 
-            breedRepository.searchBreeds(query)
-                .onSuccess { breedsResponse ->
+            when (val result = breedRepository.searchBreeds(query)) {
+                is AppResult.Success -> {
                     _uiState.value = BreedSearchUiState(
-                        breeds = breedsResponse.breeds,
+                        breeds = result.data,
                         isLoading = false
                     )
-                    _searchState.value = BreedSearchState.Success(breedsResponse)
+                    _searchState.value = BreedSearchState.Success(result.data)
                 }
-                .onFailure { exception ->
+                is AppResult.Error -> {
+                    val errorMessage = "품종 검색에 실패했습니다: ${result.message}"
                     _uiState.value = BreedSearchUiState(
-                        error = exception.message ?: "품종 검색에 실패했습니다.",
+                        error = errorMessage,
                         isLoading = false
                     )
-                    _searchState.value = BreedSearchState.Error(exception.message ?: "품종 검색에 실패했습니다.")
+                    _searchState.value = BreedSearchState.Error(errorMessage)
                 }
+                is AppResult.Exception -> {
+                    val errorMessage = result.throwable.message ?: "품종 검색에 실패했습니다."
+                    _uiState.value = BreedSearchUiState(
+                        error = errorMessage,
+                        isLoading = false
+                    )
+                    _searchState.value = BreedSearchState.Error(errorMessage)
+                }
+            }
         }
     }
 

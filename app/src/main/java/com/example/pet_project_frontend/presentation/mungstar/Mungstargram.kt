@@ -140,7 +140,7 @@ fun MungStarFeed(
                     modifier = Modifier
                         .align(Alignment.CenterEnd)
                         .padding(end = 20.dp),
-                    horizontalArrangement = Arrangement.spacedBy(15.dp),
+                    horizontalArrangement = Arrangement.spacedBy(24.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // notifications.png (22×22)
@@ -174,7 +174,7 @@ fun MungStarFeed(
             HorizontalDivider(
                 modifier = Modifier.fillMaxWidth(),
                 thickness = 1.dp,
-                color = Color(0xFF8B95A1)
+                color = Color(0xFFE4E8EB)
             )
 
             // 피드 목록
@@ -233,7 +233,7 @@ fun MungStarFeed(
                     HorizontalDivider(
                         modifier = Modifier.fillMaxWidth(),
                         thickness = 1.dp,
-                        color = Color(0xFF8B95A1)
+                        color = Color(0xFFE4E8EB)
                     )
                 }
                 
@@ -542,6 +542,9 @@ fun PostItem(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // 디버깅 로그
+            android.util.Log.d("MungstarPost", "Post ${post.postId}: pet=${post.pet?.name}, profileImageUrl=${post.pet?.profileImageUrl}")
+            
             // 프로필 이미지 (클릭 시 사용자 게시물 페이지로 이동)
             if (post.pet?.profileImageUrl != null) {
                 AsyncImage(
@@ -633,24 +636,39 @@ fun PostItem(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // 이미지 (텍스트 아래 10px 간격, 가로 스크롤, 클릭 시 상세 화면)
+        // 이미지 (텍스트 아래 10px 간격)
         if (post.mediaUrls.isNotEmpty()) {
-            LazyRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(post.mediaUrls) { imageUrl ->
-                    // FirebaseStorageInterceptor가 자동으로 URL을 갱신함
-                    AsyncImage(
-                        model = imageUrl,
-                        contentDescription = "Post image",
-                        modifier = Modifier
-                            .size(250.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color(0xFFF5F5F5))
-                            .clickable(onClick = onPostClick), // 각 이미지에 clickable 적용
-                        contentScale = ContentScale.Crop
-                    )
+            if (post.mediaUrls.size == 1) {
+                // 사진이 하나일 때: 핸드폰 너비에 맞춰 완전히 표시
+                AsyncImage(
+                    model = post.mediaUrls[0],
+                    contentDescription = "Post image",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f) // 정사각형 비율 유지
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFFF5F5F5))
+                        .clickable(onClick = onPostClick),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                // 사진이 여러 개일 때: 가로 스크롤 (250x250)
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(post.mediaUrls) { imageUrl ->
+                        AsyncImage(
+                            model = imageUrl,
+                            contentDescription = "Post image",
+                            modifier = Modifier
+                                .size(250.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color(0xFFF5F5F5))
+                                .clickable(onClick = onPostClick),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
                 }
             }
 
@@ -662,17 +680,17 @@ fun PostItem(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 좋아요 버튼 - 0개일 때 like.png (22dp), 1개 이상일 때 favorite.png (24dp)
+            // 좋아요 버튼 - 사용자가 좋아요 눌렀을 때만 favorite.png (24dp), 아니면 like.png (22dp)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.clickable { onLikeClick() }
             ) {
                 Image(
                     painter = painterResource(
-                        id = if (post.likesCount > 0) R.drawable.favorite else R.drawable.like
+                        id = if (post.isLiked) R.drawable.favorite else R.drawable.like
                     ),
                     contentDescription = "Like",
-                    modifier = Modifier.size(if (post.likesCount > 0) 24.dp else 22.dp)
+                    modifier = Modifier.size(if (post.isLiked) 24.dp else 22.dp)
                 )
                 
                 // 좋아요 수 (1개부터 표시, #EC4453, 15px)

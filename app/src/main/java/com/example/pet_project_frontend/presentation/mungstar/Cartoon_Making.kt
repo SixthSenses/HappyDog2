@@ -136,7 +136,7 @@ fun CartoonMaking(
         HorizontalDivider(
             modifier = Modifier.fillMaxWidth(),
             thickness = 1.dp,
-            color = Color(0xFF8B95A1)
+            color = Color(0xFFE4E8EB)
         )
 
         // 하단 앱바 (412X52)
