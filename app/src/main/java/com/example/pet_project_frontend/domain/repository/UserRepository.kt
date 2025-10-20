@@ -2,6 +2,7 @@ package com.example.pet_project_frontend.domain.repository
 
 import com.example.pet_project_frontend.core.common.AppResult
 import com.example.pet_project_frontend.data.remote.dto.request.UserUpdateRequest
+import com.example.pet_project_frontend.domain.model.NotificationPreferences
 import com.example.pet_project_frontend.domain.model.User
 
 interface UserRepository {
@@ -12,4 +13,16 @@ interface UserRepository {
     suspend fun deleteUser(): AppResult<Unit>
     suspend fun saveAccessToken(token: String)
     fun getAccessToken(): kotlinx.coroutines.flow.Flow<String?>
+    
+    /**
+     * GET /api/users/me/notification-preferences
+     * 현재 사용자의 알림 설정 조회
+     */
+    suspend fun getNotificationPreferences(): AppResult<NotificationPreferences>
+    
+    /**
+     * PUT /api/users/me/notification-preferences
+     * 현재 사용자의 알림 설정 수정
+     */
+    suspend fun updateNotificationPreferences(preferences: NotificationPreferences): AppResult<NotificationPreferences>
 }

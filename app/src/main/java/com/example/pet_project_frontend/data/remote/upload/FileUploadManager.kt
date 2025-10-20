@@ -1,8 +1,10 @@
 package com.example.pet_project_frontend.data.remote.upload
 
 import com.example.pet_project_frontend.data.remote.api.UploadApi
-import com.example.pet_project_frontend.data.remote.dto.request.GetUploadUrlRequest
-import com.example.pet_project_frontend.data.remote.dto.response.UploadUrlResponse
+import com.example.pet_project_frontend.data.remote.dto.UploadUrlRequestDto
+import com.example.pet_project_frontend.data.remote.dto.UploadUrlResponseDto
+import com.example.pet_project_frontend.data.mapper.toDomain
+import com.example.pet_project_frontend.domain.model.UploadUrl
 import com.example.pet_project_frontend.core.common.AppResult
 import com.example.pet_project_frontend.core.common.SafeApi
 import kotlinx.coroutines.Dispatchers
@@ -21,6 +23,7 @@ import javax.inject.Singleton
  */
 enum class UploadType(val value: String) {
     USER_PROFILE("user_profile"),
+    PET_PROFILE("pet_profile"),
     PET_NOSE_PRINT("pet_nose_print"),
     EYE_ANALYSIS("eye_analysis"),
     POST_IMAGE("post_image"),
@@ -91,13 +94,17 @@ class FileUploadManager @Inject constructor(
         uploadType: UploadType,
         filename: String,
         contentType: String
-    ): AppResult<UploadUrlResponse> {
-        val request = GetUploadUrlRequest(
+    ): AppResult<UploadUrl> {
+        val request = UploadUrlRequestDto(
+            contentType = contentType,
             uploadType = uploadType.value,
-            filename = filename,
-            contentType = contentType
+            filename = filename
         )
-        return SafeApi.response { uploadApi.getUploadUrl(request) }
+        return when (val result = SafeApi.response { uploadApi.getUploadUrl(request) }) {
+            is AppResult.Success -> AppResult.Success(result.data.toDomain())
+            is AppResult.Error -> result
+            is AppResult.Exception -> result
+        }
     }
     
     /**

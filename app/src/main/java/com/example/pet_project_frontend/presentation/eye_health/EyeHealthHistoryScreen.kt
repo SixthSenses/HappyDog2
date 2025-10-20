@@ -1,8 +1,6 @@
 package com.example.pet_project_frontend.presentation.eye_health
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -46,7 +44,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil.compose.AsyncImage
 import com.example.pet_project_frontend.R
 import com.example.pet_project_frontend.core.theme.MyPageColors
 import com.example.pet_project_frontend.domain.model.EyeAnalysisHistoryItem
@@ -196,7 +193,7 @@ private fun EyeHealthHistoryItem(
             Image(
                 painter = painterResource(
                     id = if (historyItem.isNormal) {
-                        R.drawable.check // 정상인 경우
+                        R.drawable.eye_check // 정상인 경우
                     } else {
                         R.drawable.x // 질환이 있는 경우
                     }

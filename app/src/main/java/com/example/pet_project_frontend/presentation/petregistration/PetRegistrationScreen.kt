@@ -1,26 +1,512 @@
 package com.example.pet_project_frontend.presentation.petregistration
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.selection.LocalTextSelectionColors
+import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
+import androidx.compose.material3.BasicAlertDialog
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush.Companion.verticalGradient
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.pet_project_frontend.R
 import com.example.pet_project_frontend.core.navigation.Screen // [수정됨] Screen import
 import com.example.pet_project_frontend.domain.model.Gender
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
+import kotlin.math.roundToInt
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CategorySelectField(
+    label: String,
+    value: String,
+    categories: List<String>,
+    onValueChange: (String) -> Unit,
+    placeholder: String = "",
+    dialogTitle: String,
+    isError: Boolean = false,
+    errorMessage: String? = null,
+    modifier: Modifier = Modifier
+) {
+    var showDialog by remember { mutableStateOf(false) }
+    val focusManager = LocalFocusManager.current // 추가
+
+    Column(
+        modifier = modifier.padding(vertical = 5.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        horizontalAlignment = Alignment.Start
+    ) {
+        Text(
+            text = label,
+            style = TextStyle(
+                fontSize = 13.sp,
+                lineHeight = 14.sp,
+                fontWeight = FontWeight(500),
+                color = if (isError) Color(0xFFF04452) else Color(0xFF333D4B)
+            ),
+            modifier = Modifier.padding(horizontal = 4.dp)
+        )
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            TextField(
+                value = value,
+                onValueChange = { },
+                placeholder = { if (placeholder.isNotEmpty()) Text(placeholder) },
+                singleLine = true,
+                isError = isError,
+                readOnly = true,
+                trailingIcon = {
+                    IconButton(onClick = {
+                        focusManager.clearFocus()
+                        showDialog = true
+                    }) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_arrowdown), // .xml 파일
+                            contentDescription = label,
+                            tint = Color(0xFFB0B8C1), // 색상도 조절 가능
+                            modifier = Modifier
+                                .size(24.dp)
+                        )
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color(0xFFF9FAFB))
+                    .border(
+                        width = 0.5.dp,
+                        color = Color(0xFFE5E8EB),
+                        shape = RoundedCornerShape(14.dp)
+                    ),
+                colors = TextFieldDefaults.colors(
+                    focusedTextColor = Color(0xFF333D4B),
+                    unfocusedTextColor = Color(0xFF333D4B),
+                    errorTextColor = Color(0xFF333D4B),
+                    focusedContainerColor = Color(0xFFF9FAFB),
+                    unfocusedContainerColor = Color(0xFFF9FAFB),
+                    errorContainerColor = Color(0xFFFFEEEE),
+                    cursorColor = Color(0xFF426BF2),
+                    errorCursorColor = Color(0xFFE42A38),
+                    selectionColors = TextSelectionColors(
+                        handleColor = Color(0xFF3182F6),
+                        backgroundColor = Color(0x1A001B37)
+                    ),
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    errorIndicatorColor = Color.Transparent,
+                    focusedPlaceholderColor = Color(0xFF8B95A1),
+                    unfocusedPlaceholderColor = Color(0xFF8B95A1),
+                    errorPlaceholderColor = Color.Transparent
+                )
+            )
+
+            if (isError && errorMessage != null) {
+                Text(
+                    text = errorMessage,
+                    style = TextStyle(
+                        fontSize = 13.sp,
+                        lineHeight = 14.sp,
+                        fontWeight = FontWeight(500),
+                        color = Color(0xFFF04452)
+                    ),
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                )
+            }
+        }
+    }
+
+    if (showDialog) {
+        ResizableSelectionDialog(
+            title = dialogTitle,
+            items = categories,
+            selectedItem = value,
+            onItemSelected = { category ->
+                onValueChange(category)
+                showDialog = false
+            },
+            onDismiss = { showDialog = false }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CategoryMultiSelectField(
+    label: String,
+    value: String,
+    categories: List<String>,
+    onValueChange: (Set<String>) -> Unit,
+    placeholder: String = "",
+    dialogTitle: String,
+    isError: Boolean = false,
+    errorMessage: String? = null,
+    modifier: Modifier = Modifier
+) {
+    var selectedCategories by remember { mutableStateOf(setOf<String>()) }
+    var showDialog by remember { mutableStateOf(false) }
+    val focusManager = LocalFocusManager.current // 추가
+
+    Column(
+        modifier = modifier.padding(vertical = 5.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        horizontalAlignment = Alignment.Start
+    ) {
+        Text(
+            text = label,
+            style = TextStyle(
+                fontSize = 13.sp,
+                lineHeight = 14.sp,
+                fontWeight = FontWeight(500),
+                color = if (isError) Color(0xFFF04452) else Color(0xFF333D4B)
+            ),
+            modifier = Modifier.padding(horizontal = 4.dp)
+        )
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            TextField(
+                value = selectedCategories.joinToString(", "),
+                onValueChange = { },
+                placeholder = { if (placeholder.isNotEmpty()) Text(placeholder) },
+                singleLine = true,
+                isError = isError,
+                readOnly = true,
+                trailingIcon = {
+                    IconButton(onClick = {
+                        focusManager.clearFocus()
+                        showDialog = true
+                    }) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_arrowdown), // .xml 파일
+                            contentDescription = label,
+                            tint = Color(0xFFB0B8C1), // 색상도 조절 가능
+                            modifier = Modifier
+                                .size(24.dp)
+                        )
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color(0xFFF9FAFB))
+                    .border(
+                        width = 0.5.dp,
+                        color = Color(0xFFE5E8EB),
+                        shape = RoundedCornerShape(14.dp)
+                    ),
+                colors = TextFieldDefaults.colors(
+                    focusedTextColor = Color(0xFF333D4B),
+                    unfocusedTextColor = Color(0xFF333D4B),
+                    errorTextColor = Color(0xFF333D4B),
+                    focusedContainerColor = Color(0xFFF9FAFB),
+                    unfocusedContainerColor = Color(0xFFF9FAFB),
+                    errorContainerColor = Color(0xFFFFEEEE),
+                    cursorColor = Color(0xFF426BF2),
+                    errorCursorColor = Color(0xFFE42A38),
+                    selectionColors = TextSelectionColors(
+                        handleColor = Color(0xFF3182F6),
+                        backgroundColor = Color(0x1A001B37)
+                    ),
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    errorIndicatorColor = Color.Transparent,
+                    focusedPlaceholderColor = Color(0xFF8B95A1),
+                    unfocusedPlaceholderColor = Color(0xFF8B95A1),
+                    errorPlaceholderColor = Color.Transparent
+                )
+            )
+
+            if (isError && errorMessage != null) {
+                Text(
+                    text = errorMessage,
+                    style = TextStyle(
+                        fontSize = 13.sp,
+                        lineHeight = 14.sp,
+                        fontWeight = FontWeight(500),
+                        color = Color(0xFFF04452)
+                    ),
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                )
+            }
+        }
+    }
+
+    if (showDialog) {
+        // 다중 선택 다이얼로그 가정: 리스트 항목마다 선택 체크박스 등
+        ResizableMultiSelectionDialog(
+            title = dialogTitle,
+            items = categories,
+            selectedItems = selectedCategories,
+            onSelectionChange = { newSelectedSet ->
+                selectedCategories = newSelectedSet
+                onValueChange(newSelectedSet)
+            },
+            onDismiss = { showDialog = false }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ResizableSelectionDialog(
+    title: String,
+    items: List<String>,
+    selectedItem: String = "",
+    onItemSelected: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+
+    val bottomSheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = false
+    )
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = bottomSheetState,
+        dragHandle = {
+            // 상단 드래그 핸들
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(vertical = 12.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .width(50.dp)
+                        .height(4.dp)
+                        .background(
+                            Color(0xFFE5E8EB),
+                            RoundedCornerShape(2.dp)
+                        )
+                )
+            }
+        },
+        containerColor = Color.White,
+        windowInsets = WindowInsets(0)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 10.dp)
+                .heightIn(min = 300.dp, max = 600.dp)
+        ) {
+            // 헤더
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 25.dp, vertical = 14.dp)
+            ) {
+                Text(
+                    text = title,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF191F28)
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            // 항목 리스트
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(vertical = 1.dp)
+            ) {
+                items(items) { item ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onItemSelected(item) }
+                            .padding(horizontal = 25.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = item,
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Medium,
+                            lineHeight = 0.24.em,
+                            letterSpacing = (-0.01).em,
+                            color = Color(0xFF4E5968),
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        if (item == selectedItem) {
+                            // SVG 사용
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_checkmark), // .xml 파일
+                                contentDescription = "선택됨",
+                                tint = Color(0xFF3182F6), // 색상도 조절 가능
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .padding(end = 2.dp)
+                            )
+                        }
+                    }
+                }
+            }
+            // 하단 여백
+            Spacer(modifier = Modifier.height(14.dp))
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ResizableMultiSelectionDialog(
+    title: String,
+    items: List<String>,
+    selectedItems: Set<String> = emptySet(),
+    onSelectionChange: (Set<String>) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val bottomSheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = false
+    )
+
+    ModalBottomSheet(
+        modifier = Modifier
+            .padding(horizontal = 10.dp),
+        onDismissRequest = onDismiss,
+        sheetState = bottomSheetState,
+        dragHandle = {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(vertical = 12.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .width(50.dp)
+                        .height(4.dp)
+                        .background(
+                            Color(0xFFE5E8EB),
+                            RoundedCornerShape(2.dp)
+                        )
+                )
+            }
+        },
+        containerColor = Color.White,
+        windowInsets = WindowInsets(0)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 300.dp, max = 600.dp)
+        ) {
+            // 헤더
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 25.dp, vertical = 14.dp)
+            ) {
+                Text(
+                    text = title,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF191F28)
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            // 항목 리스트
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(vertical = 1.dp)
+            ) {
+                items(items) { item ->
+                    val isSelected = selectedItems.contains(item)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                val newSelected = selectedItems.toMutableSet()
+                                if (isSelected) newSelected.remove(item)
+                                else newSelected.add(item)
+                                onSelectionChange(newSelected)
+                            }
+                            .padding(horizontal = 25.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = item,
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Medium,
+                            lineHeight = 0.24.em,
+                            letterSpacing = (-0.01).em,
+                            color = Color(0xFF4E5968),
+                            modifier = Modifier.weight(1f)
+                        )
+                        if (isSelected) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_checkmark),
+                                contentDescription = "선택됨",
+                                tint = Color(0xFF3182F6),
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .padding(end = 2.dp)
+                            )
+                        }
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(14.dp))
+        }
+    }
+}
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,15 +514,8 @@ fun PetRegistrationScreen(
     navController: NavController,
     viewModel: PetRegistrationViewModel = hiltViewModel()
 ) {
+    val focusManager = LocalFocusManager.current
     val uiState by viewModel.uiState.collectAsState()
-    val petName by viewModel.petName.collectAsState()
-    val selectedGender by viewModel.selectedGender.collectAsState()
-    val selectedBreed by viewModel.selectedBreed.collectAsState()
-    val birthDate by viewModel.birthDate.collectAsState()
-    // weight removed from schema/UI
-    val furColor by viewModel.furColor.collectAsState()
-    val healthConcerns by viewModel.healthConcerns.collectAsState()
-    val showBreedDialog by viewModel.showBreedDialog.collectAsState()
 
     // 등록 성공 시 펫케어 화면으로 이동
     LaunchedEffect(uiState.isSuccess) {
@@ -48,369 +527,436 @@ fun PetRegistrationScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("반려동물 등록") },
-                navigationIcon = {
-                    IconButton(onClick = { navController.navigateUp() }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "뒤로가기"
-                        )
-                    }
-                }
-            )
-        }
-    ) { paddingValues ->
+    Scaffold() { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .pointerInput(Unit) {
+                    detectTapGestures(onTap = {
+                        focusManager.clearFocus() // 포커스 해제 -> 키패드 닫힘
+                    })
+                }
         ) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                contentPadding = PaddingValues(21.dp, 16.dp),
+                verticalArrangement = Arrangement.spacedBy(25.dp)
             ) {
-                // 이름 입력
                 item {
-                    OutlinedTextField(
-                        value = petName,
-                        onValueChange = viewModel::updatePetName,
-                        label = { Text("이름 *") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        isError = uiState.error?.contains("이름") == true
+                    Text(
+                        text = "회원가입",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF3182F6),
+                        lineHeight = 1.40.em,
+                        letterSpacing = (-0.015).em,
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "반려견의 정보를\n알려주세요",
+                        fontSize = 23.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        lineHeight = 1.40.em,
+                        modifier = Modifier.padding(horizontal = 4.dp)
                     )
                 }
-
+                item {
+                    val isError = uiState.error?.contains("이름") == true
+                    LabeledTextField(
+                        label = "이름",
+                        value = viewModel.petName,
+                        onValueChange = viewModel::updatePetName,
+                        placeholder = "반려견의 이름을 알려주세요",
+                        isError = isError,
+                        errorMessage = uiState.error
+                    )
+                }
                 // 성별 선택
                 item {
-                    Column {
-                        Text(
-                            text = "성별 *",
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            FilterChip(
-                                selected = selectedGender == Gender.MALE,
-                                onClick = { viewModel.updateGender(Gender.MALE) },
-                                label = { Text("수컷") },
-                                modifier = Modifier.weight(1f)
-                            )
-                            FilterChip(
-                                selected = selectedGender == Gender.FEMALE,
-                                onClick = { viewModel.updateGender(Gender.FEMALE) },
-                                label = { Text("암컷") },
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                    }
+                    val isError = uiState.error?.contains("성별") == true
+                    val value = if (viewModel.selectedGender == Gender.MALE) "수컷" else if (viewModel.selectedGender == Gender.FEMALE) "암컷" else ""
+                    val categories = listOf(
+                        "수컷", "암컷"
+                    )
+                    CategorySelectField(
+                        label = "성별",
+                        value = value,
+                        categories = categories,
+                        onValueChange = viewModel::updateGender,
+                        placeholder = "반려견의 성별을 알려주세요",
+                        dialogTitle = "성별을 선택해주세요",
+                        isError = isError,
+                        errorMessage = uiState.error
+                    )
                 }
 
                 // 품종 선택
                 item {
-                    OutlinedTextField(
-                        value = selectedBreed?.breedName ?: "",
-                        onValueChange = { },
-                        label = { Text("품종 *") },
-                        modifier = Modifier.fillMaxWidth(),
-                        readOnly = true,
-                        trailingIcon = {
-                            IconButton(onClick = { viewModel.showBreedDialog() }) {
-                                Icon(Icons.Default.Search, contentDescription = "품종 검색")
+                    val isError = uiState.error?.contains("견종") == true
+                    val selectedBreed = viewModel.selectedBreed
+                    var breedName by remember { mutableStateOf(selectedBreed?.breedName ?: "") }
+                    val categories = listOf(
+                        "가나안 독", "그레이트 데인", "그레이트 피레니즈", "그레이하운드", "그린란드견", "골든 리트리버", "고든 세터", "글렌 오브 이말 테리어", "그리폰 브뤼셀루아", "그리폰 벨주", "꼬똥 드 뚤레아",
+                        "뉴기니 싱잉 독", "뉴펀들랜드", "노르웨이 엘크하운드", "노르웨이 룬데훈드", "노바 스코시아 덕 톨링 리트리버", "노리치 테리어", "노르폴크 테리어",
+                        "닥스훈트", "달마시안", "댄디 딘몬트 테리어", "도베르만", "동경이", "도사", "드로버스 캐틀 독",
+                        "래브라도 리트리버", "라이카", "로트바일러", "로디시안 리지백", "러프 콜리", "레이크랜드 테리어", "라플란드 헤더", "레오베르거",
+                        "말라뮤트", "말티즈", "마스티프", "맨체스터 테리어", "미니어처 불 테리어", "미니어처 푸들", "미니어처 핀셔", "미니어처 슈나우저", "무디",
+                        "보더 콜리", "복서", "불독", "불테리어", "불마스티프", "비글", "비숑 프리제", "보스턴 테리어", "버니즈 마운틴 독", "바셋 하운드", "브리타니 스패니얼", "보르조이", "보비에 데 플랑드르", "비어디드 콜리", "바르베",
+                        "시베리안 허스키", "시츄", "스피츠", "셰퍼드", "사모예드", "세인트 버나드", "살루키", "삽살개", "스코티시 테리어", "셔틀랜드 쉽독", "스태퍼드셔 불 테리어", "스프링거 스패니얼", "스무스 폭스 테리어", "소프트 코티드 휘튼 테리어", "시바견",
+                        "아키타", "아프간 하운드", "아이리시 세터", "아이리시 울프하운드", "아메리칸 코커 스패니얼", "아메리칸 불독", "아메리칸 스태퍼드셔 테리어", "잉글리시 불독", "잉글리시 세터", "잉글리시 스프링거 스패니얼", "올드 잉글리시 쉽독", "웰시 코기", "와이마라너", "웨스트 하이랜드 화이트 테리어", "와이어 폭스 테리어",
+                        "진돗개", "재패니즈 스피츠", "잭 러셀 테리어", "저먼 쇼트헤어드 포인터", "저먼 와이어헤어드 포인터",
+                        "치와와", "차우차우", "체사피크 베이 리트리버", "차이니즈 크레스티드", "체스키 테리어",
+                        "코커 스패니얼", "콜리", "케언 테리어", "킹 찰스 스패니얼", "케리 블루 테리어", "코몬도르", "키스훈드",
+                        "토이 푸들", "토이 맨체스터 테리어", "티베탄 마스티프", "티베탄 테리어", "토이 폭스 테리어",
+                        "푸들", "포메라니안", "퍼그", "페키니즈", "프렌치 불독", "풍산개", "포인터", "파라오 하운드", "핏 불 테리어", "파슨 러셀 테리어", "펨브로크 웰시 코기", "포르투갈 워터 독", "푸미",
+                        "허스키", "헝가리안 비즐라", "하바니즈", "하운드", "하바네제", "하리어"
+                    )
+                    val coroutineScope = rememberCoroutineScope()
+                    CategorySelectField(
+                        label = "견종",
+                        value = breedName,
+                        categories = categories,
+                        onValueChange = { newName ->
+                            breedName = newName // 입력값은 즉시 반영
+                            coroutineScope.launch {
+                                viewModel.selectBreed(newName) // API 호출
                             }
                         },
-                        isError = uiState.error?.contains("품종") == true
+                        placeholder = "반려견의 견종을 알려주세요",
+                        dialogTitle = "견종을 선택해주세요",
+                        isError = isError,
+                        errorMessage = uiState.error
                     )
+                    LaunchedEffect(selectedBreed) {
+                        breedName = selectedBreed?.breedName ?: ""
+                    }
                 }
 
                 // 생년월일 선택
                 item {
-                    var showDatePicker by remember { mutableStateOf(false) }
+                    var birthDateField by remember { mutableStateOf(TextFieldValue("")) }
+                    val isError = uiState.error?.contains("생년월일") == true
 
-                    OutlinedTextField(
-                        value = birthDate?.format(DateTimeFormatter.ofPattern("yyyy년 MM월 dd일")) ?: "",
-                        onValueChange = { },
-                        label = { Text("생년월일 *") },
-                        modifier = Modifier.fillMaxWidth(),
-                        readOnly = true,
-                        trailingIcon = {
-                            IconButton(onClick = { showDatePicker = true }) {
-                                Icon(Icons.Default.DateRange, contentDescription = "날짜 선택")
+                    LabeledDateField(
+                        label = "생년월일",
+                        value = birthDateField,
+                        onValueChange = { newValue ->
+                            // 숫자만 추출해서 포맷
+                            val digits = newValue.text.filter { it.isDigit() }
+
+                            val formatted = buildString {
+                                for (i in digits.indices) {
+                                    append(digits[i])
+                                    if (i == 3 || i == 5) append('.')
+                                }
+                            }.take(10)
+
+                            // 커서 (selection)의 위치 조정
+                            val newCursor = when {
+                                // 입력이 늘어났고, 방금 .이 찍혀 커서를 한 칸 뒤로 이동해야 할 때
+                                formatted.length > birthDateField.text.length &&
+                                        (formatted.getOrNull(newValue.selection.start - 1) == '.') ->
+                                    newValue.selection.start + 1
+                                else ->
+                                    minOf(formatted.length, newValue.selection.start)
                             }
+
+                            birthDateField = TextFieldValue(
+                                text = formatted,
+                                selection = TextRange(newCursor)
+                            )
+                            // 검증 및 상태 업데이트
+                            viewModel.updateBirthDate(
+                                try {
+                                    if (digits.length >= 8) LocalDate.parse(formatted, DateTimeFormatter.ofPattern("yyyy.MM.dd"))
+                                    else null
+                                } catch (e: DateTimeParseException) { null }
+                            )
                         },
-                        isError = uiState.error?.contains("생년월일") == true
+                        placeholder = "반려견의 생일을 알려주세요",
+                        isError = isError,
+                        isNumberType = true,
+                        errorMessage = uiState.error
                     )
-
-                    if (showDatePicker) {
-                        PetDatePickerDialog(
-                            onDateSelected = { date ->
-                                viewModel.updateBirthDate(date)
-                            },
-                            onDismiss = { showDatePicker = false }
-                        )
-                    }
                 }
-
-                // weight removed
 
                 // 털 색상 (선택)
                 item {
-                    OutlinedTextField(
-                        value = furColor,
+                    val isError = uiState.error?.contains("털 색상") == true
+                    val value = viewModel.furColor
+                    val categories = listOf(
+                        "흰색", "금색", "황색", "회색", "검은색", "흰색 + 금색", "흰색 + 황색", "흰색 + 회색", "흰색 + 검은색", "검은색 + 금색"
+                    )
+                    CategorySelectField(
+                        label = "털 색상",
+                        value = value,
+                        categories = categories,
                         onValueChange = viewModel::updateFurColor,
-                        label = { Text("털 색상 (선택)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        placeholder = "반려견의 털 색상을 알려주세요",
+                        dialogTitle = "털 색상을 선택해주세요",
+                        isError = isError,
+                        errorMessage = uiState.error
                     )
                 }
 
                 // 건강 관심사 (선택)
                 item {
-                    HealthConcernsSection(
-                        healthConcerns = healthConcerns,
-                        onAdd = viewModel::addHealthConcern,
-                        onRemove = viewModel::removeHealthConcern
+                    val isError = uiState.error?.contains("건강 관심사") == true
+                    val value = viewModel.healthConcerns.joinToString(separator = ", ")
+                    val categories = listOf(
+                        "눈", "뼈/관절", "피부/피모", "치아/구강", "노화", "비만", "변비", "심장", "영양", "신장/요로", "면역력", "구토"
+                    )
+                    CategoryMultiSelectField(
+                        label = "건강 관심사",
+                        value = value,
+                        categories = categories,
+                        onValueChange = viewModel::updateHealthConcerns,
+                        placeholder = "지금 가장 관심있는 내용을 알려주세요",
+                        dialogTitle = "건강 관심사를 선택해주세요",
+                        isError = isError,
+                        errorMessage = uiState.error
                     )
                 }
 
-                // 에러 메시지
-                uiState.error?.let {
-                    item {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer
-                            )
-                        ) {
-                            Text(
-                                text = it,
-                                modifier = Modifier.padding(16.dp),
-                                color = MaterialTheme.colorScheme.onErrorContainer
-                            )
-                        }
-                    }
-                }
-
-                // 등록 버튼
                 item {
-                    Button(
-                        onClick = { viewModel.registerPet() },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        enabled = !uiState.isLoading,
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        if (uiState.isLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                color = MaterialTheme.colorScheme.onPrimary
-                            )
-                        } else {
-                            Text(
-                                text = "등록하기",
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
+                    Spacer(modifier = Modifier.height(92.dp))
                 }
             }
-
-            // 품종 선택 다이얼로그
-            if (showBreedDialog) {
-                BreedSelectionDialog(
-                    viewModel = viewModel,
-                    onDismiss = { viewModel.hideBreedDialog() }
-                )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-fun HealthConcernsSection(
-    healthConcerns: List<String>,
-    onAdd: (String) -> Unit,
-    onRemove: (String) -> Unit
-) {
-    var inputText by remember { mutableStateOf("") }
-
-    Column {
-        Text(
-            text = "건강 관심사 (선택)",
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            OutlinedTextField(
-                value = inputText,
-                onValueChange = { inputText = it },
-                modifier = Modifier.weight(1f),
-                placeholder = { Text("예: 알러지, 관절염") },
-                singleLine = true
-            )
-
-            IconButton(
-                onClick = {
-                    if (inputText.isNotBlank()) {
-                        onAdd(inputText)
-                        inputText = ""
-                    }
-                }
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "추가")
-            }
-        }
-
-        if (healthConcerns.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(8.dp))
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                healthConcerns.forEach { concern ->
-                    InputChip(
-                        selected = false,
-                        onClick = { /* 선택 기능 없음 */ },
-                        label = { Text(concern) },
-                        trailingIcon = {
-                            IconButton(
-                                onClick = { onRemove(concern) },
-                                modifier = Modifier.size(18.dp)
-                            ) {
-                                Icon(Icons.Default.Close, contentDescription = "삭제")
-                            }
-                        }
-                    )
-                }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun PetDatePickerDialog(
-    onDateSelected: (LocalDate) -> Unit,
-    onDismiss: () -> Unit
-) {
-    val datePickerState = rememberDatePickerState()
-
-    DatePickerDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    datePickerState.selectedDateMillis?.let { millis ->
-                        val selectedDate = Instant.ofEpochMilli(millis)
-                            .atZone(ZoneId.systemDefault())
-                            .toLocalDate()
-                        onDateSelected(selectedDate)
-                    }
-                    onDismiss()
-                }
-            ) {
-                Text("확인")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("취소")
-            }
-        }
-    ) {
-        DatePicker(state = datePickerState)
-    }
-}
-
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun BreedSelectionDialog(
-    viewModel: PetRegistrationViewModel,
-    onDismiss: () -> Unit
-) {
-    val searchQuery by viewModel.breedSearchQuery.collectAsState()
-    val searchResults by viewModel.breedSearchResults.collectAsState()
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        modifier = Modifier.fillMaxHeight(0.8f),
-        title = {
-            Text(
-                text = "품종 선택",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
-            )
-        },
-        text = {
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .fillMaxSize(),
+                verticalArrangement = Arrangement.Bottom,
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = viewModel::updateBreedSearchQuery,
-                    label = { Text("품종 검색") },
-                    modifier = Modifier.fillMaxWidth(),
-                    leadingIcon = {
-                        Icon(Icons.Default.Search, contentDescription = "검색")
-                    },
-                    singleLine = true
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                LazyColumn(
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 360.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                        .height(30.dp)
+                        .background(
+                            brush = verticalGradient(
+                                colors = listOf(
+                                    Color.White.copy(alpha = 0f),
+                                    Color.White,
+                                )
+                            )
+                        )
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(78.dp)
+                        .background(Color.White),
+                    contentAlignment = Alignment.Center
                 ) {
-                    items(searchResults) { breed ->
-                        Card(
-                            onClick = { viewModel.selectBreed(breed) },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = breed.breedName,
-                                    style = MaterialTheme.typography.bodyLarge
-                                )
-                                Text(
-                                    text = "평균 수명: ${breed.lifeExpectancy}년",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
+                    Button(
+                        onClick = { viewModel.registerPet() },
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(58.dp)
+                            .padding(horizontal = 21.dp),
+                        enabled = !uiState.isLoading,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF3182F6),
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Text(
+                            text = "완료",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        )
                     }
                 }
             }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("닫기")
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun LabeledTextField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String? = null,
+    isError: Boolean = false,
+    isNumberType: Boolean = false,
+    errorMessage: String? = null,
+    singleLine: Boolean = true,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.padding(vertical = 5.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        horizontalAlignment = Alignment.Start
+    ) {
+        Text(
+            text = label,
+            style = TextStyle(
+                fontSize = 13.sp,
+                lineHeight = 14.sp,
+                fontWeight = FontWeight(500),
+                color = if (isError) Color(0xFFF04452) else Color(0xFF333D4B)
+            ),
+            modifier = Modifier.padding(horizontal = 4.dp)
+        )
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            TextField(
+                value = value,
+                onValueChange = onValueChange,
+                placeholder = { placeholder?.let { Text(it) }},
+                singleLine = singleLine,
+                isError = isError,
+                keyboardOptions = if (isNumberType) {
+                    KeyboardOptions.Default.copy(
+                        keyboardType = KeyboardType.Number
+                    )
+                } else {
+                    KeyboardOptions.Default
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color(0xFFF9FAFB))
+                    .border(
+                        width = 0.5.dp,
+                        color = Color(0xFFE5E8EB),
+                        shape = RoundedCornerShape(14.dp)
+                    ),
+                colors = TextFieldDefaults.colors(
+                    focusedTextColor = Color(0xFF333D4B),
+                    unfocusedTextColor = Color(0xFF333D4B),
+                    errorTextColor = Color(0xFF333D4B),
+                    focusedContainerColor = Color(0xFFF9FAFB),
+                    unfocusedContainerColor = Color(0xFFF9FAFB),
+                    errorContainerColor = Color(0xFFFFEEEE),
+                    cursorColor = Color(0xFF426BF2),
+                    errorCursorColor = Color(0xFFE42A38),
+                    selectionColors = TextSelectionColors(
+                        handleColor = Color(0xFF3182F6),
+                        backgroundColor = Color(0x1A001B37)
+                    ),
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    errorIndicatorColor = Color.Transparent,
+                    focusedPlaceholderColor = Color(0xFF8B95A1),
+                    unfocusedPlaceholderColor = Color(0xFF8B95A1),
+                    errorPlaceholderColor = Color.Transparent
+                )
+            )
+
+            if (isError && errorMessage != null) {
+                Text(
+                    text = errorMessage,
+                    style = TextStyle(
+                        fontSize = 13.sp,
+                        lineHeight = 14.sp,
+                        fontWeight = FontWeight(500),
+                        color = Color(0xFFF04452)
+                    ),
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                )
             }
         }
-    )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun LabeledDateField(
+    label: String,
+    value: TextFieldValue,
+    onValueChange: (TextFieldValue) -> Unit,
+    placeholder: String? = null,
+    isError: Boolean = false,
+    isNumberType: Boolean = false,
+    errorMessage: String? = null,
+    singleLine: Boolean = true,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.padding(vertical = 5.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        horizontalAlignment = Alignment.Start
+    ) {
+        Text(
+            text = label,
+            style = TextStyle(
+                fontSize = 13.sp,
+                lineHeight = 14.sp,
+                fontWeight = FontWeight(500),
+                color = if (isError) Color(0xFFF04452) else Color(0xFF333D4B)
+            ),
+            modifier = Modifier.padding(horizontal = 4.dp)
+        )
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            TextField(
+                value = value,
+                onValueChange = onValueChange,
+                placeholder = { placeholder?.let { Text(it) }},
+                singleLine = singleLine,
+                isError = isError,
+                keyboardOptions = if (isNumberType) {
+                    KeyboardOptions.Default.copy(
+                        keyboardType = KeyboardType.Number
+                    )
+                } else {
+                    KeyboardOptions.Default
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color(0xFFF9FAFB))
+                    .border(
+                        width = 0.5.dp,
+                        color = Color(0xFFE5E8EB),
+                        shape = RoundedCornerShape(14.dp)
+                    ),
+                colors = TextFieldDefaults.colors(
+                    focusedTextColor = Color(0xFF333D4B),
+                    unfocusedTextColor = Color(0xFF333D4B),
+                    errorTextColor = Color(0xFF333D4B),
+                    focusedContainerColor = Color(0xFFF9FAFB),
+                    unfocusedContainerColor = Color(0xFFF9FAFB),
+                    errorContainerColor = Color(0xFFFFEEEE),
+                    cursorColor = Color(0xFF426BF2),
+                    errorCursorColor = Color(0xFFE42A38),
+                    selectionColors = TextSelectionColors(
+                        handleColor = Color(0xFF3182F6),
+                        backgroundColor = Color(0x1A001B37)
+                    ),
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    errorIndicatorColor = Color.Transparent,
+                    focusedPlaceholderColor = Color(0xFF8B95A1),
+                    unfocusedPlaceholderColor = Color(0xFF8B95A1),
+                    errorPlaceholderColor = Color.Transparent
+                )
+            )
+
+            if (isError && errorMessage != null) {
+                Text(
+                    text = errorMessage,
+                    style = TextStyle(
+                        fontSize = 13.sp,
+                        lineHeight = 14.sp,
+                        fontWeight = FontWeight(500),
+                        color = Color(0xFFF04452)
+                    ),
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                )
+            }
+        }
+    }
 }

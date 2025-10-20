@@ -62,12 +62,13 @@ class MyPageViewModel @Inject constructor(
                 val birthDateText = pet.birthDate.format(DateTimeFormatter.ofPattern("yyyy.MM.dd"))
                 _uiState.update { 
                                     it.copy(
+                                        petId = pet.id,
                                         petName = pet.name,
                                         breed = pet.breed,
                     age = ageText,
                     birthDate = birthDateText,
                     gender = genderText,
-                                        profileImageUrl = user.profileImageUrl,
+                                        profileImageUrl = pet.profileImageUrl,
                                         isLoading = false,
                                         error = null
                                     )
@@ -126,10 +127,20 @@ class MyPageViewModel @Inject constructor(
     fun uploadAndApplyProfileImage(localFilePath: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isUploading = true, error = null) }
-            when (val upload = fileUploadManager.uploadFile(java.io.File(localFilePath), UploadType.USER_PROFILE)) {
+            
+            val petId = _uiState.value.petId
+            if (petId.isNullOrBlank()) {
+                _uiState.update { it.copy(isUploading = false, error = "펫 정보를 찾을 수 없습니다") }
+                return@launch
+            }
+            
+            when (val upload = fileUploadManager.uploadFile(java.io.File(localFilePath), UploadType.PET_PROFILE)) {
                 is AppResult.Success -> {
                     val filePath = upload.data // backend file_path
-                    when (val res = userRepository.updateProfileImage(filePath)) {
+                    val updateRequest = com.example.pet_project_frontend.data.remote.dto.request.UpdatePetRequest(
+                        profileImageUrl = filePath
+                    )
+                    when (val res = petRepository.updatePetProfile(petId, updateRequest)) {
                         is AppResult.Success -> {
                             _uiState.update { it.copy(profileImageUrl = res.data.profileImageUrl, isUploading = false) }
                         }
@@ -153,6 +164,7 @@ class MyPageViewModel @Inject constructor(
 }
 
 data class MyPageUiState(
+    val petId: String? = null,
     val petName: String = "",
     val breed: String = "",
     val age: String = "",

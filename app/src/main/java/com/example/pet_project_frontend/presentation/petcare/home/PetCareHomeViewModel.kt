@@ -37,7 +37,7 @@ class PetCareHomeViewModel @Inject constructor(
                         val pet = petResult.data
                         _uiState.value = _uiState.value.copy(
                             petName = pet.name,
-                            petImageUrl = pet.nosePrintUrl
+                            petImageUrl = pet.profileImageUrl // 마이페이지와 동일한 프로필 이미지 사용
                         )
                         
                         // 반려동물 ID를 사용해서 케어 설정과 오늘 기록 로딩

@@ -1,5 +1,9 @@
 package com.example.pet_project_frontend.presentation.petregistration
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pet_project_frontend.data.remote.dto.response.BreedResponse
@@ -7,6 +11,9 @@ import com.example.pet_project_frontend.core.common.AppResult
 import com.example.pet_project_frontend.core.common.ValidationError
 import com.example.pet_project_frontend.domain.model.Gender
 import com.example.pet_project_frontend.presentation.model.PetUiState
+import com.example.pet_project_frontend.data.local.preferences.TokenManager
+import com.example.pet_project_frontend.data.remote.dto.response.HeightWeightInfo
+import com.example.pet_project_frontend.domain.repository.BreedRepository
 import com.example.pet_project_frontend.domain.usecase.breed.SearchBreedsUseCase
 import com.example.pet_project_frontend.domain.usecase.pet.RegisterPetUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -25,120 +32,70 @@ import java.time.Period
  * - [RegisterPetUseCase]: 서버에 반려동물 등록을 수행합니다.
  * - [SearchBreedsUseCase]: 품종 검색 쿼리를 기반으로 품종 목록을 조회합니다.
  */
+
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class PetRegistrationViewModel @Inject constructor(
     private val registerPetUseCase: RegisterPetUseCase,
+    private val breedRepository: BreedRepository,
     private val searchBreedsUseCase: SearchBreedsUseCase
 ) : ViewModel() {
-    
-    // UI State
+
+    // UI State (유지)
     private val _uiState = MutableStateFlow(PetRegistrationUiState())
     val uiState: StateFlow<PetRegistrationUiState> = _uiState.asStateFlow()
-    
-    // Form fields
-    private val _petName = MutableStateFlow("")
-    val petName: StateFlow<String> = _petName.asStateFlow()
-    
-    private val _selectedGender = MutableStateFlow(Gender.MALE)
-    val selectedGender: StateFlow<Gender> = _selectedGender.asStateFlow()
-    
-    private val _selectedBreed = MutableStateFlow<BreedResponse?>(null)
-    val selectedBreed: StateFlow<BreedResponse?> = _selectedBreed.asStateFlow()
-    
-    private val _birthDate = MutableStateFlow<LocalDate?>(null)
-    val birthDate: StateFlow<LocalDate?> = _birthDate.asStateFlow()
-    
-    // Weight is not part of PetRegistrationSchema; removed from registration form
-    
-    private val _furColor = MutableStateFlow("")
-    val furColor: StateFlow<String> = _furColor.asStateFlow()
-    
-    private val _healthConcerns = MutableStateFlow<List<String>>(emptyList())
-    val healthConcerns: StateFlow<List<String>> = _healthConcerns.asStateFlow()
-    
+
+    // -- Form fields (mutableStateOf 로 변경) --
+    var petName by mutableStateOf("")
+
+    var selectedGender by mutableStateOf<Gender?>(null)
+
+    var selectedBreed by mutableStateOf<BreedResponse?>(null)
+
+    var birthDate by mutableStateOf<LocalDate?>(null)
+
+    var weight by mutableStateOf("")
+
+    var furColor by mutableStateOf("")
+
+    var healthConcerns by mutableStateOf<List<String>>(emptyList())
+
     // Breed search
-    private val _breedSearchQuery = MutableStateFlow("")
-    val breedSearchQuery: StateFlow<String> = _breedSearchQuery.asStateFlow()
-    
-    private val _breedSearchResults = MutableStateFlow<List<BreedResponse>>(emptyList())
-    val breedSearchResults: StateFlow<List<BreedResponse>> = _breedSearchResults.asStateFlow()
-    
-    private val _showBreedDialog = MutableStateFlow(false)
-    val showBreedDialog: StateFlow<Boolean> = _showBreedDialog.asStateFlow()
-    
+    var breedSearchQuery by mutableStateOf("")
+    var breedSearchResults by mutableStateOf<List<BreedResponse>>(emptyList())
+    var showBreedDialog by mutableStateOf(false)
+
     /**
      * 초기화 블록으로, 품종 검색어의 변화를 감지하여 자동으로 검색을 수행합니다.
      *
      * @return Unit
      */
-    init {
-        // 품종 검색 자동 실행
-        viewModelScope.launch {
-            _breedSearchQuery
-                .debounce(300) // 300ms 딜레이
-                .distinctUntilChanged()
-                .flatMapLatest { query ->
-                    searchBreedsUseCase(query)
-                }
-                .collect { breeds ->
-                    _breedSearchResults.value = breeds
-                }
+
+    fun updatePetName(name: String) {
+        petName = name
+        clearError()
+    }
+
+    fun updateGender(gender: String) {
+        val gender = if (gender == "수컷") Gender.MALE else if (gender == "암컷") Gender.FEMALE else Gender.UNKNOWN
+        selectedGender = gender
+        clearError()
+    }
+
+    suspend fun selectBreed(breedName: String) {
+        val result = breedRepository.searchBreeds(breedName, 1)
+        result.onSuccess { breedResponse ->
+            selectedBreed = breedResponse.breeds[0]
+            clearError()
         }
     }
-    
-    /**
-     * 반려동물 이름을 업데이트합니다. 입력 시 기존 오류 메시지를 초기화합니다.
-     *
-     * @param name 반려동물 이름
-     * @return Unit
-     */
-    fun updatePetName(name: String) {
-        _petName.value = name
+
+
+    fun updateBirthDate(date: LocalDate?) {
+        birthDate = date
         clearError()
     }
-    
-    /**
-     * 선택된 성별을 업데이트합니다.
-     *
-     * @param gender 선택할 성별
-     * @return Unit
-     */
-    fun updateGender(gender: Gender) {
-        _selectedGender.value = gender
-    }
-    
-    /**
-     * 선택된 품종을 설정하고 품종 선택 다이얼로그를 닫습니다.
-     *
-     * @param breed 선택된 품종 응답
-     * @return Unit
-     */
-    fun selectBreed(breed: BreedResponse) {
-        _selectedBreed.value = breed
-        _showBreedDialog.value = false
-        clearError()
-    }
-    
-    /**
-     * 생년월일을 업데이트합니다. 입력 시 기존 오류 메시지를 초기화합니다.
-     *
-     * @param date 선택한 생년월일
-     * @return Unit
-     */
-    fun updateBirthDate(date: LocalDate) {
-        _birthDate.value = date
-        clearError()
-    }
-    
-    /**
-     * 체중 입력값을 업데이트합니다. 숫자와 소수점만 허용하며 유효할 때만 반영합니다.
-     *
-     * @param weight 체중 문자열(예: "4.2")
-     * @return Unit
-     */
-    // No-op: weight removed
-    
+
     /**
      * 털색 정보를 업데이트합니다.
      *
@@ -146,9 +103,10 @@ class PetRegistrationViewModel @Inject constructor(
      * @return Unit
      */
     fun updateFurColor(color: String) {
-        _furColor.value = color
+        furColor = color
+        clearError()
     }
-    
+
     /**
      * 건강 이슈를 추가합니다. 공백이 아니고 중복이 아닐 때만 추가됩니다.
      *
@@ -156,11 +114,11 @@ class PetRegistrationViewModel @Inject constructor(
      * @return Unit
      */
     fun addHealthConcern(concern: String) {
-        if (concern.isNotBlank() && !_healthConcerns.value.contains(concern)) {
-            _healthConcerns.value = _healthConcerns.value + concern
+        if (concern.isNotBlank() && !healthConcerns.contains(concern)) {
+            healthConcerns = healthConcerns + concern
         }
     }
-    
+
     /**
      * 건강 이슈를 제거합니다.
      *
@@ -168,9 +126,13 @@ class PetRegistrationViewModel @Inject constructor(
      * @return Unit
      */
     fun removeHealthConcern(concern: String) {
-        _healthConcerns.value = _healthConcerns.value - concern
+        healthConcerns = healthConcerns - concern
     }
-    
+
+    fun updateHealthConcerns(newConcerns: Set<String>) {
+        healthConcerns = newConcerns.toList()
+    }
+
     /**
      * 품종 검색어를 업데이트합니다. 검색어 변경은 자동 검색을 트리거합니다.
      *
@@ -178,29 +140,29 @@ class PetRegistrationViewModel @Inject constructor(
      * @return Unit
      */
     fun updateBreedSearchQuery(query: String) {
-        _breedSearchQuery.value = query
+        breedSearchQuery = query
     }
-    
+
     /**
      * 품종 선택 다이얼로그를 표시합니다. 전체 목록을 보이도록 검색어를 초기화합니다.
      *
      * @return Unit
      */
     fun showBreedDialog() {
-        _showBreedDialog.value = true
+        showBreedDialog = true
         // 다이얼로그 열 때 전체 목록 로드
-        _breedSearchQuery.value = ""
+        breedSearchQuery = ""
     }
-    
+
     /**
      * 품종 선택 다이얼로그를 숨깁니다.
      *
      * @return Unit
      */
     fun hideBreedDialog() {
-        _showBreedDialog.value = false
+        showBreedDialog = false
     }
-    
+
     /**
      * 입력값을 검증한 뒤, 반려동물 등록 유스케이스를 호출하여 서버에 등록합니다.
      * 처리 결과에 따라 UI 상태([uiState])를 갱신합니다.
@@ -218,19 +180,18 @@ class PetRegistrationViewModel @Inject constructor(
                 )
                 return@launch
             }
-            
+
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-            
+
             val result = registerPetUseCase(
-                name = _petName.value,
-                gender = _selectedGender.value,
-                breed = _selectedBreed.value!!.breedName,
-                birthDate = _birthDate.value!!,
-                // weight removed from API schema
-                furColor = _furColor.value.takeIf { it.isNotBlank() },
-                healthConcerns = _healthConcerns.value
+                name = petName,
+                gender = selectedGender!!,
+                breed = selectedBreed!!.breedName,
+                birthDate = birthDate!!,
+                furColor = furColor.takeIf { it.isNotBlank() },
+                healthConcerns = healthConcerns
             )
-            
+
             when (result) {
                 is AppResult.Success -> {
                     val petUi = result.data.toUiState()
@@ -279,9 +240,9 @@ class PetRegistrationViewModel @Inject constructor(
             else -> "${years}살"
         }
         val genderText = when (gender) {
-            com.example.pet_project_frontend.domain.model.Gender.MALE -> "수컷"
-            com.example.pet_project_frontend.domain.model.Gender.FEMALE -> "암컷"
-            com.example.pet_project_frontend.domain.model.Gender.UNKNOWN -> "미상"
+            Gender.MALE -> "수컷"
+            Gender.FEMALE -> "암컷"
+            Gender.UNKNOWN -> "미상"
         }
         return PetUiState(
             id = id,
@@ -290,12 +251,11 @@ class PetRegistrationViewModel @Inject constructor(
             ageText = ageText,
             birthDateText = birthDate.toString(),
             genderText = genderText,
-            weightText = null,
             furColorText = null,
             profileImageUrl = null
         )
     }
-    
+
     /**
      * 현재 입력값을 검증하고 오류 메시지를 반환합니다.
      *
@@ -303,15 +263,18 @@ class PetRegistrationViewModel @Inject constructor(
      */
     private fun validateInput(): String? {
         return when {
-            _petName.value.isBlank() -> "반려동물 이름을 입력해주세요"
-            _petName.value.length > 20 -> "이름은 20자 이내로 입력해주세요"
-            _selectedBreed.value == null -> "품종을 선택해주세요"
-            _birthDate.value == null -> "생년월일을 선택해주세요"
-            _birthDate.value!!.isAfter(LocalDate.now()) -> "올바른 생년월일을 선택해주세요"
+            petName.isBlank() -> "이름을 입력해주세요"
+            petName.length > 20 -> "이름은 20자 이내로 입력해주세요"
+            selectedGender == null -> "성별을 선택해주세요"
+            selectedBreed == null -> "견종을 선택해주세요"
+            birthDate == null -> "생년월일을 입력해주세요"
+            birthDate!!.isAfter(LocalDate.now()) -> "올바른 생년월일을 입력해주세요"
+            furColor.isBlank() -> "털 색상을 선택해주세요"
+            healthConcerns.size == 0 -> "건강 관심사를 선택해주세요"
             else -> null
         }
     }
-    
+
     /**
      * UI 상태의 오류 메시지를 초기화합니다.
      *

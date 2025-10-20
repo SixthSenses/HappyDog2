@@ -66,9 +66,9 @@ object NetworkModule {
             .addInterceptor(httpLoggingInterceptor)
             .addInterceptor(idempotencyInterceptor)
             .addInterceptor(ErrorInterceptor())
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS)
+            .connectTimeout(300, TimeUnit.SECONDS)
+            .readTimeout(300, TimeUnit.SECONDS)
+            .writeTimeout(300, TimeUnit.SECONDS)
             .build()
 
         return Retrofit.Builder()
@@ -94,9 +94,9 @@ object NetworkModule {
             .addInterceptor(ErrorInterceptor())
             .addInterceptor(protectedErrorInterceptor)
             .authenticator(tokenAuthenticator)
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS)
+            .connectTimeout(300, TimeUnit.SECONDS)
+            .readTimeout(300, TimeUnit.SECONDS)
+            .writeTimeout(300, TimeUnit.SECONDS)
             .build()
     }
 
@@ -155,6 +155,18 @@ object NetworkModule {
     @Singleton
     fun providePostApi(retrofit: Retrofit): PostApi {
         return retrofit.create(PostApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideCommentApi(retrofit: Retrofit): CommentApi {
+        return retrofit.create(CommentApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideCartoonJobApi(retrofit: Retrofit): CartoonJobApi {
+        return retrofit.create(CartoonJobApi::class.java)
     }
 
     @Provides

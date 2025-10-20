@@ -121,11 +121,6 @@ class ActivityManagementViewModel @Inject constructor(
                 isLoading = true, 
                 error = null, 
                 selectedDate = date,
-                selectedDateActivityLiveMinutes = 0,
-                goalActivityCount = 0,
-                previousDateActivityMinutes = 0,
-                previousDateAchivementPercentage = 0f,
-                selectedDateAchievementPercentage = 0f
             )
 
             try {

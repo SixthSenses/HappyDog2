@@ -604,82 +604,87 @@ class ThrottledImageAnalyzer(
     private var tempDmuResult: String? = null
 
     override fun analyze(image: ImageProxy) {
-        runBlocking {
-            coroutineScope {
-                launch {
-                    val currentTimestamp = System.currentTimeMillis()
-                    if (currentTimestamp - lastYoloTimestamp >= 200) {
-                        cameraStateHolder.bestCandidate = tempYoloResult
-                        cameraStateHolder.addSequence(
-                            if (tempYoloResult != null) {
-                                remapKeypoints(normalizeKeypoints(tempYoloResult!!))
-                            } else {
-                                null
+        try {
+            runBlocking {
+                coroutineScope {
+                    launch {
+                        val currentTimestamp = System.currentTimeMillis()
+                        if (currentTimestamp - lastYoloTimestamp >= 200) {
+                            cameraStateHolder.bestCandidate = tempYoloResult
+                            cameraStateHolder.addSequence(
+                                if (tempYoloResult != null) {
+                                    remapKeypoints(normalizeKeypoints(tempYoloResult!!))
+                                } else {
+                                    null
+                                }
+                            )
+                            lastYoloTimestamp = currentTimestamp
+                            tempYoloResult = null
+                        }
+                        if (tempYoloResult == null) {
+                            val bitmap = image.toBitmap()
+                            val tensorImage = TensorImage.fromBitmap(bitmap)
+                            val imageProcessor = ImageProcessor.Builder()
+                                .add(ResizeOp(640, 640, ResizeOp.ResizeMethod.BILINEAR))
+                                .add(NormalizeOp(0f, 255f))
+                                .build()
+                            val processedTensorImage = imageProcessor.process(tensorImage)
+                            val tensorBuffer = processedTensorImage.tensorBuffer
+                            val inputBuffer = TensorBuffer.createFixedSize(yoloInputDetails.shape(), yoloInputDetails.dataType())
+                            inputBuffer.loadArray(tensorBuffer.floatArray)
+                            val outputBuffer = TensorBuffer.createFixedSize(yoloOutputDetails.shape(), yoloOutputDetails.dataType())
+                            yoloInterpreter.run(inputBuffer.buffer, outputBuffer.buffer)
+                            val outputArray = outputBuffer.floatArray
+                            val confidences = FloatArray(8400) { candidate ->
+                                outputArray[4 * 8400 + candidate]
                             }
-                        )
-                        lastYoloTimestamp = currentTimestamp
-                        tempYoloResult = null
-                    }
-                    if (tempYoloResult == null) {
-                        val bitmap = image.toBitmap()
-                        val tensorImage = TensorImage.fromBitmap(bitmap)
-                        val imageProcessor = ImageProcessor.Builder()
-                            .add(ResizeOp(640, 640, ResizeOp.ResizeMethod.BILINEAR))
-                            .add(NormalizeOp(0f, 255f))
-                            .build()
-                        val processedTensorImage = imageProcessor.process(tensorImage)
-                        val tensorBuffer = processedTensorImage.tensorBuffer
-                        val inputBuffer = TensorBuffer.createFixedSize(yoloInputDetails.shape(), yoloInputDetails.dataType())
-                        inputBuffer.loadArray(tensorBuffer.floatArray)
-                        val outputBuffer = TensorBuffer.createFixedSize(yoloOutputDetails.shape(), yoloOutputDetails.dataType())
-                        yoloInterpreter.run(inputBuffer.buffer, outputBuffer.buffer)
-                        val outputArray = outputBuffer.floatArray
-                        val confidences = FloatArray(8400) { candidate ->
-                            outputArray[4 * 8400 + candidate]
-                        }
-                        val validIndices = confidences
-                            .toList()
-                            .mapIndexedNotNull { idx, value -> if (value >= 0.7f) idx else null }
-                        val bestIdx = validIndices.maxByOrNull { idx -> confidences[idx] }
-                        val bestCandidate = bestIdx?.let { idx ->
-                            FloatArray(77) { feature ->
-                                outputArray[feature * 8400 + idx]
+                            val validIndices = confidences
+                                .toList()
+                                .mapIndexedNotNull { idx, value -> if (value >= 0.7f) idx else null }
+                            val bestIdx = validIndices.maxByOrNull { idx -> confidences[idx] }
+                            val bestCandidate = bestIdx?.let { idx ->
+                                FloatArray(77) { feature ->
+                                    outputArray[feature * 8400 + idx]
+                                }
                             }
+                            tempYoloResult = bestCandidate
                         }
-                        tempYoloResult = bestCandidate
                     }
-                }
-                launch {
-                    val currentTimestamp = System.currentTimeMillis()
-                    if (currentTimestamp - lastDmuTimestamp >= 2000) {
-                        cameraStateHolder.mood = tempDmuResult
-                        lastDmuTimestamp = currentTimestamp
-                        tempDmuResult = null
-                    }
-                    val nonNullSequence = cameraStateHolder.sequence.filterNotNull()
-                    if (tempDmuResult == null && nonNullSequence.size >= 10) {
-                        val last10 = nonNullSequence.takeLast(10)
-                        val flat = last10.flatMap { it.asList() }.toFloatArray()
-                        val inputBuffer = TensorBuffer.createFixedSize(dmuInputDetails.shape(), dmuInputDetails.dataType())
-                        inputBuffer.loadArray(flat)
-                        val outputBuffer = TensorBuffer.createFixedSize(dmuOutputDetails.shape(), dmuOutputDetails.dataType())
-                        dmuInterpreter.run(inputBuffer.buffer, outputBuffer.buffer)
-                        val outputArray = outputBuffer.floatArray
-                        val mood = when (
-                            outputArray.indices.maxByOrNull { outputArray[it] }
-                        ) {
-                            0 -> "\uD83D\uDE21  공격"
-                            1 -> "\uD83D\uDE28  공포"
-                            2 -> "\uD83D\uDE22  불안/슬픔"
-                            3 -> "\uD83D\uDE0A  편안/안정"
-                            4 -> "\uD83D\uDE0D  행복/즐거움"
-                            5 -> "\uD83D\uDE12  불쾌"
-                            else -> null
+                    launch {
+                        val currentTimestamp = System.currentTimeMillis()
+                        if (currentTimestamp - lastDmuTimestamp >= 2000) {
+                            cameraStateHolder.mood = tempDmuResult
+                            lastDmuTimestamp = currentTimestamp
+                            tempDmuResult = null
                         }
-                        tempDmuResult = mood
+                        val nonNullSequence = cameraStateHolder.sequence.filterNotNull()
+                        if (tempDmuResult == null && nonNullSequence.size >= 10) {
+                            val last10 = nonNullSequence.takeLast(10)
+                            val flat = last10.flatMap { it.asList() }.toFloatArray()
+                            val inputBuffer = TensorBuffer.createFixedSize(dmuInputDetails.shape(), dmuInputDetails.dataType())
+                            inputBuffer.loadArray(flat)
+                            val outputBuffer = TensorBuffer.createFixedSize(dmuOutputDetails.shape(), dmuOutputDetails.dataType())
+                            dmuInterpreter.run(inputBuffer.buffer, outputBuffer.buffer)
+                            val outputArray = outputBuffer.floatArray
+                            val mood = when (
+                                outputArray.indices.maxByOrNull { outputArray[it] }
+                            ) {
+                                0 -> "\uD83D\uDE21  공격"
+                                1 -> "\uD83D\uDE28  공포"
+                                2 -> "\uD83D\uDE22  불안/슬픔"
+                                3 -> "\uD83D\uDE0A  편안/안정"
+                                4 -> "\uD83D\uDE0D  행복/즐거움"
+                                5 -> "\uD83D\uDE12  불쾌"
+                                else -> null
+                            }
+                            tempDmuResult = mood
+                        }
                     }
                 }
             }
+        } catch (e: InterruptedException) {
+            Log.e("ThrottledImageAnalyzer", "분석 중단", e)
+        } finally {
             image.close()
         }
     }

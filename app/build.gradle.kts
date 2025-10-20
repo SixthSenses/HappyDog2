@@ -39,24 +39,24 @@ android {
             useSupportLibrary = true
         }
 
-    // Populate BuildConfig from local.properties so runtime injection has actual values
-    val googleClientIdRaw = localProperties.getProperty("GOOGLE_SERVER_CLIENT_ID")
-        ?: (project.findProperty("GOOGLE_SERVER_CLIENT_ID") as? String)
-        ?: ""
-    val kakaoNativeAppKeyRaw = localProperties.getProperty("KAKAO_NATIVE_APP_KEY")
-        ?: (project.findProperty("KAKAO_NATIVE_APP_KEY") as? String)
-        ?: ""
+        // Populate BuildConfig from local.properties so runtime injection has actual values
+        val googleClientIdRaw = localProperties.getProperty("GOOGLE_SERVER_CLIENT_ID")
+            ?: (project.findProperty("GOOGLE_SERVER_CLIENT_ID") as? String)
+            ?: ""
+        val kakaoNativeAppKeyRaw = localProperties.getProperty("KAKAO_NATIVE_APP_KEY")
+            ?: (project.findProperty("KAKAO_NATIVE_APP_KEY") as? String)
+            ?: ""
 
-    val googleClientId = googleClientIdRaw.unquote()
-    val kakaoNativeAppKey = kakaoNativeAppKeyRaw.unquote()
+        val googleClientId = googleClientIdRaw.unquote()
+        val kakaoNativeAppKey = kakaoNativeAppKeyRaw.unquote()
 
-    buildConfigField("String", "GOOGLE_SERVER_CLIENT_ID", "\"$googleClientId\"")
-    buildConfigField("String", "KAKAO_NATIVE_APP_KEY", "\"$kakaoNativeAppKey\"")
+        buildConfigField("String", "GOOGLE_SERVER_CLIENT_ID", "\"$googleClientId\"")
+        buildConfigField("String", "KAKAO_NATIVE_APP_KEY", "\"$kakaoNativeAppKey\"")
 
-    // For Kakao Map SDK meta-data replacement in AndroidManifest
-    manifestPlaceholders["kakaoAppKey"] = kakaoNativeAppKey
-    // Some Kakao artifacts reference upper-cased placeholder name; set both to be safe
-    manifestPlaceholders["KAKAO_APP_KEY"] = kakaoNativeAppKey
+        // For Kakao Map SDK meta-data replacement in AndroidManifest
+        manifestPlaceholders["kakaoAppKey"] = kakaoNativeAppKey
+        // Some Kakao artifacts reference upper-cased placeholder name; set both to be safe
+        manifestPlaceholders["KAKAO_APP_KEY"] = kakaoNativeAppKey
     }
 
     buildTypes {
@@ -142,6 +142,9 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
+    // uCrop 최신 (원형 디밍 레이어 지원) - 마이페이지 프로필 설정
+    implementation("com.github.yalantis:ucrop:2.2.11")
+
     // JSON Parsing
     implementation("com.google.code.gson:gson:2.10.1")
 
@@ -171,6 +174,10 @@ dependencies {
     implementation("com.kakao.sdk:v2-user:2.19.0")
     // Image Loading
     implementation("io.coil-kt:coil-compose:2.5.0")
+
+    // Accompanist (Pager for image carousel)
+    implementation("com.google.accompanist:accompanist-pager:0.32.0")
+    implementation("com.google.accompanist:accompanist-pager-indicators:0.32.0")
 
     // Date/Time Support for older Android versions
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")

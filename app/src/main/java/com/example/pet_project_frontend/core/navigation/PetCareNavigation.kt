@@ -10,12 +10,22 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import androidx.navigation.NavType
 import androidx.navigation.navDeepLink
+import com.example.pet_project_frontend.core.navigation.DeepLinks
+import com.example.pet_project_frontend.core.navigation.Routes
 import com.example.pet_project_frontend.presentation.auth.LoginScreen
 import com.example.pet_project_frontend.presentation.map.MapScreen
 import com.example.pet_project_frontend.presentation.mypage.main.MyPageScreen
 import com.example.pet_project_frontend.presentation.petcare.PetCareMainScreen
 import com.example.pet_project_frontend.presentation.petcare.home.PetCareHomeScreen
 import com.example.pet_project_frontend.presentation.petregistration.PetRegistrationScreen
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.currentBackStackEntryAsState
+import com.example.pet_project_frontend.presentation.mungstar.MungStarFeed
+import com.example.pet_project_frontend.presentation.mungstar.FreeWriting
+import com.example.pet_project_frontend.presentation.mungstar.CartoonMaking
+import com.example.pet_project_frontend.presentation.mungstar.CartoonLoadingScreen
+import com.example.pet_project_frontend.presentation.mungstar.PostDetailScreen
+import com.example.pet_project_frontend.presentation.mungstar.UserPostsScreen
 import com.example.pet_project_frontend.presentation.translator.TranslatorScreen
 import com.example.pet_project_frontend.presentation.eye_health.EyeHealthScreen
 import com.example.pet_project_frontend.presentation.eye_health.EyeHealthHistoryScreen
@@ -71,16 +81,16 @@ fun PetCareNavHost(
 			// ViewModel을 여기서 가져와서 선택된 날짜 사용
 			val viewModel: PetCareHomeViewModel = hiltViewModel()
 			val uiState by viewModel.uiState.collectAsState()
-			
+
 			PetCareHomeScreen(
 				viewModel = viewModel,
-				onHealthSurveyClick = { 
+				onHealthSurveyClick = {
 					navController.navigate(Screen.HealthSurvey.route)
 				},
-				onBreedGuideClick = { 
+				onBreedGuideClick = {
 					navController.navigate(Screen.BreedGuide.route)
 				},
-				onEyeCheckClick = { 
+				onEyeCheckClick = {
 					navController.navigate(Screen.EyeHealth.route)
 				},
 				onFeedClick = {
@@ -124,8 +134,100 @@ fun PetCareNavHost(
 		// 지도 화면
 		composable(Screen.Map.route) { MapScreen() }
 
-		// 커뮤니티/번역기는 임시로 펫케어 메인으로 연결하거나 별도 화면 구성 필요 시 교체
-		composable(Screen.Community.route) { PetCareMainScreen() }
+		// 멍스타그램 메인 화면 (NavController 전달)
+		composable(Screen.Community.route) {
+			MungStarFeed(navController = navController)
+		}
+
+		// 게시글 상세 화면
+		composable(
+			route = "post_detail/{postId}",
+			arguments = listOf(
+				navArgument("postId") {
+					type = NavType.StringType
+				}
+			)
+		) { backStackEntry ->
+			val postId = backStackEntry.arguments?.getString("postId") ?: return@composable
+			PostDetailScreen(
+				postId = postId,
+				navController = navController
+			)
+		}
+
+		// 자유글 작성/수정 화면
+		composable(
+			route = "free_writing?postId={postId}&initialText={initialText}&imageUrls={imageUrls}",
+			arguments = listOf(
+				navArgument("postId") {
+					type = NavType.StringType
+					nullable = true
+					defaultValue = null
+				},
+				navArgument("initialText") {
+					type = NavType.StringType
+					nullable = true
+					defaultValue = null
+				},
+				navArgument("imageUrls") {
+					type = NavType.StringType
+					nullable = true
+					defaultValue = null
+				}
+			)
+		) { backStackEntry ->
+			val postId = backStackEntry.arguments?.getString("postId")
+			val initialText = backStackEntry.arguments?.getString("initialText")
+			val imageUrlsString = backStackEntry.arguments?.getString("imageUrls")
+			val initialImageUrls = imageUrlsString?.split(",")?.filter { it.isNotBlank() }
+
+			FreeWriting(
+				navController = navController,
+				postId = postId,
+				initialText = initialText,
+				initialImageUrls = initialImageUrls
+			)
+		}
+
+		// 만화 제작 화면
+		composable("cartoon_making") { backStackEntry ->
+			CartoonMaking(navController = navController)
+		}
+
+		// 만화 로딩 화면
+		composable(
+			route = "cartoon_loading/{jobId}?userText={userText}",
+			arguments = listOf(
+				navArgument("jobId") {
+					type = NavType.StringType
+				},
+				navArgument("userText") {
+					type = NavType.StringType
+					nullable = true
+					defaultValue = null
+				}
+			)
+		) { backStackEntry ->
+			CartoonLoadingScreen(navController = navController)
+		}
+
+		// 사용자 게시물 화면
+		composable(
+			route = "user_posts/{author_id}",
+			arguments = listOf(
+				navArgument("author_id") {
+					type = NavType.StringType
+				}
+			)
+		) { backStackEntry ->
+			val authorId = backStackEntry.arguments?.getString("author_id") ?: ""
+			UserPostsScreen(
+				navController = navController,
+				authorId = authorId
+			)
+		}
+
+		// 번역기 화면
 		composable(Screen.Translator.route) { TranslatorScreen(openNotice = openNotice) }
 
 		// 마이페이지 화면
@@ -160,7 +262,7 @@ fun PetCareNavHost(
 		) { backStackEntry ->
 			val encodedImageUrl = backStackEntry.arguments?.getString("imageUrl") ?: ""
 			val imageUrl = java.net.URLDecoder.decode(encodedImageUrl, "UTF-8")
-			
+
 			ImageViewerScreen(
 				imageUrl = imageUrl,
 				onCloseClick = { navController.popBackStack() }
@@ -307,7 +409,7 @@ fun PetCareNavHost(
 				onBackClick = { navController.popBackStack() }
 			)
 		}
-		
+
 		// 품종 가이드북 상세 화면
 		composable(
 			route = Screen.BreedGuidebook.route,

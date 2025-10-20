@@ -1,6 +1,8 @@
-package com.example.pet_project_frontend.core.navigation
+﻿package com.example.pet_project_frontend.core.navigation
 
-// sealed class Screen 하나로 모든 경로를 관리합니다.
+import android.net.Uri
+
+// 앱 내에서 사용하는 주요 경로를 정의한다.
 sealed class Screen(val route: String) {
     object Login : Screen("login")
     object PetRegistration : Screen("pet_registration")
@@ -48,8 +50,49 @@ sealed class Screen(val route: String) {
     object PoopRecord : Screen("poop_record") // 대변 기록 화면
     object VomitRecord : Screen("vomit_record") // 구토 기록 화면
 
-    // 펫케어 대시보드(딥링크 표준과 맞춤) - core:navigation 상수 사용
-    object PetCareDashboard : Screen(com.example.pet_project_frontend.core.navigation.Routes.PetCare.Dashboard) {
+    object EditPetName : Screen("mypage/edit/name?initialName={initialName}") {
+        fun createRoute(initialName: String): String {
+            val encoded = Uri.encode(initialName)
+            return "mypage/edit/name?initialName=$encoded"
+        }
+    }
+
+    object EditBirthDate : Screen("mypage/edit/birth?initialBirth={initialBirth}") {
+        fun createRoute(initialBirth: String): String {
+            val encoded = Uri.encode(initialBirth)
+            return "mypage/edit/birth?initialBirth=$encoded"
+        }
+    }
+
+    object SelectGender : Screen("mypage/edit/gender?initialGender={initialGender}") {
+        fun createRoute(initialGender: String): String {
+            val encoded = Uri.encode(initialGender)
+            return "mypage/edit/gender?initialGender=$encoded"
+        }
+    }
+
+    object SelectBreed : Screen("mypage/edit/breed?initialBreed={initialBreed}") {
+        fun createRoute(initialBreed: String): String {
+            val encoded = Uri.encode(initialBreed)
+            return "mypage/edit/breed?initialBreed=$encoded"
+        }
+    }
+
+    object NotificationSettings : Screen("mypage/settings/notification")
+
+    object Withdraw : Screen("mypage/withdraw")
+
+    object VerificationIntro : Screen("mypage/verification/intro")
+    object VerificationGuide : Screen("mypage/verification/guide")
+    object VerificationLoading :
+        Screen("mypage/verification/loading?petId={petId}") {
+        fun createRoute(petId: String): String =
+            "mypage/verification/loading?petId=$petId"
+    }
+
+    object VerificationSuccess : Screen("mypage/verification/success")
+
+    object PetCareDashboard : Screen(Routes.PetCare.Dashboard) {
         fun createRoute(
             petId: String? = null,
             date: String? = null,
@@ -65,7 +108,6 @@ sealed class Screen(val route: String) {
         }
     }
 
-    // 인자가 필요한 화면들
     object PetProfile : Screen("pet_profile/{petId}") {
         fun createRoute(petId: String) = "pet_profile/$petId"
     }
