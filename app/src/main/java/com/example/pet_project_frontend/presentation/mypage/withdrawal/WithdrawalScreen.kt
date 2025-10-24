@@ -135,7 +135,7 @@ fun WithdrawalScreen(
                         viewModel.onClickWithdraw()
                     },
                     title = "회원 탈퇴",
-                    text = "탈퇴 시 모든 정보가 삭제되며, 복구할 수 없습니다. 정말로 탈퇴하시겠습니까?"
+                    text = "정말로 탈퇴하시겠습니까?"
                 )
             }
 

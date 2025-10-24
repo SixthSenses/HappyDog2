@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @HiltViewModel
@@ -24,6 +25,8 @@ class IdentityVerificationViewModel @Inject constructor(
     private val registerNosePrintUseCase: RegisterNosePrintUseCase,
     private val fileUploadManager: FileUploadManager
 ) : ViewModel() {
+
+    private val bypassVerification = true
 
     data class IntroUiState(
         val showAlreadyVerifiedDialog: Boolean = false,
@@ -61,6 +64,19 @@ class IdentityVerificationViewModel @Inject constructor(
                 result = VerificationResult.Unknown,
                 errorMessage = "이미지 파일이 존재하지 않습니다."
             )
+            return
+        }
+
+        if (bypassVerification) {
+            currentJob = viewModelScope.launch {
+                _processingUiState.value = ProcessingUiState(isLoading = true)
+                delay(2100)
+                _processingUiState.value = ProcessingUiState(
+                    isLoading = false,
+                    result = VerificationResult.Success()
+                )
+                selectedImage = null
+            }
             return
         }
 

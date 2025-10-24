@@ -12,6 +12,7 @@ import com.example.pet_project_frontend.data.remote.dto.request.PetRegistrationR
 import com.example.pet_project_frontend.data.remote.dto.request.PetUpdateRequest
 import com.example.pet_project_frontend.data.remote.dto.response.BiometricAnalysisResponse
 import com.example.pet_project_frontend.data.remote.dto.response.EyeAnalysisResponse
+import com.example.pet_project_frontend.data.remote.dto.response.PetViewBasedResponse
 import com.example.pet_project_frontend.domain.model.Pet
 import com.example.pet_project_frontend.domain.repository.PetRepository
 import kotlinx.coroutines.flow.Flow

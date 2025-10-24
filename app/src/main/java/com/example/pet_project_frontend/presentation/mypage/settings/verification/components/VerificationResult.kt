@@ -1,33 +1,33 @@
-package com.example.pet_project_frontend.presentation.mypage.settings.verification.components
+﻿package com.example.pet_project_frontend.presentation.mypage.settings.verification.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.aspectRatio
 import com.example.pet_project_frontend.R
+import com.example.pet_project_frontend.core.theme.PretendardFont
 
 sealed class VerificationResult(val name: String) {
     data class Success(val matchRate: Int? = null) : VerificationResult("Success")
@@ -47,18 +47,6 @@ fun VerificationResultScreen(
     imageResId: Int = R.drawable.dog,
     onConfirm: () -> Unit
 ) {
-    val configuration = LocalConfiguration.current
-    val screenWidth = (configuration.screenWidthDp.takeIf { it > 0 } ?: 412)
-    val screenHeight = (configuration.screenHeightDp.takeIf { it > 0 } ?: 917)
-    val widthRatio = screenWidth / 412f
-    val heightRatio = screenHeight / 917f
-
-    val scaledWidth = remember(widthRatio) { { value: Float -> (value * widthRatio).dp } }
-    val scaledHeight = remember(heightRatio) { { value: Float -> (value * heightRatio).dp } }
-    val pretendard = remember {
-        FontFamily(Font(R.font.pretendard))
-    }
-
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -70,63 +58,58 @@ fun VerificationResultScreen(
                     )
                 )
             )
-            .padding(horizontal = scaledWidth(21f))
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = scaledHeight(120f))
-                .padding(bottom = scaledHeight(12f)),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(horizontal = 24.dp)
+                .padding(top = 72.dp, bottom = 24.dp)
+                .navigationBarsPadding(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(
-                text = title,
-                modifier = Modifier
-                    .width(scaledWidth(173f))
-                    .height(scaledHeight(39f)),
-                style = TextStyle(
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = title,
+                    fontFamily = PretendardFont,
+                    fontWeight = FontWeight.SemiBold,
                     fontSize = 30.sp,
-                    lineHeight = 39.sp,
-                    fontFamily = pretendard,
-                    fontWeight = FontWeight(600),
+                    lineHeight = 38.sp,
                     color = Color(0xFF333D4B),
                     textAlign = TextAlign.Center
                 )
-            )
 
-            Spacer(modifier = Modifier.height(scaledHeight(8f)))
+                Spacer(modifier = Modifier.height(16.dp))
 
-            Text(
-                text = subtitle,
-                modifier = Modifier
-                    .width(scaledWidth(224f))
-                    .height(scaledHeight(46f)),
-                style = TextStyle(
+                Text(
+                    text = subtitle,
+                    fontFamily = PretendardFont,
+                    fontWeight = FontWeight.Medium,
                     fontSize = 18.sp,
-                    lineHeight = 23.4.sp,
-                    fontFamily = pretendard,
-                    fontWeight = FontWeight(500),
+                    lineHeight = 24.sp,
                     color = Color(0xFF6B7684),
                     textAlign = TextAlign.Center
                 )
-            )
 
-            Spacer(modifier = Modifier.height(scaledHeight(60f)))
+                Spacer(modifier = Modifier.height(56.dp))
 
-            Image(
-                painter = painterResource(id = imageResId),
-                contentDescription = "신원 인증 결과 이미지",
-                modifier = Modifier
-                    .width(scaledWidth(244.9529f))
-                    .height(scaledHeight(314f))
-            )
-
-            Spacer(modifier = Modifier.height(scaledHeight(184f)))
+                Image(
+                    painter = painterResource(id = imageResId),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxWidth(0.7f)
+                        .aspectRatio(244.9529f / 314f)
+                )
+            }
 
             Box(
                 modifier = Modifier
-                    .width(scaledWidth(370f))
-                    .height(scaledHeight(58f))
+                    .fillMaxWidth()
+                    .height(58.dp)
                     .background(
                         color = Color(0xFFFD8800),
                         shape = RoundedCornerShape(16.dp)
@@ -136,17 +119,13 @@ fun VerificationResultScreen(
             ) {
                 Text(
                     text = "확인",
-                    style = TextStyle(
-                        fontSize = 18.sp,
-                        lineHeight = 18.sp,
-                        fontFamily = pretendard,
-                        fontWeight = FontWeight(600),
-                        color = Color.White
-                    )
+                    fontFamily = PretendardFont,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 18.sp,
+                    lineHeight = 22.sp,
+                    color = Color.White
                 )
             }
-
-            Spacer(modifier = Modifier.height(scaledHeight(12f)))
         }
     }
 }

@@ -61,9 +61,9 @@ fun CommonAlertDialog(
     val buttonHeight = frameHeight * (50f / 173f)
 
     val pretendard = FontFamily(
-        Font(R.font.pretendard_regular, FontWeight.W400),
-        Font(R.font.pretendard_medium, FontWeight.W500),
-        Font(R.font.pretendard_semibold, FontWeight.W600),
+        Font(R.font.pretendard_400, FontWeight.W400),
+        Font(R.font.pretendard_500, FontWeight.W500),
+        Font(R.font.pretendard_600, FontWeight.W600),
         Font(R.font.pretendard_bold, FontWeight.W700)
     )
 

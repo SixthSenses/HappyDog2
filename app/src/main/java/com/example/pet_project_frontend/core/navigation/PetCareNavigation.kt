@@ -467,7 +467,7 @@ fun PetCareNavHost(
                     when (result) {
                         is VerificationResult.Success -> {
                             navController.navigate(Screen.VerificationSuccess.route) {
-                                popUpTo(Screen.VerificationIntro.route) { inclusive = true }
+                                popUpTo(Screen.VerificationGuide.route) { inclusive = true }
                             }
                         }
 

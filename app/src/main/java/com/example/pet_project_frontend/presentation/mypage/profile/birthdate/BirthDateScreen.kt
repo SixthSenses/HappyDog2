@@ -44,7 +44,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.pet_project_frontend.core.components.TopBar
 import com.example.pet_project_frontend.core.navigation.Screen
-import com.example.pet_project_frontend.presentation.mypage.common.GestureBar
 import com.example.pet_project_frontend.presentation.mypage.main.MyPageViewModel
 
 @Composable

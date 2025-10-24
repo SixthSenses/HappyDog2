@@ -1,4 +1,4 @@
-package com.example.pet_project_frontend.presentation.mypage.settings.verification.components
+﻿package com.example.pet_project_frontend.presentation.mypage.settings.verification.components
 
 import android.widget.Toast
 import androidx.compose.foundation.Image
@@ -43,9 +43,6 @@ import com.example.pet_project_frontend.core.theme.PretendardFont
 import com.example.pet_project_frontend.presentation.mypage.settings.verification.IdentityVerificationViewModel
 import kotlinx.coroutines.delay
 
-/**
- * Verification loading screen that mirrors the cartoon loading UX while the nose print is processed.
- */
 @Composable
 fun VerificationLoadingScreen(
     viewModel: IdentityVerificationViewModel,
@@ -141,7 +138,7 @@ fun VerificationLoadingScreen(
             Text(
                 text = "비문 사진을\n분석하고 있어요",
                 fontFamily = PretendardFont,
-                fontWeight = FontWeight(600),
+                fontWeight = FontWeight.SemiBold,
                 fontSize = 28.sp,
                 color = Color(0xFF191F28),
                 textAlign = TextAlign.Center,
@@ -174,7 +171,7 @@ fun VerificationLoadingScreen(
                         Text(
                             text = "인증을 중단할까요?",
                             fontFamily = PretendardFont,
-                            fontWeight = FontWeight(600),
+                            fontWeight = FontWeight.SemiBold,
                             fontSize = 21.sp,
                             color = Color(0xFF333D4B),
                             modifier = Modifier.padding(start = 17.dp, top = 17.dp)
@@ -202,7 +199,7 @@ fun VerificationLoadingScreen(
                                 Text(
                                     text = "아니요",
                                     fontFamily = PretendardFont,
-                                    fontWeight = FontWeight(600),
+                                    fontWeight = FontWeight.SemiBold,
                                     fontSize = 18.sp,
                                     color = Color(0xFF4E5968)
                                 )
@@ -225,7 +222,7 @@ fun VerificationLoadingScreen(
                                 Text(
                                     text = "중단하기",
                                     fontFamily = PretendardFont,
-                                    fontWeight = FontWeight(600),
+                                    fontWeight = FontWeight.SemiBold,
                                     fontSize = 18.sp,
                                     color = Color.White
                                 )

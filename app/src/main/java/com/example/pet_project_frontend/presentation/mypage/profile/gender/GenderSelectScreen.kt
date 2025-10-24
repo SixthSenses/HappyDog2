@@ -39,7 +39,6 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.pet_project_frontend.R
 import com.example.pet_project_frontend.core.components.TopBar
-import com.example.pet_project_frontend.presentation.mypage.common.GestureBar
 import com.example.pet_project_frontend.presentation.mypage.common.UiColors
 
 @OptIn(ExperimentalMaterial3Api::class)

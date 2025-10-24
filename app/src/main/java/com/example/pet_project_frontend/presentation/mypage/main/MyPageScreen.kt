@@ -54,6 +54,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -110,13 +114,38 @@ fun MyPageScreen(
         }
     }
 
-    var showPhotoPicker by remember { mutableStateOf(false) }
     var cropSourceUri by remember { mutableStateOf<Uri?>(null) }
     var showCrop by remember { mutableStateOf(false) }
 
+    val context = LocalContext.current
+
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        uri?.let {
+            cropSourceUri = it
+            showCrop = true
+        }
+    }
+
+    val legacyPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let {
+            cropSourceUri = it
+            showCrop = true
+        }
+    }
+
     val openPhotoPicker: () -> Unit = {
         onProfileImageClick()
-        showPhotoPicker = true
+        if (ActivityResultContracts.PickVisualMedia.isPhotoPickerAvailable(context)) {
+            photoPickerLauncher.launch(
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+            )
+        } else {
+            legacyPickerLauncher.launch("image/*")
+        }
     }
 
     Box(
@@ -254,16 +283,6 @@ fun MyPageScreen(
                 }
             }
         }
-
-        MediaPickerSheet(
-            visible = showPhotoPicker,
-            onDismissRequest = { showPhotoPicker = false },
-            onPicked = { uri ->
-                cropSourceUri = uri
-                showPhotoPicker = false
-                showCrop = true
-            }
-        )
 
         if (showCrop && cropSourceUri != null) {
             Dialog(
