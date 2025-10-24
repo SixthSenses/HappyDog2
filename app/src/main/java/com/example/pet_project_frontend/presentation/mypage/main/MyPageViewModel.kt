@@ -66,6 +66,8 @@ class MyPageViewModel @Inject constructor(
                                         birthDate = birthDateText,
                                         gender = genderText,
                                         profileImageUrl = pet.profileImageUrl,
+                                        isPetVerified = pet.isVerified,
+                                        hasRegisteredNosePrint = !pet.nosePrintUrl.isNullOrBlank(),
                                         isLoading = false,
                                         error = null
                                     )
@@ -229,5 +231,7 @@ data class MyPageUiState(
     val uploadedImageUrls: List<String> = emptyList(),
     val isLoading: Boolean = false,
     val isUploading: Boolean = false,
-val error: String? = null
+    val isPetVerified: Boolean = false,
+    val hasRegisteredNosePrint: Boolean = false,
+    val error: String? = null
 )

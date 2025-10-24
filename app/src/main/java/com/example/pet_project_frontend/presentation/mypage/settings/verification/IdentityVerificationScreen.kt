@@ -31,7 +31,11 @@ import com.example.pet_project_frontend.presentation.mypage.settings.verificatio
 @Composable
 fun VerificationMainScreen(
     onBack: () -> Unit = {},
-    onVerifyClick: () -> Unit = {}
+    onVerifyClick: () -> Unit = {},
+    showAlreadyVerifiedDialog: Boolean = false,
+    onDismissAlreadyVerifiedDialog: () -> Unit = {},
+    showUnknownErrorDialog: Boolean = false,
+    onDismissUnknownErrorDialog: () -> Unit = {}
 ) {
     Scaffold(
         topBar = {
@@ -42,6 +46,19 @@ fun VerificationMainScreen(
         },
         containerColor = Color.White
     ) { paddingValues ->
+
+        if (showAlreadyVerifiedDialog) {
+            VerificationAlreadyVerifiedDialog(
+                onConfirm = onDismissAlreadyVerifiedDialog
+            )
+        }
+
+        if (showUnknownErrorDialog) {
+            VerificationUnknownErrorDialog(
+                onConfirm = onDismissUnknownErrorDialog
+            )
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()

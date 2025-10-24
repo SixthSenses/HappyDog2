@@ -149,13 +149,13 @@ class MainActivity : ComponentActivity() {
                     // startDestination은 로그인 + 펫 존재 여부에 따라 분기합니다.
                     val effectiveStart = when {
                         !isLoggedIn -> Screen.Login.route
-                        !hasPet -> Screen.PetRegistration.route
+                        hasPet == false -> Screen.PetRegistration.route
                         else -> Screen.PetCare.route
                     }
 
                     // 런타임에도 펫이 없으면 등록 화면으로 유도
                     LaunchedEffect(hasPet, currentRoute, isLoggedIn) {
-                        if (isLoggedIn && !hasPet && currentRoute != Screen.Login.route && currentRoute != Screen.PetRegistration.route) {
+                        if (isLoggedIn && hasPet == false && currentRoute != Screen.Login.route && currentRoute != Screen.PetRegistration.route) {
                             navController.navigate(Screen.PetRegistration.route) {
                                 popUpTo(navController.graph.startDestinationId) { saveState = false }
                                 launchSingleTop = true

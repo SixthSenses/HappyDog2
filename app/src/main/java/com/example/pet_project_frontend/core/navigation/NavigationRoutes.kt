@@ -31,9 +31,8 @@ sealed class Screen(val route: String) {
         fun createRoute(date: String? = null) = if (date != null) "activity_management?date=$date" else "activity_management"
     }
     object WeightManagement : Screen("weight_management?date={date}") { // 몸무게 관리 화면
-        fun createRoute(date: String): String {
-            return "weight_management?date=$date"
-        }
+        fun createRoute(date: String? = null): String =
+            if (date != null) "weight_management?date=$date" else "weight_management"
     }
     object PoopManagement : Screen("poop_management?date={date}") { // 대변 관리 화면
         fun createRoute(date: String? = null) = if (date != null) "poop_management?date=$date" else "poop_management"

@@ -301,9 +301,11 @@ fun VerificationGuideScreen(
 
     when (errorDialog) {
         VerificationGuideError.Duplicate ->
-            VerificationGuideDuplicateErrorDialog(onConfirm = onDismissError)
+            VerificationDuplicateNoseDialog(onConfirm = onDismissError)
         VerificationGuideError.DetectionFailed ->
-            VerificationGuideDetectionErrorDialog(onConfirm = onDismissError)
+            VerificationDetectionFailedDialog(onConfirm = onDismissError)
+        VerificationGuideError.AlreadyVerified,
+        VerificationGuideError.Unknown,
         null -> Unit
     }
 }
