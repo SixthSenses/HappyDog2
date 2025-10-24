@@ -1,4 +1,3 @@
-// 변경 의도: hasPet이 null일 때 로딩 상태를 유지해 초기 라우팅 튐을 방지
 package com.example.pet_project_frontend
 
 import android.os.Bundle
@@ -101,8 +100,6 @@ class MainActivity : ComponentActivity() {
         AppTheme {
             val isLoggedIn by viewModel.isLoggedIn.collectAsStateWithLifecycle()
             val hasPet by viewModel.hasPet.collectAsStateWithLifecycle()
-            val shouldBypassOnboarding = true // 2025-10-11 03:48:23 - 온보딩 루프 현상으로 임시 비활성화
-            val isPendingPetStatus = isLoggedIn && hasPet == null
             val navController = rememberNavController()
             val navBackStackEntry by navController.currentBackStackEntryAsState()
             val currentRoute = navBackStackEntry?.destination?.route
@@ -141,7 +138,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             ) { innerPadding ->
-                if (isLoading.value || isPendingPetStatus) {
+                if (isLoading.value) {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
@@ -152,13 +149,13 @@ class MainActivity : ComponentActivity() {
                     // startDestination은 로그인 + 펫 존재 여부에 따라 분기합니다.
                     val effectiveStart = when {
                         !isLoggedIn -> Screen.Login.route
-                        hasPet == false && !shouldBypassOnboarding -> Screen.PetRegistration.route
+                        !hasPet -> Screen.PetRegistration.route
                         else -> Screen.PetCare.route
                     }
 
                     // 런타임에도 펫이 없으면 등록 화면으로 유도
                     LaunchedEffect(hasPet, currentRoute, isLoggedIn) {
-                        if (!shouldBypassOnboarding && isLoggedIn && hasPet == false && currentRoute != Screen.Login.route && currentRoute != Screen.PetRegistration.route) {
+                        if (isLoggedIn && !hasPet && currentRoute != Screen.Login.route && currentRoute != Screen.PetRegistration.route) {
                             navController.navigate(Screen.PetRegistration.route) {
                                 popUpTo(navController.graph.startDestinationId) { saveState = false }
                                 launchSingleTop = true

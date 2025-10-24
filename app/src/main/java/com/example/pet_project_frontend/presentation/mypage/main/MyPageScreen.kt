@@ -242,6 +242,19 @@ fun MyPageScreen(
             }
         }
 
+        if (uiState.isUploading) {
+            Dialog(onDismissRequest = { /* prevent dismissal */ }) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.3f))
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+        }
+
         MediaPickerSheet(
             visible = showPhotoPicker,
             onDismissRequest = { showPhotoPicker = false },
@@ -267,7 +280,9 @@ fun MyPageScreen(
                 PhotoCropScreen(
                     source = cropSourceUri!!,
                     onCropped = { croppedUri ->
-                        viewModel.updateProfileImage(croppedUri.toString())
+                        croppedUri.path?.let { path ->
+                            viewModel.uploadAndApplyProfileImage(path)
+                        }
                         showCrop = false
                         cropSourceUri = null
                     },

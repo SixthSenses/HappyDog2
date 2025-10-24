@@ -17,6 +17,9 @@ val Pretendard = FontFamily(
     Font(R.font.pretendard_bold,     FontWeight.Bold),
 )
 
+// Mungstar 모듈에서 사용하는 alias
+val PretendardFont = Pretendard
+
 // 3) 확장함수 (15개 스타일에 일괄 적용)
 private fun Typography.setDefaultFontFamily(ff: FontFamily) = Typography(
     displayLarge  = displayLarge.copy(fontFamily = ff),

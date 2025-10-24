@@ -16,4 +16,47 @@ object MyPageColors {
     val ProfileAddButton = Color(0xFFE4E7EA)
     val Scrim = Color(0x52000000) // 32% opacity
     val TapChosen: Color = Color(0xFFFFFFFF)
+
+    // 펫케어 화면
+    val Blue100: Color = Color(0xFFC9E2FF)
+    val Blue800: Color = Color(0xFF1957C2)
+    val Blue50: Color = Color(0xFFE8F3FF)
+    val Blue200: Color = Color(0xFF90C2FF)
+    val Yellow100: Color = Color(0xFFFFEFBF)
+    val Yellow50: Color = Color(0xFFFFF9E7)
+    val Orange800: Color = Color(0xFFFB8800)
+    val Orange600: Color = Color(0xFFED6700)
+    val Orange500: Color = Color(0xFFFE9800)
+    val Orange700: Color = Color(0xFFF57800)
+    val Orange100: Color = Color(0xFFFFE0B0)
+    val Green600: Color = Color(0xFF02A262)
+    val Green500: Color = Color(0xFF03B26C)
+    val Green700: Color = Color(0xFF029359)
+    val Green50: Color = Color(0xFFF0FAF6)
+    val Green: Color = Color(0xFF03B26C)
+    val Orange: Color = Color(0xFFFB8800)
+    val Grey100: Color = Color(0xFFF2F4F6)
+    val Grey200: Color = Color(0xFFE5E8EB)
+    val Grey900: Color = Color(0xFF191F28)
+    val Grey600: Color = Color(0xFF6B7684)
+    val Grey500: Color = Color(0xFF8B95A1)
+    val Grey700: Color = Color(0xFF4E5968)
+    val Grey800: Color = Color(0xFF333D4B)
+    val Grey400: Color = Color(0xFFB0B8C1)
+    val Grey300: Color = Color(0xFFD1D6DB)
+    val GreyOpacity600: Color = Color(0x94132B00) // 58%
+    val GreyOpacity200: Color = Color(0x1A1B3700) // 10%
+    val GreyOpacity100: Color = Color(0x0D022047) // 5%
+    val GreyOpacity400: Color = Color(0x0019364F) // 31%
+    val Blue500: Color = Color(0xFF3182F6)
+    val White: Color = Color(0xFFFFFFFF)
+    val Black: Color = Color(0xFF000000)
+    val Red50: Color = Color(0xFFFFEEEE)
+    val Red700: Color = Color(0xFFD22030)
+    val Red100: Color = Color(0xFFFFD4D6)
+    val Red400: Color = Color(0xFFF66570)
+    val Red500: Color = Color(0xFFE73E52)
+    val Red600: Color = Color(0xFFE42939)
+    val Brown500: Color = Color(0xFF8B4513)
+
 }

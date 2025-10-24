@@ -105,6 +105,21 @@ class PetRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getPetProfileForPetCare(): AppResult<PetViewBasedResponse> {
+        Log.d(TAG, "Getting pet profile for petcare view")
+        return SafeApi.response { petApi.getPetProfileForPetCare() }
+            .let { res ->
+                when (res) {
+                    is AppResult.Success -> {
+                        Log.d(TAG, "PetCare profile fetched successfully: ${res.data.petId}")
+                        res
+                    }
+                    is AppResult.Error -> res
+                    is AppResult.Exception -> res
+                }
+            }
+    }
+
     override suspend fun updatePetProfile(petId: String, request: PetUpdateRequest): AppResult<Pet> {
         Log.d(TAG, "Updating pet profile: $petId")
         return SafeApi.response { petApi.updatePetProfile(petId, request) }

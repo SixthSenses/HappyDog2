@@ -1,45 +1,20 @@
 package com.example.pet_project_frontend.presentation.petcare
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 
-@OptIn(ExperimentalMaterial3Api::class)
+// 다른 탭 화면 완성되면 파일 지우기
 @Composable
 fun PetCareMainScreen() {
-    Scaffold(
-        topBar = { 
-            TopAppBar(
-                title = { Text("펫 케어") }
-            ) 
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = "펫 케어 메인 화면",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-            
-            Text(
-                text = "반려동물 케어 기능이 준비 중입니다.",
-                fontSize = 16.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text = "펫케어 메인 화면 (임시)")
     }
 }
 

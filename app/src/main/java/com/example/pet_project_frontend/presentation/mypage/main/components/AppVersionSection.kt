@@ -13,7 +13,7 @@ import com.example.pet_project_frontend.core.theme.MyPageColors
 @Composable
 fun AppVersionSection() {
     Text(
-        text = "앱 버전 2025.09.23",
+        text = "앱 버전 2025.07.20",
         fontSize = 16.sp,
         fontWeight = FontWeight.Normal,
         color = MyPageColors.AppVersion,

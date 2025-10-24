@@ -4,6 +4,9 @@ package com.example.pet_project_frontend.core.di
 
 import com.example.pet_project_frontend.data.repository.AuthRepositoryImpl
 import com.example.pet_project_frontend.data.repository.BreedRepositoryImpl
+import com.example.pet_project_frontend.data.repository.EyeHealthRepositoryImpl
+import com.example.pet_project_frontend.data.repository.CartoonRepositoryImpl
+import com.example.pet_project_frontend.data.repository.CommentRepositoryImpl
 import com.example.pet_project_frontend.data.repository.MapRepositoryImpl
 import com.example.pet_project_frontend.data.repository.PetCareRepositoryImpl
 import com.example.pet_project_frontend.data.repository.PetRepositoryImpl
@@ -11,6 +14,9 @@ import com.example.pet_project_frontend.data.repository.PostRepositoryImpl
 import com.example.pet_project_frontend.data.repository.UserRepositoryImpl
 import com.example.pet_project_frontend.domain.repository.AuthRepository
 import com.example.pet_project_frontend.domain.repository.BreedRepository
+import com.example.pet_project_frontend.domain.repository.EyeHealthRepository
+import com.example.pet_project_frontend.domain.repository.CartoonRepository
+import com.example.pet_project_frontend.domain.repository.CommentRepository
 import com.example.pet_project_frontend.domain.repository.MapRepository
 import com.example.pet_project_frontend.domain.repository.PetCareRepository
 import com.example.pet_project_frontend.domain.repository.PetRepository
@@ -67,4 +73,22 @@ abstract class RepositoryModule {
     abstract fun bindPostRepository(
         postRepositoryImpl: PostRepositoryImpl
     ): PostRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindEyeHealthRepository(
+        eyeHealthRepositoryImpl: EyeHealthRepositoryImpl
+    ): EyeHealthRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindCommentRepository(
+        commentRepositoryImpl: CommentRepositoryImpl
+    ): CommentRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindCartoonRepository(
+        cartoonRepositoryImpl: CartoonRepositoryImpl
+    ): CartoonRepository
 }

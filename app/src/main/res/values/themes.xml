@@ -3,6 +3,10 @@
     <style name="Base.Theme.Pet_project_frontend" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!-- Customize your light theme here. -->
         <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        
+        <!-- Pretendard 폰트 전역 적용 -->
+        <item name="android:fontFamily">@font/pretendard</item>
+        <item name="fontFamily">@font/pretendard</item>
     </style>
 
     <style name="Theme.Pet_project_frontend" parent="Base.Theme.Pet_project_frontend" />

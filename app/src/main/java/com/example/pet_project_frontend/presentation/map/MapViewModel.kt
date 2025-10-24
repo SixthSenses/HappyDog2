@@ -52,19 +52,19 @@ enum class DetailedPlaceCategory(
 ) {
 	// --- 반려의료 ---
 	ANIMAL_HOSPITAL("동물병원", PlaceCategory.HOSPITAL, R.drawable.hospital, R.drawable.hospital),
-	ANIMAL_PHARMACY("동물약국", PlaceCategory.HOSPITAL, R.drawable.my_location_marker, R.drawable.my_location_marker),
+	ANIMAL_PHARMACY("동물약국", PlaceCategory.HOSPITAL, R.drawable.pharmacy, R.drawable.pharmacy),
 
 	// --- 반려동물 동반가능 ---
-	ART_MUSEUM("미술관", PlaceCategory.PET_FACILITY, R.drawable.my_location_marker, R.drawable.my_location_marker),
+	ART_MUSEUM("미술관", PlaceCategory.PET_FACILITY, R.drawable.art_gallery, R.drawable.art_gallery),
 	CAFE("카페", PlaceCategory.PET_FACILITY, R.drawable.cafe, R.drawable.cafe),
-	PET_SUPPLIES("반려동물용품", PlaceCategory.PET_FACILITY, R.drawable.my_location_marker, R.drawable.my_location_marker),
-	GROOMING("미용", PlaceCategory.PET_FACILITY, R.drawable.my_location_marker, R.drawable.my_location_marker),
-	CULTURE_CENTER("문예회관", PlaceCategory.PET_FACILITY, R.drawable.my_location_marker, R.drawable.my_location_marker),
+	PET_SUPPLIES("반려동물용품", PlaceCategory.PET_FACILITY, R.drawable.pet_supplies, R.drawable.pet_supplies),
+	GROOMING("미용", PlaceCategory.PET_FACILITY, R.drawable.beauty, R.drawable.beauty),
+	CULTURE_CENTER("문예회관", PlaceCategory.PET_FACILITY, R.drawable.cultural_center, R.drawable.cultural_center),
 	PENSION("펜션", PlaceCategory.PET_FACILITY, R.drawable.pension, R.drawable.pension),
 	RESTAURANT("식당", PlaceCategory.PET_FACILITY, R.drawable.restaurant, R.drawable.restaurant),
 	TOURIST_SPOT("여행지", PlaceCategory.PET_FACILITY, R.drawable.travel, R.drawable.travel),
-	PET_SITTING("위탁관리", PlaceCategory.PET_FACILITY, R.drawable.my_location_marker, R.drawable.my_location_marker),
-	MUSEUM("박물관", PlaceCategory.PET_FACILITY, R.drawable.my_location_marker, R.drawable.my_location_marker),
+	PET_SITTING("위탁관리", PlaceCategory.PET_FACILITY, R.drawable.management, R.drawable.management),
+	MUSEUM("박물관", PlaceCategory.PET_FACILITY, R.drawable.museum, R.drawable.museum),
 
 	// CSV의 카테고리 이름과 일치하지 않을 경우를 대비한 기본값 -> 임의로 현재 위치 마커와 동일한 이미지 사용
 	UNKNOWN("기타", PlaceCategory.PET_FACILITY, R.drawable.my_location_marker,R.drawable.my_location_marker);

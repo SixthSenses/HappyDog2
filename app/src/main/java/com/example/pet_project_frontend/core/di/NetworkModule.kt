@@ -156,4 +156,22 @@ object NetworkModule {
     fun providePostApi(retrofit: Retrofit): PostApi {
         return retrofit.create(PostApi::class.java)
     }
+
+    @Provides
+    @Singleton
+    fun provideCommentApi(retrofit: Retrofit): CommentApi {
+        return retrofit.create(CommentApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideCartoonJobApi(retrofit: Retrofit): CartoonJobApi {
+        return retrofit.create(CartoonJobApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideEyeHealthApi(retrofit: Retrofit): EyeHealthApi {
+        return retrofit.create(EyeHealthApi::class.java)
+    }
 }
