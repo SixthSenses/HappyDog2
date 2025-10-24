@@ -586,19 +586,31 @@ fun PostItem(
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    // 반려견 이름 (닉네임 - weight 500)
-                    Text(
-                        text = post.pet?.name ?: post.author.displayName,
-                        fontFamily = PretendardFont,
-                        fontWeight = FontWeight(500),
-                        fontSize = 16.sp,
-                        color = Color(0xFF6B7684)
-                    )
-                    
-                    // 타임스탬프 (오른쪽, 이름과 같은 높이)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = post.pet?.name ?: post.author.displayName,
+                            fontFamily = PretendardFont,
+                            fontWeight = FontWeight(500),
+                            fontSize = 16.sp,
+                            color = Color(0xFF6B7684)
+                        )
+                        if (post.pet?.isVerified == true) {
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Image(
+                                painter = painterResource(id = R.drawable.badge_container),
+                                contentDescription = "신원 인증 완료",
+                                modifier = Modifier
+                                    .padding(1.dp)
+                                    .size(width = 24.dp, height = 25.dp)
+                            )
+                        }
+                    }
+
                     Text(
                         text = com.example.pet_project_frontend.util.TimeUtil.getRelativeTimeString(post.createdAt),
                         fontFamily = PretendardFont,

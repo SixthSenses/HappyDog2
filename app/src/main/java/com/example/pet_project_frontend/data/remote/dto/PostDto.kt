@@ -44,7 +44,10 @@ data class PetInfoDto(
     val birthdate: String,
     
     @SerializedName("profile_image_url")
-    val profileImageUrl: String?
+    val profileImageUrl: String?,
+    
+    @SerializedName("is_verified")
+    val isVerified: Boolean = false
 )
 
 // 게시글 응답 DTO
