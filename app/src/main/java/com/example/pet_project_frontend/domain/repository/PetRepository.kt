@@ -1,3 +1,4 @@
+// 변경 의도: hasPet 초기 null 상태를 외부로 전달해 첫 화면 라우팅 튐 현상을 방지
 package com.example.pet_project_frontend.domain.repository
 
 import com.example.pet_project_frontend.core.common.AppResult
@@ -16,10 +17,10 @@ interface PetRepository {
     suspend fun getPetProfileForPetCare(): AppResult<PetViewBasedResponse>
     suspend fun updatePetProfile(petId: String, request: PetUpdateRequest): AppResult<Pet>
     
-    // 생체 인증
+    // �체 �증
     suspend fun registerNosePrint(petId: String, filePath: String): AppResult<BiometricAnalysisResponse>
     suspend fun analyzeEye(petId: String, filePath: String): AppResult<EyeAnalysisResponse>
 
-    // 단일 펫 정책에 기반한 보조 API: 존재 여부 확인
-    fun hasPet(): kotlinx.coroutines.flow.Flow<Boolean>
+    // �일 ��책�기반�보조 API: 존재 �인
+    fun hasPet(): Flow<Boolean?>
 }

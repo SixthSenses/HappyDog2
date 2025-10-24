@@ -8,6 +8,7 @@ import com.example.pet_project_frontend.data.remote.dto.response.SocialLoginResp
 import com.example.pet_project_frontend.data.remote.dto.response.TokenRefreshResponse
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.Header
 import retrofit2.http.POST
 
@@ -26,4 +27,8 @@ interface AuthApi {
         @Header("Authorization") refreshToken: String,
         @Body body: EmptyRequest
     ): Response<TokenRefreshResponse>
+
+    // DELETE /api/users/me - EmptyRequestSchema -> EmptyResponseSchema
+    @DELETE("/api/users/me")
+    suspend fun withdraw(@Header("Authorization") accessToken: String): Response<Unit>
 }

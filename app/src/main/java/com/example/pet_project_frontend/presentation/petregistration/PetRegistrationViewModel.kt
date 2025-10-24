@@ -264,7 +264,7 @@ class PetRegistrationViewModel @Inject constructor(
     private fun validateInput(): String? {
         return when {
             petName.isBlank() -> "이름을 입력해주세요"
-            petName.length > 20 -> "이름은 20자 이내로 입력해주세요"
+            petName.length > 11 -> "이름은 11자 이내로 입력해주세요"
             selectedGender == null -> "성별을 선택해주세요"
             selectedBreed == null -> "견종을 선택해주세요"
             birthDate == null -> "생년월일을 입력해주세요"

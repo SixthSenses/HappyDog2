@@ -123,14 +123,27 @@ fun UserPostsScreen(
                                     modifier = Modifier.weight(1f)
                                 ) {
                                     // 사용자 이름 (#000, 25px, weight 600)
-                                    Text(
-                                        text = firstPost.pet?.name ?: firstPost.author.displayName,
-                                        fontFamily = PretendardFont,
-                                        fontWeight = FontWeight(600),
-                                        fontSize = 25.sp,
-                                        color = Color(0xFF000000)
-                                    )
-                                    
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = firstPost.pet?.name ?: firstPost.author.displayName,
+                                            fontFamily = PretendardFont,
+                                            fontWeight = FontWeight(600),
+                                            fontSize = 25.sp,
+                                            color = Color(0xFF000000)
+                                        )
+                                        if (firstPost.pet?.isVerified == true) {
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Image(
+                                                painter = painterResource(id = R.drawable.badge_container),
+                                                contentDescription = "신원 인증 완료",
+                                                modifier = Modifier
+                                                    .padding(1.dp)
+                                                    .size(width = 24.dp, height = 25.dp)
+                                            )
+                                        }
+                                    }
                                     Spacer(modifier = Modifier.height(8.dp))
                                     
                                     // 견종과 나이 (#8B95A1, 14px, weight 400)
