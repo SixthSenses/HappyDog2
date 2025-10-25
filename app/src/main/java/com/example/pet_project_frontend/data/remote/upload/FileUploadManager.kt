@@ -52,11 +52,16 @@ class FileUploadManager @Inject constructor(
         uploadType: UploadType
     ): AppResult<String> = withContext(Dispatchers.IO) {
         try {
+            // 파일 확장자 추출 및 검증
+            val extension = file.extension.lowercase()
+            val filename = ensureFileExtension(file.name, uploadType, extension)
+            val contentType = getMimeType(extension, uploadType)
+            
             // 1단계: Pre-signed URL 요청
             val urlResult = getUploadUrl(
                 uploadType = uploadType,
-                filename = file.name,
-                contentType = getMimeType(file.extension)
+                filename = filename,
+                contentType = contentType
             )
             
             when (urlResult) {
@@ -67,7 +72,7 @@ class FileUploadManager @Inject constructor(
                     val uploadResult = uploadToStorage(
                         uploadUrl = uploadInfo.uploadUrl,
                         file = file,
-                        contentType = getMimeType(file.extension)
+                        contentType = contentType
                     )
                     
                     when (uploadResult) {
@@ -190,15 +195,56 @@ class FileUploadManager @Inject constructor(
     }
     
     /**
-     * 파일 확장자로부터 MIME 타입 추출
+     * 파일명에 확장자가 있는지 확인하고, 없으면 추가
      */
-    private fun getMimeType(extension: String): String {
-        return when (extension.lowercase()) {
-            "jpg", "jpeg" -> "image/jpeg"
-            "png" -> "image/png"
-            "gif" -> "image/gif"
-            "webp" -> "image/webp"
-            else -> "application/octet-stream"
+    private fun ensureFileExtension(
+        filename: String, 
+        uploadType: UploadType, 
+        extension: String
+    ): String {
+        // 확장자가 이미 있으면 그대로 반환
+        if (extension.isNotEmpty()) {
+            return filename
+        }
+        
+        // 확장자가 없는 경우, uploadType에 따라 기본 확장자 추가
+        val defaultExtension = when (uploadType) {
+            UploadType.PET_NOSE_PRINT, 
+            UploadType.EYE_ANALYSIS,
+            UploadType.USER_PROFILE,
+            UploadType.PET_PROFILE,
+            UploadType.POST_IMAGE,
+            UploadType.CARTOON_SOURCE_IMAGE -> ".jpg"
+        }
+        
+        return "$filename$defaultExtension"
+    }
+    
+    /**
+     * 파일 확장자로부터 MIME 타입 추출
+     * 확장자가 없는 경우 uploadType을 기반으로 기본값 반환
+     */
+    private fun getMimeType(extension: String, uploadType: UploadType? = null): String {
+        // 확장자가 있는 경우
+        if (extension.isNotEmpty()) {
+            return when (extension.lowercase()) {
+                "jpg", "jpeg" -> "image/jpeg"
+                "png" -> "image/png"
+                "gif" -> "image/gif"
+                "webp" -> "image/webp"
+                else -> "application/octet-stream"
+            }
+        }
+        
+        // 확장자가 없는 경우, uploadType을 기반으로 기본 MIME 타입 반환
+        return when (uploadType) {
+            UploadType.PET_NOSE_PRINT,
+            UploadType.EYE_ANALYSIS,
+            UploadType.USER_PROFILE,
+            UploadType.PET_PROFILE,
+            UploadType.POST_IMAGE,
+            UploadType.CARTOON_SOURCE_IMAGE -> "image/jpeg"
+            null -> "application/octet-stream"
         }
     }
 }
