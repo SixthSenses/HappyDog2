@@ -11,6 +11,7 @@ interface AuthRepository {
     suspend fun socialLogin(authCode: String): AppResult<SocialLoginResponse>
     suspend fun refreshToken(refreshToken: String): AppResult<TokenRefreshResponse>
     suspend fun logout(accessToken: String, refreshToken: String): AppResult<Unit>
+    suspend fun withdraw(): AppResult<Unit>
     
     // 토큰 관리
     suspend fun saveTokens(accessToken: String, refreshToken: String)

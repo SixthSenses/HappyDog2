@@ -1,4 +1,4 @@
-﻿package com.example.pet_project_frontend.core.navigation
+package com.example.pet_project_frontend.core.navigation
 
 import android.net.Uri
 
@@ -31,9 +31,8 @@ sealed class Screen(val route: String) {
         fun createRoute(date: String? = null) = if (date != null) "activity_management?date=$date" else "activity_management"
     }
     object WeightManagement : Screen("weight_management?date={date}") { // 몸무게 관리 화면
-        fun createRoute(date: String): String {
-            return "weight_management?date=$date"
-        }
+        fun createRoute(date: String? = null): String =
+            if (date != null) "weight_management?date=$date" else "weight_management"
     }
     object PoopManagement : Screen("poop_management?date={date}") { // 대변 관리 화면
         fun createRoute(date: String? = null) = if (date != null) "poop_management?date=$date" else "poop_management"
@@ -50,10 +49,11 @@ sealed class Screen(val route: String) {
     object PoopRecord : Screen("poop_record") // 대변 기록 화면
     object VomitRecord : Screen("vomit_record") // 구토 기록 화면
 
-    object EditPetName : Screen("mypage/edit/name?initialName={initialName}") {
-        fun createRoute(initialName: String): String {
-            val encoded = Uri.encode(initialName)
-            return "mypage/edit/name?initialName=$encoded"
+    object EditPetName : Screen("mypage/edit/name?initialName={initialName}&petId={petId}") {
+        fun createRoute(initialName: String, petId: String?): String {
+            val encodedName = Uri.encode(initialName)
+            val encodedPetId = Uri.encode(petId ?: "")
+            return "mypage/edit/name?initialName=$encodedName&petId=$encodedPetId"
         }
     }
 

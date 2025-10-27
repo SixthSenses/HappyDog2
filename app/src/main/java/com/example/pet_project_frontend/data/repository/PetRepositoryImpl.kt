@@ -1,4 +1,4 @@
-// app/src/main/java/com/example/pet_project_frontend/data/repository/PetRepositoryImpl.kt
+// 변경 의도: hasPet 초기 null 상태를 유지해 첫 화면 라우팅 튐 현상을 방지
 
 package com.example.pet_project_frontend.data.repository
 
@@ -7,13 +7,18 @@ import com.example.pet_project_frontend.core.common.AppResult
 import com.example.pet_project_frontend.core.common.SafeApi
 import com.example.pet_project_frontend.data.mapper.PetMapper
 import com.example.pet_project_frontend.data.remote.api.PetApi
-import com.example.pet_project_frontend.data.remote.dto.request.*
-import com.example.pet_project_frontend.data.remote.dto.response.*
+import com.example.pet_project_frontend.data.remote.dto.request.BiometricAnalysisRequest
+import com.example.pet_project_frontend.data.remote.dto.request.PetRegistrationRequest
+import com.example.pet_project_frontend.data.remote.dto.request.PetUpdateRequest
+import com.example.pet_project_frontend.data.remote.dto.response.BiometricAnalysisResponse
+import com.example.pet_project_frontend.data.remote.dto.response.EyeAnalysisResponse
+import com.example.pet_project_frontend.data.remote.dto.response.PetViewBasedResponse
 import com.example.pet_project_frontend.domain.model.Pet
 import com.example.pet_project_frontend.domain.repository.PetRepository
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.onStart
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -26,11 +31,11 @@ class PetRepositoryImpl @Inject constructor(
         private const val TAG = "PetRepositoryImpl"
     }
 
-    // StateFlow로 반려동물 보유 상태 관리
-    // null = 아직 확인 안됨, true = 보유, false = 미보유
+    // StateFlow는 반려동물 보유 여부를 캐싱하기 위한 컨테이너
+    // null = 미확인, true = 보유, false = 미보유
     private val _hasPet = MutableStateFlow<Boolean?>(null)
-    
-    // 서버에서 반려동물 상태를 확인하고 StateFlow 업데이트
+
+    // 서버에서 반려동물 상태를 확인하고 캐시를 갱신
     private suspend fun refreshPetStatus() {
         Log.d(TAG, "Refreshing pet status from server")
         when (val res = SafeApi.response { petApi.getMyPetProfile() }) {
@@ -56,7 +61,7 @@ class PetRepositoryImpl @Inject constructor(
                 when (res) {
                     is AppResult.Success -> {
                         Log.d(TAG, "Pet registered successfully: ${res.data.petId}")
-                        // 🔥 핵심: 반려동물 등록 성공 시 즉시 상태 업데이트
+                        // 등록 성공 즉시 상태 캐시 갱신
                         _hasPet.value = true
                         Log.d(TAG, "Updated hasPet state to true after registration")
                         AppResult.Success(PetMapper.mapToDomainModel(res.data))
@@ -84,8 +89,6 @@ class PetRepositoryImpl @Inject constructor(
 
     override suspend fun getMyPetProfile(): AppResult<Pet> {
         Log.d(TAG, "Getting my pet profile (single-pet policy)")
-        // OpenAPI: /api/pets/profile returns PetViewBasedResponse (요약 뷰)
-        // 도메인 Pet에는 상세 필드가 필요하므로 petId로 상세 조회를 한 번 더 수행합니다.
         return when (val viewRes = SafeApi.response { petApi.getMyPetProfile() }) {
             is AppResult.Success -> {
                 val petId = viewRes.data.petId
@@ -145,30 +148,13 @@ class PetRepositoryImpl @Inject constructor(
         return SafeApi.response { petApi.analyzeEye(petId, request) }
     }
 
-    override fun hasPet(): kotlinx.coroutines.flow.Flow<Boolean> =
-        kotlinx.coroutines.flow.flow {
-            // 🔥 핵심: 캐시된 상태가 있으면 먼저 emit
-            _hasPet.value?.let { 
-                Log.d(TAG, "Emitting cached hasPet status: $it")
-                emit(it) 
-            }
-            
-            // 아직 확인하지 않았으면 서버에서 확인
-            if (_hasPet.value == null) {
-                Log.d(TAG, "Pet status not cached, checking server")
-                refreshPetStatus()
-                _hasPet.value?.let { 
-                    Log.d(TAG, "Emitting refreshed hasPet status: $it")
-                    emit(it) 
+    override fun hasPet(): Flow<Boolean?> =
+        _hasPet
+            .asStateFlow()
+            .onStart {
+                if (_hasPet.value == null) {
+                    Log.d(TAG, "Pet status not cached, checking server")
+                    refreshPetStatus()
                 }
             }
-            
-            // 🔥 핵심: StateFlow의 변화를 계속 감지하여 실시간 업데이트
-            _hasPet.asStateFlow().collect { hasPet ->
-                if (hasPet != null) {
-                    Log.d(TAG, "StateFlow changed, emitting new hasPet status: $hasPet")
-                    emit(hasPet)
-                }
-            }
-        }
 }

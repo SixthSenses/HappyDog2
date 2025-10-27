@@ -1,4 +1,4 @@
-// app/src/main/java/com/example/pet_project_frontend/MainViewModel.kt
+// 변경 의도: hasPet을 nullable로 유지해 초기 라우팅 시 잘못된 분기를 방지
 
 package com.example.pet_project_frontend
 
@@ -32,10 +32,10 @@ class MainViewModel @Inject constructor(
         )
 
     // 단일 펫 정책 기반: 서버의 내 펫 프로필 조회 가능 여부로 판정
-    val hasPet: StateFlow<Boolean> = petRepository.hasPet()
+    val hasPet: StateFlow<Boolean?> = petRepository.hasPet()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = false
+            initialValue = null
         )
 }
