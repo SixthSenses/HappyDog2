@@ -13,7 +13,8 @@ data class PetInfo(
     val name: String,
     val breed: String,
     val age: Int?,
-    val profileImageUrl: String?
+    val profileImageUrl: String?,
+    val isVerified: Boolean = false  // 신원 인증 여부 (비문 등록 완료)
 )
 
 // 게시글

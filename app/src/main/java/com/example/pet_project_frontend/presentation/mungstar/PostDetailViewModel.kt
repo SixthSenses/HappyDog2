@@ -3,10 +3,12 @@ package com.example.pet_project_frontend.presentation.mungstar
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.pet_project_frontend.core.common.AppResult
 import com.example.pet_project_frontend.domain.model.Comment
 import com.example.pet_project_frontend.domain.model.Post
 import com.example.pet_project_frontend.domain.repository.CommentRepository
 import com.example.pet_project_frontend.domain.repository.PostRepository
+import com.example.pet_project_frontend.domain.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,13 +26,15 @@ data class PostDetailUiState(
     val showMoreMenu: Boolean = false,
     val showDeleteDialog: Boolean = false,
     val isDeleting: Boolean = false,
-    val showCommentToast: Boolean = false
+    val showCommentToast: Boolean = false,
+    val currentUserProfileUrl: String? = null
 )
 
 @HiltViewModel
 class PostDetailViewModel @Inject constructor(
     private val postRepository: PostRepository,
-    private val commentRepository: CommentRepository
+    private val commentRepository: CommentRepository,
+    private val userRepository: UserRepository
 ) : ViewModel() {
     
     companion object {
@@ -42,6 +46,26 @@ class PostDetailViewModel @Inject constructor(
     
     // 게시글 ID 저장
     private var currentPostId: String? = null
+    
+    init {
+        // 현재 사용자의 프로필 이미지 가져오기
+        loadCurrentUserProfile()
+    }
+    
+    private fun loadCurrentUserProfile() {
+        viewModelScope.launch {
+            when (val result = userRepository.getUserInfo()) {
+                is AppResult.Success -> {
+                    _uiState.value = _uiState.value.copy(
+                        currentUserProfileUrl = result.data.profileImageUrl
+                    )
+                }
+                else -> {
+                    Log.e(TAG, "사용자 프로필 조회 실패")
+                }
+            }
+        }
+    }
     
     fun loadPostDetail(postId: String) {
         currentPostId = postId

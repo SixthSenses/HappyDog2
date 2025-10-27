@@ -26,6 +26,7 @@ import com.example.pet_project_frontend.presentation.mungstar.CartoonMaking
 import com.example.pet_project_frontend.presentation.mungstar.CartoonLoadingScreen
 import com.example.pet_project_frontend.presentation.mungstar.PostDetailScreen
 import com.example.pet_project_frontend.presentation.mungstar.UserPostsScreen
+import com.example.pet_project_frontend.presentation.notification.NotificationScreen
 import com.example.pet_project_frontend.presentation.translator.TranslatorScreen
 import com.example.pet_project_frontend.presentation.eye_health.EyeHealthScreen
 import com.example.pet_project_frontend.presentation.eye_health.EyeHealthHistoryScreen
@@ -153,6 +154,11 @@ fun PetCareNavHost(
 				postId = postId,
 				navController = navController
 			)
+		}
+
+		// 알림 목록 화면
+		composable("notification") {
+			NotificationScreen(navController = navController)
 		}
 
 		// 자유글 작성/수정 화면

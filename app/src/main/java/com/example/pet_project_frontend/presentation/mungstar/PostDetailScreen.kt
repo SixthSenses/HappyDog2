@@ -187,6 +187,7 @@ fun PostDetailScreen(
                     // 댓글 입력창
                     CommentInputBar(
                         text = commentText,
+                        profileImageUrl = uiState.currentUserProfileUrl,
                         onTextChange = { commentText = it },
                         onSendClick = {
                             if (commentText.isNotBlank()) {
@@ -248,6 +249,7 @@ fun PostDetailScreen(
                         .shadow(
                             elevation = 4.dp,
                             shape = RoundedCornerShape(26.dp),
+                            ambientColor = Color.Black.copy(alpha = 0.08f),
                             spotColor = Color.Black.copy(alpha = 0.08f)
                         )
                         .border(
@@ -341,14 +343,30 @@ fun PostDetailItem(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // 반려견 이름 (닉네임 - weight 500, #6B7684, 16px)
-                    Text(
-                        text = post.pet?.name ?: post.author.displayName,
-                        fontFamily = PretendardFont,
-                        fontWeight = FontWeight(500),
-                        fontSize = 16.sp,
-                        color = Color(0xFF6B7684)
-                    )
+                    // 반려견 이름 + 인증 배지
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = post.pet?.name ?: post.author.displayName,
+                            fontFamily = PretendardFont,
+                            fontWeight = FontWeight(500),
+                            fontSize = 16.sp,
+                            color = Color(0xFF6B7684)
+                        )
+                        
+                        // 신원 인증 배지 (is_verified = true일 때만 표시)
+                        if (post.pet?.isVerified == true) {
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Image(
+                                painter = painterResource(id = R.drawable.badge),
+                                contentDescription = "신원 인증",
+                                modifier = Modifier.size(16.dp, 17.dp),
+                                contentScale = ContentScale.Fit
+                            )
+                        }
+                    }
                     
                     // 타임스탬프 (오른쪽 하단, 이름과 같은 높이, #8B95A1, 14px)
                     Text(
@@ -628,6 +646,7 @@ fun CommentItem(
 @Composable
 fun CommentInputBar(
     text: String,
+    profileImageUrl: String? = null,
     onTextChange: (String) -> Unit,
     onSendClick: () -> Unit
 ) {
@@ -641,20 +660,31 @@ fun CommentInputBar(
         verticalAlignment = Alignment.CenterVertically
     ) {
         // 프로필 사진 (40X40 원)
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(Color(0xFFE0E0E0)),
-            contentAlignment = Alignment.Center
-        ) {
-            // TODO: 실제 사용자 프로필 사진으로 교체
-            Text(
-                text = "U",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
+        if (profileImageUrl != null) {
+            AsyncImage(
+                model = profileImageUrl,
+                contentDescription = "프로필 사진",
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFE0E0E0)),
+                contentScale = ContentScale.Crop
             )
+        } else {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFE0E0E0)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "U",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
         }
         
         Spacer(modifier = Modifier.width(8.dp))

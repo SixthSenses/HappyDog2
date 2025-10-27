@@ -1,5 +1,6 @@
 package com.example.pet_project_frontend.presentation.mungstar
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pet_project_frontend.domain.model.Post
@@ -66,6 +67,12 @@ class MungStarViewModel @Inject constructor(
 
                 if (result.isSuccess) {
                     val feed = result.getOrNull()!!
+                    
+                    // 디버깅: is_verified 값 로깅
+                    feed.posts.forEach { post ->
+                        Log.d("MungStarViewModel", "Post ${post.postId}: pet=${post.pet?.name}, isVerified=${post.pet?.isVerified}")
+                    }
+                    
                     _uiState.value = if (refresh) {
                         _uiState.value.copy(
                             isLoading = false,
