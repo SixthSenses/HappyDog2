@@ -12,11 +12,11 @@ data class PetProfileResponse(
     @SerializedName("name")
     val name: String,
     @SerializedName("gender")
-    val gender: String,
+    val gender: String?,
     @SerializedName("breed")
-    val breed: String,
+    val breed: String?,
     @SerializedName("birthdate")
-    val birthdate: String,
+    val birthdate: String?,
     @SerializedName("fur_color")
     val furColor: String?,
     @SerializedName("profile_image_url")
