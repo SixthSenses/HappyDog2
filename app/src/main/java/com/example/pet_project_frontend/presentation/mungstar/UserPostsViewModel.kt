@@ -12,13 +12,23 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+data class UserInfo(
+    val displayName: String,
+    val petName: String?,
+    val breed: String?,
+    val age: Int?,
+    val isVerified: Boolean?,
+    val profileImageUrl: String?
+)
+
 data class UserPostsUiState(
     val isLoading: Boolean = false,
     val posts: List<Post> = emptyList(),
     val nextCursor: String? = null,
     val hasMore: Boolean = false,
     val error: String? = null,
-    val isRefreshing: Boolean = false
+    val isRefreshing: Boolean = false,
+    val userInfo: UserInfo? = null
 )
 
 @HiltViewModel
@@ -53,12 +63,27 @@ class UserPostsViewModel @Inject constructor(
             
             if (result.isSuccess) {
                 val feed = result.getOrNull()!!
+                val newPosts = if (refresh) feed.posts else _uiState.value.posts + feed.posts
+                
+                // 첫 번째 게시물에서 사용자 정보 추출
+                val userInfo = newPosts.firstOrNull()?.let { firstPost ->
+                    UserInfo(
+                        displayName = firstPost.author.displayName,
+                        petName = firstPost.pet?.name,
+                        breed = firstPost.pet?.breed,
+                        age = firstPost.pet?.age,
+                        isVerified = firstPost.pet?.isVerified,
+                        profileImageUrl = firstPost.pet?.profileImageUrl ?: firstPost.author.profilePictureUrl
+                    )
+                }
+                
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     isRefreshing = false,
-                    posts = if (refresh) feed.posts else _uiState.value.posts + feed.posts,
+                    posts = newPosts,
                     nextCursor = feed.nextCursor,
-                    hasMore = feed.hasMore
+                    hasMore = feed.hasMore,
+                    userInfo = userInfo
                 )
             } else {
                 Log.e(TAG, "사용자 게시물 조회 실패", result.exceptionOrNull())

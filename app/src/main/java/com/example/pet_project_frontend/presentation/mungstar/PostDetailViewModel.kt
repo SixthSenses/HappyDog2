@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.pet_project_frontend.core.common.AppResult
 import com.example.pet_project_frontend.domain.model.Comment
 import com.example.pet_project_frontend.domain.model.Post
+import com.example.pet_project_frontend.domain.model.PetInfo
 import com.example.pet_project_frontend.domain.repository.CommentRepository
 import com.example.pet_project_frontend.domain.repository.PostRepository
 import com.example.pet_project_frontend.domain.repository.UserRepository
@@ -27,7 +28,7 @@ data class PostDetailUiState(
     val showDeleteDialog: Boolean = false,
     val isDeleting: Boolean = false,
     val showCommentToast: Boolean = false,
-    val currentUserProfileUrl: String? = null
+    val currentUserPet: PetInfo? = null // Pet 정보로 변경하여 일관성 유지
 )
 
 @HiltViewModel
@@ -54,15 +55,27 @@ class PostDetailViewModel @Inject constructor(
     
     private fun loadCurrentUserProfile() {
         viewModelScope.launch {
-            when (val result = userRepository.getUserInfo()) {
-                is AppResult.Success -> {
-                    _uiState.value = _uiState.value.copy(
-                        currentUserProfileUrl = result.data.profileImageUrl
+            try {
+                // /api/users/me/summary를 사용하여 Pet 정보 가져오기
+                val profileImageUrl = userRepository.getUserProfileImageUrl()
+                
+                if (profileImageUrl != null) {
+                    // Pet 정보를 임시로 생성 (프로필 이미지만 필요)
+                    val petInfo = PetInfo(
+                        petId = "", // 실제로는 사용하지 않음
+                        name = "",
+                        breed = "",
+                        age = 0,
+                        profileImageUrl = profileImageUrl,
+                        isVerified = false
                     )
+                    _uiState.value = _uiState.value.copy(currentUserPet = petInfo)
+                    Log.d(TAG, "사용자 Pet 프로필 이미지 로드 성공: $profileImageUrl")
+                } else {
+                    Log.w(TAG, "사용자 Pet 프로필 이미지를 가져올 수 없습니다")
                 }
-                else -> {
-                    Log.e(TAG, "사용자 프로필 조회 실패")
-                }
+            } catch (e: Exception) {
+                Log.e(TAG, "프로필 로드 중 오류", e)
             }
         }
     }

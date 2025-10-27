@@ -7,6 +7,7 @@ import com.example.pet_project_frontend.domain.model.User
 
 interface UserRepository {
     suspend fun getUserInfo(): AppResult<User>
+    suspend fun getUserProfileImageUrl(): String? // 프로필 이미지 URL만 간단히 가져오기
     suspend fun updateUserProfile(request: UserUpdateRequest): AppResult<User>
     // Update only the profile image; returns updated User domain model
     suspend fun updateProfileImage(filePath: String): AppResult<User>

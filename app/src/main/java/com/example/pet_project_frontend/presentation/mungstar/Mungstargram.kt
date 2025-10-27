@@ -156,20 +156,10 @@ fun MungStarFeed(
                     ) {
                         Image(
                             painter = painterResource(id = R.drawable.notifications),
-                            contentDescription = "Notifications",
+                            contentDescription = "Notification",
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Fit
                         )
-                        
-                        // 미확인 알림 뱃지
-                        if (notificationUiState.unreadCount > 0) {
-                            Box(
-                                modifier = Modifier
-                                    .size(8.dp)
-                                    .align(Alignment.TopEnd)
-                                    .background(Color(0xFFFF3B30), CircleShape)
-                            )
-                        }
                     }
 
                     // person.png (20×20) - 현재 사용자 프로필로 이동

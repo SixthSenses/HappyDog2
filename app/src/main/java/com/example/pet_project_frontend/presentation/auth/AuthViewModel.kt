@@ -52,6 +52,23 @@ class AuthViewModel @Inject constructor(
                         // UserRepository에도 액세스 토큰 저장 (중복이지만 기존 코드 호환성을 위해)
                         userRepository.saveAccessToken(response.accessToken)
 
+                        // 프로필 이미지 URL을 가져와 저장
+                        val profileImageUrl = userRepository.getUserProfileImageUrl()
+                        if (profileImageUrl != null) {
+                            Log.d("AuthViewModel", "Profile image URL loaded: $profileImageUrl")
+                            // 프로필 이미지 포함하여 저장
+                            authRepository.saveUserInfo(
+                                com.example.pet_project_frontend.data.remote.dto.response.UserInfo(
+                                    userId = response.userInfo.userId,
+                                    email = response.userInfo.email,
+                                    nickname = response.userInfo.nickname,
+                                    profileImageUrl = profileImageUrl
+                                )
+                            )
+                        } else {
+                            Log.w("AuthViewModel", "Profile image URL not available")
+                        }
+
                         Log.d("AuthViewModel", "Tokens and user info saved successfully")
                         Log.d("AuthViewModel", "Is new user: ${response.isNewUser}")
 

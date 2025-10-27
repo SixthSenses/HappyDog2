@@ -115,6 +115,7 @@ fun PostDetailScreen(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxWidth()
+                            .background(Color.White)
                     ) {
                         // 게시글 아이템
                         item {
@@ -187,7 +188,7 @@ fun PostDetailScreen(
                     // 댓글 입력창
                     CommentInputBar(
                         text = commentText,
-                        profileImageUrl = uiState.currentUserProfileUrl,
+                        profileImageUrl = uiState.currentUserPet?.profileImageUrl,
                         onTextChange = { commentText = it },
                         onSendClick = {
                             if (commentText.isNotBlank()) {
