@@ -210,7 +210,7 @@ private fun UserPostsProfileHeader(
                     )
                     if (isVerified) {
                         Spacer(modifier = Modifier.width(6.dp))
-                        VerifiedBadge()
+                        VerifiedBadge(modifier = Modifier.size(25.dp))
                     }
                 }
 
