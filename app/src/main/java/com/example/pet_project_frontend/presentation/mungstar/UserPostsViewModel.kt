@@ -3,6 +3,7 @@ package com.example.pet_project_frontend.presentation.mungstar
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.pet_project_frontend.domain.model.PetInfo
 import com.example.pet_project_frontend.domain.model.Post
 import com.example.pet_project_frontend.domain.repository.PostRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,7 +19,8 @@ data class UserPostsUiState(
     val nextCursor: String? = null,
     val hasMore: Boolean = false,
     val error: String? = null,
-    val isRefreshing: Boolean = false
+    val isRefreshing: Boolean = false,
+    val profilePet: PetInfo? = null
 )
 
 @HiltViewModel
@@ -51,21 +53,28 @@ class UserPostsViewModel @Inject constructor(
                 cursor = if (refresh) null else _uiState.value.nextCursor
             )
             
-            if (result.isSuccess) {
-                val feed = result.getOrNull()!!
+            result.onSuccess { feed ->
+                val updatedPosts = if (refresh) feed.posts else _uiState.value.posts + feed.posts
+                val profilePet = when {
+                    updatedPosts.isNotEmpty() -> updatedPosts.first().pet ?: _uiState.value.profilePet
+                    refresh                   -> null
+                    else                       -> _uiState.value.profilePet
+                }
+
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     isRefreshing = false,
-                    posts = if (refresh) feed.posts else _uiState.value.posts + feed.posts,
+                    posts = updatedPosts,
                     nextCursor = feed.nextCursor,
-                    hasMore = feed.hasMore
+                    hasMore = feed.hasMore,
+                    profilePet = profilePet
                 )
-            } else {
-                Log.e(TAG, "사용자 게시물 조회 실패", result.exceptionOrNull())
+            }.onFailure { throwable ->
+                Log.e(TAG, "사용자 게시물 조회 실패", throwable)
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     isRefreshing = false,
-                    error = result.exceptionOrNull()?.message ?: "게시물 조회 실패"
+                    error = throwable.message ?: "게시물 조회 실패"
                 )
             }
         }
