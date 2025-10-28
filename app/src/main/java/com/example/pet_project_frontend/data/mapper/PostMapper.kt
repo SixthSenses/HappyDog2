@@ -28,7 +28,8 @@ fun PetInfoDto.toDomain(): PetInfo {
         name = name,
         breed = breed,
         age = age,
-        profileImageUrl = profileImageUrl
+        profileImageUrl = profileImageUrl,
+        isVerified = isVerified
     )
 }
 

@@ -122,14 +122,26 @@ fun UserPostsScreen(
                                 Column(
                                     modifier = Modifier.weight(1f)
                                 ) {
-                                    // 사용자 이름 (#000, 25px, weight 600)
-                                    Text(
-                                        text = firstPost.pet?.name ?: firstPost.author.displayName,
-                                        fontFamily = PretendardFont,
-                                        fontWeight = FontWeight(600),
-                                        fontSize = 25.sp,
-                                        color = Color(0xFF000000)
-                                    )
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = firstPost.pet?.name ?: firstPost.author.displayName,
+                                            fontFamily = PretendardFont,
+                                            fontWeight = FontWeight(600),
+                                            fontSize = 25.sp,
+                                            color = Color(0xFF000000)
+                                        )
+
+                                        if (firstPost.pet?.isVerified == true) {
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Image(
+                                                painter = painterResource(id = R.drawable.badge),
+                                                contentDescription = "Verification badge",
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                    }
                                     
                                     Spacer(modifier = Modifier.height(8.dp))
                                     

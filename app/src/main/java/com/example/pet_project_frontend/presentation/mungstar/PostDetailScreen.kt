@@ -341,14 +341,27 @@ fun PostDetailItem(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // 반려견 이름 (닉네임 - weight 500, #6B7684, 16px)
-                    Text(
-                        text = post.pet?.name ?: post.author.displayName,
-                        fontFamily = PretendardFont,
-                        fontWeight = FontWeight(500),
-                        fontSize = 16.sp,
-                        color = Color(0xFF6B7684)
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // 반려견 이름 (닉네임 - weight 500, #6B7684, 16px)
+                        Text(
+                            text = post.pet?.name ?: post.author.displayName,
+                            fontFamily = PretendardFont,
+                            fontWeight = FontWeight(500),
+                            fontSize = 16.sp,
+                            color = Color(0xFF6B7684)
+                        )
+                        
+                        if (post.pet?.isVerified == true) {
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Image(
+                                painter = painterResource(id = R.drawable.badge),
+                                contentDescription = "Verification badge",
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
                     
                     // 타임스탬프 (오른쪽 하단, 이름과 같은 높이, #8B95A1, 14px)
                     Text(
@@ -528,6 +541,15 @@ fun CommentItem(
                     fontSize = 14.sp,
                     color = Color(0xFF6B7684)
                 )
+                
+                if (comment.pet?.isVerified == true) {
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Image(
+                        painter = painterResource(id = R.drawable.badge),
+                        contentDescription = "Verification badge",
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
                 
                 Spacer(modifier = Modifier.width(4.dp))
                 
