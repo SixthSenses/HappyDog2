@@ -71,11 +71,11 @@ fun CartoonLoadingScreen(
         }
     }
     
-    // 에러 발생 시 토스트 표시
+    // 에러 발생 시 토스트 표시 후 이전 화면으로 (자동으로 돌아감)
     LaunchedEffect(uiState.error) {
         if (uiState.error != null) {
-            Toast.makeText(context, uiState.error, Toast.LENGTH_SHORT).show()
-            delay(2000)
+            Toast.makeText(context, uiState.error, Toast.LENGTH_LONG).show()
+            delay(3000) // 3초 후 자동으로 뒤로가기
             navController.popBackStack()
         }
     }

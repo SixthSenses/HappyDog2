@@ -74,7 +74,11 @@ fun UserPostsScreen(
             }
     }
     
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White)
+    ) {
         // 상단 헤더 바 (412X64)
         Box(
             modifier = Modifier
@@ -102,6 +106,7 @@ fun UserPostsScreen(
                 CircularProgressIndicator()
             }
         } else {
+
             LazyColumn(
                 state = listState,
                 modifier = Modifier.fillMaxSize()
@@ -126,46 +131,74 @@ fun UserPostsScreen(
                     )
                 }
                 
-                // 게시물 목록
-                items(uiState.posts) { post ->
-                    PostItem(
-                        post = post,
-                        onLikeClick = { viewModel.toggleLike(post.postId) },
-                        onPostClick = { navController.navigate("post_detail/${post.postId}") }
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
-                
-                // 로딩 인디케이터
-                if (uiState.isLoading && uiState.posts.isNotEmpty()) {
-                    item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator()
-                        }
-                    }
-                }
-                
-                // 게시물이 없을 때
+                // 게시물이 없을 때 - 화면 중앙에 표시
                 if (uiState.posts.isEmpty() && !uiState.isLoading) {
-                    item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 48.dp),
-                            contentAlignment = Alignment.Center
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .background(Color.White),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
+                            // no_post.png 이미지 (60X65)
+                            Image(
+                                painter = painterResource(id = R.drawable.no_post),
+                                contentDescription = "게시물 없음",
+                                modifier = Modifier.size(width = 60.dp, height = 65.dp)
+                            )
+                            
+                            Spacer(modifier = Modifier.height(24.dp))
+                            
+                            // 안내 텍스트
                             Text(
-                                text = "아직 작성한 게시물이 없어요.",
+                                text = "아직 게시물을 남기지 않았어요.",
                                 fontFamily = PretendardFont,
                                 fontWeight = FontWeight(400),
                                 fontSize = 16.sp,
-                                color = Color.Gray
+                                color = Color(0xFF6B7684)
                             )
+                        }
+                    }
+                } else {
+                    // 게시물이 있을 때 - LazyColumn으로 스크롤 가능하게
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier
+                            .weight(1f)
+                            .background(Color.White)
+                    ) {
+                
+                        // 게시물 목록
+                        items(uiState.posts) { post ->
+                            PostItem(
+                                post = post,
+                                onLikeClick = { viewModel.toggleLike(post.postId) },
+                                onPostClick = { navController.navigate("post_detail/${post.postId}") }
+                            )
+                            
+                            // 게시물 사이 구분선 (#E4E8EB, 1dp)
+                            HorizontalDivider(
+                                modifier = Modifier.fillMaxWidth(),
+                                thickness = 1.dp,
+                                color = Color(0xFFE4E8EB)
+                            )
+                        }
+                        
+                        // 로딩 인디케이터
+                        if (uiState.isLoading && uiState.posts.isNotEmpty()) {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator()
+                                }
+                            }
                         }
                     }
                 }

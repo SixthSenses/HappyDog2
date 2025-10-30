@@ -115,6 +115,7 @@ fun PostDetailScreen(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxWidth()
+                            .background(Color.White)
                     ) {
                         // 게시글 아이템
                         item {
@@ -187,6 +188,7 @@ fun PostDetailScreen(
                     // 댓글 입력창
                     CommentInputBar(
                         text = commentText,
+                        profileImageUrl = uiState.currentUserPet?.profileImageUrl,
                         onTextChange = { commentText = it },
                         onSendClick = {
                             if (commentText.isNotBlank()) {
@@ -248,6 +250,7 @@ fun PostDetailScreen(
                         .shadow(
                             elevation = 4.dp,
                             shape = RoundedCornerShape(26.dp),
+                            ambientColor = Color.Black.copy(alpha = 0.08f),
                             spotColor = Color.Black.copy(alpha = 0.08f)
                         )
                         .border(
@@ -341,10 +344,12 @@ fun PostDetailItem(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+
                     Row(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         // 반려견 이름 (닉네임 - weight 500, #6B7684, 16px)
+
                         Text(
                             text = post.pet?.name ?: post.author.displayName,
                             fontFamily = PretendardFont,
@@ -650,6 +655,7 @@ fun CommentItem(
 @Composable
 fun CommentInputBar(
     text: String,
+    profileImageUrl: String? = null,
     onTextChange: (String) -> Unit,
     onSendClick: () -> Unit
 ) {
@@ -663,20 +669,31 @@ fun CommentInputBar(
         verticalAlignment = Alignment.CenterVertically
     ) {
         // 프로필 사진 (40X40 원)
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(Color(0xFFE0E0E0)),
-            contentAlignment = Alignment.Center
-        ) {
-            // TODO: 실제 사용자 프로필 사진으로 교체
-            Text(
-                text = "U",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
+        if (profileImageUrl != null) {
+            AsyncImage(
+                model = profileImageUrl,
+                contentDescription = "프로필 사진",
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFE0E0E0)),
+                contentScale = ContentScale.Crop
             )
+        } else {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFE0E0E0)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "U",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
         }
         
         Spacer(modifier = Modifier.width(8.dp))

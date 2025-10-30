@@ -61,13 +61,15 @@ fun LoginScreen(
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
+        Log.d("LoginScreen", "ActivityResult received with resultCode: ${result.resultCode}")
         val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
         try {
             val account = task.getResult(ApiException::class.java)
+            Log.d("LoginScreen", "Google account obtained: ${account.email}")
 
             // serverAuthCode를 가져와서 백엔드로 전송
             account.serverAuthCode?.let { authCode ->
-                Log.d("LoginScreen", "Auth Code received: ${authCode.take(10)}...")
+                Log.d("LoginScreen", "Auth Code received: ${authCode.take(10)}... (length: ${authCode.length})")
                 viewModel.socialLogin(authCode)
             } ?: run {
                 Log.e("LoginScreen", "No auth code received")
@@ -79,7 +81,7 @@ fun LoginScreen(
                 }
             }
         } catch (e: ApiException) {
-            Log.e("LoginScreen", "Google Sign-In failed", e)
+            Log.e("LoginScreen", "Google Sign-In failed with statusCode: ${e.statusCode}", e)
             scope.launch {
                 val errorMessage = when (e.statusCode) {
                     12501 -> "로그인이 취소되었습니다."

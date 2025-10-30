@@ -394,17 +394,51 @@ fun PlaceDetail(
 				line.trim()
 			}
 		}.joinToString("\n") // 다시 \n으로 합침
-		DetailInfoRow(icon = Icons.Default.LocationOn, content = place.address)
-		DetailInfoRow(icon = Icons.Default.Call, content = place.phoneNumber)
-		DetailInfoRow(icon = Icons.Default.Schedule, content = formattedOperateTime)
-		DetailInfoRow(icon = Icons.Default.Link, content = place.homePage, isLink = true)
+	DetailInfoRow(icon = Icons.Default.LocationOn, content = place.address)
+	DetailInfoRow(icon = Icons.Default.Call, content = formatPhoneForDisplay(place.phoneNumber))
+	DetailInfoRow(icon = Icons.Default.Schedule, content = formattedOperateTime)
+	DetailInfoRow(icon = Icons.Default.Link, content = place.homePage, isLink = true)
 		Spacer(modifier = Modifier.height(16.dp))
+	}
+}
+
+/**
+ * 전화번호 표시를 위해 CSV 값 그대로 사용하되, 하이픈이 없을 때는 간단한 규칙으로 보기 좋게 포맷합니다.
+ * - 이미 '-'가 포함되어 있으면 원본 그대로 반환
+ * - 숫자만 있는 경우 길이에 따라 한국식 표기(예: 010-1234-5678, 02-123-4567, 031-123-4567)를 시도
+ */
+private fun formatPhoneForDisplay(raw: String): String {
+	if (raw.isBlank()) return "정보 없음"
+	// 이미 하이픈이나 비숫자 문자가 포함되어 있으면 원본 그대로 사용
+	if (raw.any { !it.isDigit() }) return raw
+
+	val digits = raw.filter { it.isDigit() }
+	return when (digits.length) {
+		8 -> digits.replaceFirst(Regex("^(\\d{4})(\\d{4})$"), "$1-$2")
+		9 -> {
+			if (digits.startsWith("02")) {
+				digits.replaceFirst(Regex("^(02)(\\d{3})(\\d{4})$"), "$1-$2-$3")
+			} else {
+				digits.replaceFirst(Regex("^(\\d{3})(\\d{3})(\\d{3})$"), "$1-$2-$3")
+			}
+		}
+		10 -> {
+			if (digits.startsWith("02")) {
+				digits.replaceFirst(Regex("^(02)(\\d{4})(\\d{4})$"), "$1-$2-$3")
+			} else {
+				digits.replaceFirst(Regex("^(\\d{3})(\\d{3})(\\d{4})$"), "$1-$2-$3")
+			}
+		}
+		11 -> digits.replaceFirst(Regex("^(\\d{3})(\\d{4})(\\d{4})$"), "$1-$2-$3")
+		else -> raw
 	}
 }
 
 @Composable
 fun DetailInfoRow(icon: ImageVector, content: String, isLink: Boolean = false) {
 	val context = LocalContext.current
+	val displayContent = content.ifEmpty { "정보 없음" }
+    
 	Row(
 		modifier = Modifier
 			.fillMaxWidth()
@@ -418,15 +452,15 @@ fun DetailInfoRow(icon: ImageVector, content: String, isLink: Boolean = false) {
 			tint = MyPageColors.IconColor
 		)
 		Spacer(modifier = Modifier.width(16.dp))
-		if (isLink && content.startsWith("http")) {
+		if (isLink && displayContent != "정보 없음" && displayContent.startsWith("http")) {
 			Text(
-				text = content,
+				text = displayContent,
 				fontSize = 16.sp,
 				color = MyPageColors.Accent,
 				textDecoration = TextDecoration.Underline,
 				modifier = Modifier.clickable {
 					try {
-						val intent = Intent(Intent.ACTION_VIEW, Uri.parse(content))
+						val intent = Intent(Intent.ACTION_VIEW, Uri.parse(displayContent))
 						context.startActivity(intent)
 					} catch (e: Exception) {
 						Toast.makeText(context, "링크를 열 수 없습니다.", Toast.LENGTH_SHORT).show()
@@ -434,7 +468,11 @@ fun DetailInfoRow(icon: ImageVector, content: String, isLink: Boolean = false) {
 				}
 			)
 		} else {
-			Text(text = content, fontSize = 16.sp, color = MyPageColors.Secondary)
+			Text(
+				text = displayContent, 
+				fontSize = 16.sp, 
+				color = if (displayContent == "정보 없음") MyPageColors.Tertiary else MyPageColors.Secondary
+			)
 		}
 	}
 }

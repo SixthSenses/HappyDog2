@@ -13,6 +13,15 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+data class UserInfo(
+    val displayName: String,
+    val petName: String?,
+    val breed: String?,
+    val age: Int?,
+    val isVerified: Boolean?,
+    val profileImageUrl: String?
+)
+
 data class UserPostsUiState(
     val isLoading: Boolean = false,
     val posts: List<Post> = emptyList(),
@@ -21,6 +30,7 @@ data class UserPostsUiState(
     val error: String? = null,
     val isRefreshing: Boolean = false,
     val profilePet: PetInfo? = null
+
 )
 
 @HiltViewModel

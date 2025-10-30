@@ -52,6 +52,35 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     /**
+     * 현재 사용자의 프로필 이미지 URL만 가져오기
+     * /api/users/me는 profile_image_url을 반환하지 않으므로
+     * /api/users/me/summary를 사용하여 pet의 profile_image_url을 가져옴
+     */
+    override suspend fun getUserProfileImageUrl(): String? {
+        val saved = authRepository.getUserInfo()
+        if (saved == null) {
+            Log.w(TAG, "No logged-in user. Cannot fetch profile image.")
+            return null
+        }
+        
+        Log.d(TAG, "Fetching user summary for profile image")
+        return try {
+            val response = userApi.getUserSummary()
+            if (response.isSuccessful) {
+                val profileImageUrl = response.body()?.pet?.profileImageUrl
+                Log.d(TAG, "Profile image URL: $profileImageUrl")
+                profileImageUrl
+            } else {
+                Log.e(TAG, "Failed to fetch user summary: ${response.code()}")
+                null
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Exception while fetching profile image", e)
+            null
+        }
+    }
+
+    /**
      * 일반 프로필 업데이트는 OpenAPI spec에 정의되지 않음
      * Pet 프로필 업데이트를 사용하세요 (PetRepository.updatePetProfile)
      */
