@@ -82,9 +82,9 @@ object DatabaseModule {
                             category = category,
                             address = address,
                             shortAddress = shortAddress,
-                            phoneNumber = if (phoneNumber.isNotEmpty()) phoneNumber else "정보 없음",
-                            operateTime = operateTime,
-                            homePage = homePage
+                            phoneNumber = phoneNumber.ifEmpty { "정보 없음" },
+                            operateTime = operateTime.ifEmpty { "정보 없음" },
+                            homePage = homePage.ifEmpty { "정보 없음" }
                         )
                     } catch (_: Exception) {
                         null
