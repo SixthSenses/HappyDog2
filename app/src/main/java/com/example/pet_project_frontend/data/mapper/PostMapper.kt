@@ -36,7 +36,7 @@ fun PetInfoDto.toDomain(): PetInfo {
         breed = breed,
         age = age,
         profileImageUrl = profileImageUrl,
-        isVerified = verifiedValue  // 신원 인증 여부
+        isVerified = isVerified
     )
 }
 

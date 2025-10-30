@@ -26,7 +26,7 @@ class IdentityVerificationViewModel @Inject constructor(
     private val fileUploadManager: FileUploadManager
 ) : ViewModel() {
 
-    private val bypassVerification = true
+    private val bypassVerification = false  // 실제 백엔드 호출 활성화
 
     data class IntroUiState(
         val showAlreadyVerifiedDialog: Boolean = false,

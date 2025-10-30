@@ -1,9 +1,11 @@
-// 변경의도: 초기 견종 값을 SavedStateHandle에서 읽고 저장 콜백이 MyPage 갱신 여부를 판단하도록 확장한다.
 package com.example.pet_project_frontend.presentation.mypage.profile.breed
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.pet_project_frontend.core.common.AppResult
+import com.example.pet_project_frontend.data.remote.dto.request.UpdatePetRequest
+import com.example.pet_project_frontend.domain.repository.PetRepository
 import com.example.pet_project_frontend.domain.usecase.breed.SearchBreedsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -20,7 +22,8 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class BreedSelectViewModel @Inject constructor(
     private val searchBreedsUseCase: SearchBreedsUseCase,
-    private val savedStateHandle: SavedStateHandle
+    private val savedStateHandle: SavedStateHandle,
+    private val petRepository: PetRepository
 ) : ViewModel() {
 
     data class UiState(
@@ -37,10 +40,21 @@ class BreedSelectViewModel @Inject constructor(
 
     private var searchJob: Job? = null
 
+    private var petId: String? = savedStateHandle
+        .get<String>("petId")
+        ?.takeUnless { it.isNullOrBlank() || it == "null" }
+
     init {
         val initialBreed = savedStateHandle.get<String>("initialBreed").orEmpty()
         _ui.update { it.copy(selectedBreedName = initialBreed.takeIf { it.isNotBlank() }) }
         fetchBreeds("")
+    }
+
+    fun initializePetId(id: String?) {
+        if (!id.isNullOrBlank() && id != "null" && petId == null) {
+            petId = id
+            savedStateHandle["petId"] = id
+        }
     }
 
     fun onQueryChange(value: String) {
@@ -61,11 +75,54 @@ class BreedSelectViewModel @Inject constructor(
     fun confirmSelection(onSuccess: (String, Boolean) -> Unit) {
         val selected = _ui.value.selectedBreedName ?: return
         if (_ui.value.isSaving) return
-        _ui.update { it.copy(isSaving = true) }
+        _ui.update { it.copy(isSaving = true, error = null) }
+
         viewModelScope.launch {
-            // TODO 서버 연동 시 치환: 견종 수정 API를 연동해 실제 응답으로 갱신
-            onSuccess(selected, false)
-            _ui.update { state -> state.copy(isSaving = false) }
+            val targetPetId = petId ?: run {
+                val profile = when (val result = petRepository.getMyPetProfile()) {
+                    is AppResult.Success -> result.data
+                    is AppResult.Error -> {
+                        val message = result.message ?: result.validation?.generalMessage ?: GENERIC_SAVE_ERROR_MESSAGE
+                        _ui.update { it.copy(isSaving = false, error = message) }
+                        return@launch
+                    }
+                    is AppResult.Exception -> {
+                        val message = result.throwable.message ?: GENERIC_SAVE_ERROR_MESSAGE
+                        _ui.update { it.copy(isSaving = false, error = message) }
+                        return@launch
+                    }
+                }
+
+                petId = profile.id
+                savedStateHandle["petId"] = profile.id
+                profile.id
+            }
+
+            val request = UpdatePetRequest(
+                breed = selected
+            )
+
+            when (val update = petRepository.updatePetProfile(targetPetId, request)) {
+                is AppResult.Success -> {
+                    val appliedBreed = update.data.breed.ifBlank { selected }
+                    _ui.update {
+                        it.copy(
+                            isSaving = false,
+                            selectedBreedName = appliedBreed,
+                            error = null
+                        )
+                    }
+                    onSuccess(appliedBreed, true)
+                }
+                is AppResult.Error -> {
+                    val message = update.message ?: update.validation?.generalMessage ?: GENERIC_SAVE_ERROR_MESSAGE
+                    _ui.update { it.copy(isSaving = false, error = message) }
+                }
+                is AppResult.Exception -> {
+                    val message = update.throwable.message ?: GENERIC_SAVE_ERROR_MESSAGE
+                    _ui.update { it.copy(isSaving = false, error = message) }
+                }
+            }
         }
     }
 
@@ -81,7 +138,7 @@ class BreedSelectViewModel @Inject constructor(
                         it.copy(
                             breeds = emptyList(),
                             isLoading = false,
-                            error = "견종 정보를 불러오는 중 오류가 발생했어요"
+                            error = "견종 정보를 불러오는 동안 오류가 발생했어요."
                         )
                     }
                 }
@@ -100,5 +157,9 @@ class BreedSelectViewModel @Inject constructor(
                     }
                 }
         }
+    }
+
+    companion object {
+        private const val GENERIC_SAVE_ERROR_MESSAGE = "견종을 저장하는 중 문제가 발생했어요. 잠시 후 다시 시도해주세요."
     }
 }

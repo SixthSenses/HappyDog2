@@ -3,6 +3,7 @@ package com.example.pet_project_frontend.presentation.mungstar
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.pet_project_frontend.domain.model.PetInfo
 import com.example.pet_project_frontend.domain.model.Post
 import com.example.pet_project_frontend.domain.repository.PostRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -28,7 +29,8 @@ data class UserPostsUiState(
     val hasMore: Boolean = false,
     val error: String? = null,
     val isRefreshing: Boolean = false,
-    val userInfo: UserInfo? = null
+    val profilePet: PetInfo? = null
+
 )
 
 @HiltViewModel
@@ -61,36 +63,28 @@ class UserPostsViewModel @Inject constructor(
                 cursor = if (refresh) null else _uiState.value.nextCursor
             )
             
-            if (result.isSuccess) {
-                val feed = result.getOrNull()!!
-                val newPosts = if (refresh) feed.posts else _uiState.value.posts + feed.posts
-                
-                // 첫 번째 게시물에서 사용자 정보 추출
-                val userInfo = newPosts.firstOrNull()?.let { firstPost ->
-                    UserInfo(
-                        displayName = firstPost.author.displayName,
-                        petName = firstPost.pet?.name,
-                        breed = firstPost.pet?.breed,
-                        age = firstPost.pet?.age,
-                        isVerified = firstPost.pet?.isVerified,
-                        profileImageUrl = firstPost.pet?.profileImageUrl ?: firstPost.author.profilePictureUrl
-                    )
+            result.onSuccess { feed ->
+                val updatedPosts = if (refresh) feed.posts else _uiState.value.posts + feed.posts
+                val profilePet = when {
+                    updatedPosts.isNotEmpty() -> updatedPosts.first().pet ?: _uiState.value.profilePet
+                    refresh                   -> null
+                    else                       -> _uiState.value.profilePet
                 }
-                
+
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     isRefreshing = false,
-                    posts = newPosts,
+                    posts = updatedPosts,
                     nextCursor = feed.nextCursor,
                     hasMore = feed.hasMore,
-                    userInfo = userInfo
+                    profilePet = profilePet
                 )
-            } else {
-                Log.e(TAG, "사용자 게시물 조회 실패", result.exceptionOrNull())
+            }.onFailure { throwable ->
+                Log.e(TAG, "사용자 게시물 조회 실패", throwable)
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     isRefreshing = false,
-                    error = result.exceptionOrNull()?.message ?: "게시물 조회 실패"
+                    error = throwable.message ?: "게시물 조회 실패"
                 )
             }
         }

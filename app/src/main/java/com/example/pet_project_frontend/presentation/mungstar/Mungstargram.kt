@@ -600,11 +600,11 @@ fun PostItem(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // 반려견 이름 + 인증 배지
+
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
+ 
                         Text(
                             text = post.pet?.name ?: post.author.displayName,
                             fontFamily = PretendardFont,
@@ -613,19 +613,17 @@ fun PostItem(
                             color = Color(0xFF6B7684)
                         )
                         
-                        // 신원 인증 배지 (is_verified = true일 때만 표시)
                         if (post.pet?.isVerified == true) {
-                            Spacer(modifier = Modifier.width(4.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
                             Image(
                                 painter = painterResource(id = R.drawable.badge),
-                                contentDescription = "신원 인증",
-                                modifier = Modifier.size(16.dp, 17.dp),
-                                contentScale = ContentScale.Fit
+                                contentDescription = "Verification badge",
+                                modifier = Modifier.size(18.dp)
+
                             )
                         }
                     }
                     
-                    // 타임스탬프 (오른쪽, 이름과 같은 높이)
                     Text(
                         text = com.example.pet_project_frontend.util.TimeUtil.getRelativeTimeString(post.createdAt),
                         fontFamily = PretendardFont,
@@ -646,7 +644,6 @@ fun PostItem(
                 }
             }
         }
-
         Spacer(modifier = Modifier.height(20.dp))
 
         // 게시글 텍스트 (사용자 정보 아래 20px, #333D4B, 17px, 클릭 시 상세 화면)

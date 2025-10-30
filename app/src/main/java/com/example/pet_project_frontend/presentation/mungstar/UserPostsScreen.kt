@@ -29,6 +29,8 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.pet_project_frontend.R
 import com.example.pet_project_frontend.core.theme.PretendardFont
+import com.example.pet_project_frontend.domain.model.Author
+import com.example.pet_project_frontend.domain.model.PetInfo
 import com.example.pet_project_frontend.domain.model.Post
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
@@ -104,93 +106,20 @@ fun UserPostsScreen(
                 CircularProgressIndicator()
             }
         } else {
-            Column(modifier = Modifier.fillMaxSize()) {
-                // 사용자 정보 앱바 (174dp 높이) - 항상 표시
-                uiState.userInfo?.let { userInfo ->
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(174.dp)
-                            .background(Color.White)
-                            .padding(horizontal = 25.dp, vertical = 28.dp)
-                    ) {
-                        // 왼쪽: 사용자 정보
-                        Column(
-                            modifier = Modifier.align(Alignment.TopStart)
-                        ) {
-                            // 사용자 이름 + 인증 배지
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Text(
-                                    text = userInfo.petName ?: userInfo.displayName,
-                                    fontFamily = PretendardFont,
-                                    fontWeight = FontWeight(600),
-                                    fontSize = 25.sp,
-                                    color = Color(0xFF000000)
-                                )
-                                
-                                // 신원 인증 배지 (is_verified = true일 때만 표시)
-                                if (userInfo.isVerified == true) {
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Image(
-                                        painter = painterResource(id = R.drawable.badge),
-                                        contentDescription = "신원 인증",
-                                        modifier = Modifier.size(16.dp, 17.dp),
-                                        contentScale = ContentScale.Fit
-                                    )
-                                }
-                            }
-                            
-                            Spacer(modifier = Modifier.height(8.dp))
-                            
-                            // 견종과 나이 (#8B95A1, 14px, weight 400)
-                            if (userInfo.breed != null && userInfo.age != null) {
-                                Text(
-                                    text = "${userInfo.breed} • ${userInfo.age}살",
-                                    fontFamily = PretendardFont,
-                                    fontWeight = FontWeight(400),
-                                    fontSize = 14.sp,
-                                    color = Color(0xFF8B95A1)
-                                )
-                            }
-                            
-                            Spacer(modifier = Modifier.height(24.dp))
-                            
-                            // 게시물 정보
-                            Column {
-                                // "게시물" 텍스트 (#8B95A1, 14px, weight 500)
-                                Text(
-                                    text = "게시물",
-                                    fontFamily = PretendardFont,
-                                    fontWeight = FontWeight(500),
-                                    fontSize = 14.sp,
-                                    color = Color(0xFF8B95A1)
-                                )
-                                
-                                Spacer(modifier = Modifier.height(4.dp))
-                                
-                                // 게시물 개수 (#4E5968, 17px, weight 500)
-                                Text(
-                                    text = "${uiState.posts.size}",
-                                    fontFamily = PretendardFont,
-                                    fontWeight = FontWeight(500),
-                                    fontSize = 17.sp,
-                                    color = Color(0xFF4E5968)
-                                )
-                            }
-                        }
-                        
-                        // 오른쪽: 프로필 사진 (61X61, 오른쪽에서 25픽셀 떨어진 위치 - 패딩 이미 적용됨)
-                        AsyncImage(
-                            model = userInfo.profileImageUrl,
-                            contentDescription = "프로필",
-                            modifier = Modifier
-                                .size(61.dp)
-                                .clip(CircleShape)
-                                .align(Alignment.TopEnd),
-                            contentScale = ContentScale.Crop
+
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                // 사용자 정보 앱바 (174dp 높이)
+                item {
+                    val headerPet = uiState.profilePet ?: uiState.posts.firstOrNull()?.pet
+                    val headerAuthor = uiState.posts.firstOrNull()?.author
+                    if (headerPet != null || headerAuthor != null) {
+                        UserPostsProfileHeader(
+                            pet = headerPet,
+                            author = headerAuthor,
+                            postCount = uiState.posts.size
                         )
                     }
                     
@@ -276,4 +205,97 @@ fun UserPostsScreen(
             }
         }
     }
+}
+
+@Composable
+private fun UserPostsProfileHeader(
+    pet: PetInfo?,
+    author: Author?,
+    postCount: Int,
+    modifier: Modifier = Modifier
+) {
+    val displayName = pet?.name ?: author?.displayName.orEmpty()
+    val profileImageUrl = pet?.profileImageUrl ?: author?.profilePictureUrl
+    val breedAgeText = pet?.let { petInfo ->
+        val ageText = petInfo.age?.let { age -> "${age}살" }
+        if (!ageText.isNullOrBlank()) "${petInfo.breed} • $ageText" else petInfo.breed
+    }
+    val isVerified = pet?.isVerified == true
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(Color.White)
+            .padding(horizontal = 25.dp, vertical = 28.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = displayName,
+                        fontFamily = PretendardFont,
+                        fontWeight = FontWeight(600),
+                        fontSize = 25.sp,
+                        color = Color(0xFF000000)
+                    )
+                    if (isVerified) {
+                        Spacer(modifier = Modifier.width(6.dp))
+                        VerifiedBadge(modifier = Modifier.size(25.dp))
+                    }
+                }
+
+                breedAgeText?.takeIf { it.isNotBlank() }?.let {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = it,
+                        fontFamily = PretendardFont,
+                        fontWeight = FontWeight(400),
+                        fontSize = 14.sp,
+                        color = Color(0xFF8B95A1)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Column {
+                    Text(
+                        text = "게시물",
+                        fontFamily = PretendardFont,
+                        fontWeight = FontWeight(500),
+                        fontSize = 14.sp,
+                        color = Color(0xFF8B95A1)
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "$postCount",
+                        fontFamily = PretendardFont,
+                        fontWeight = FontWeight(500),
+                        fontSize = 17.sp,
+                        color = Color(0xFF4E5968)
+                    )
+                }
+            }
+
+            AsyncImage(
+                model = profileImageUrl,
+                contentDescription = "프로필",
+                modifier = Modifier
+                    .size(61.dp)
+                    .clip(CircleShape),
+                contentScale = ContentScale.Crop
+            )
+        }
+    }
+}
+
+@Composable
+private fun VerifiedBadge(modifier: Modifier = Modifier) {
+    Image(
+        painter = painterResource(id = R.drawable.badge),
+        contentDescription = "인증 완료 배지",
+        modifier = modifier.size(18.dp)
+    )
 }

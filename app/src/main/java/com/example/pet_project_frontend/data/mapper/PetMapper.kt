@@ -9,16 +9,22 @@ import java.time.format.DateTimeFormatter
 object PetMapper {
     
     fun mapToDomainModel(dto: PetProfileResponse): Pet {
+        val birthDate = runCatching {
+            dto.birthdate?.let { LocalDate.parse(it, DateTimeFormatter.ISO_LOCAL_DATE) }
+        }.getOrNull() ?: LocalDate.now()
+
+        val gender = when (dto.gender?.lowercase()) {
+            "male", "수컷" -> Gender.MALE
+            "female", "암컷" -> Gender.FEMALE
+            else -> Gender.UNKNOWN
+        }
+
         return Pet(
             id = dto.petId,
             name = dto.name,
-            breed = dto.breed,
-            birthDate = LocalDate.parse(dto.birthdate, DateTimeFormatter.ISO_LOCAL_DATE),
-            gender = when (dto.gender.lowercase()) {
-                "male", "수컷" -> com.example.pet_project_frontend.domain.model.Gender.MALE
-                "female", "암컷" -> com.example.pet_project_frontend.domain.model.Gender.FEMALE
-                else -> com.example.pet_project_frontend.domain.model.Gender.UNKNOWN
-            },
+            breed = dto.breed ?: "",
+            birthDate = birthDate,
+            gender = gender,
             ownerId = dto.userId,
             isVerified = dto.isVerified,
             nosePrintUrl = dto.nosePrintUrl,
