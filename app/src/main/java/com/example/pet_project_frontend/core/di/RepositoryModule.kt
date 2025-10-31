@@ -8,6 +8,7 @@ import com.example.pet_project_frontend.data.repository.EyeHealthRepositoryImpl
 import com.example.pet_project_frontend.data.repository.CartoonRepositoryImpl
 import com.example.pet_project_frontend.data.repository.CommentRepositoryImpl
 import com.example.pet_project_frontend.data.repository.MapRepositoryImpl
+import com.example.pet_project_frontend.data.repository.NotificationRepositoryImpl
 import com.example.pet_project_frontend.data.repository.PetCareRepositoryImpl
 import com.example.pet_project_frontend.data.repository.PetRepositoryImpl
 import com.example.pet_project_frontend.data.repository.PostRepositoryImpl
@@ -18,6 +19,7 @@ import com.example.pet_project_frontend.domain.repository.EyeHealthRepository
 import com.example.pet_project_frontend.domain.repository.CartoonRepository
 import com.example.pet_project_frontend.domain.repository.CommentRepository
 import com.example.pet_project_frontend.domain.repository.MapRepository
+import com.example.pet_project_frontend.domain.repository.NotificationRepository
 import com.example.pet_project_frontend.domain.repository.PetCareRepository
 import com.example.pet_project_frontend.domain.repository.PetRepository
 import com.example.pet_project_frontend.domain.repository.PostRepository
@@ -91,4 +93,10 @@ abstract class RepositoryModule {
     abstract fun bindCartoonRepository(
         cartoonRepositoryImpl: CartoonRepositoryImpl
     ): CartoonRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindNotificationRepository(
+        notificationRepositoryImpl: NotificationRepositoryImpl
+    ): NotificationRepository
 }

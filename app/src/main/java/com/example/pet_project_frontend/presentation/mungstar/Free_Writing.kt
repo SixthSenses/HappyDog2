@@ -149,7 +149,7 @@ fun FreeWriting(
             storageDir.mkdirs()
         }
         val imageFile = File.createTempFile(imageFileName, ".jpg", storageDir)
-        return FileProvider.getUriForFile(context, "${context.packageName}.provider", imageFile)
+        return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", imageFile)
     }
 
     Box(

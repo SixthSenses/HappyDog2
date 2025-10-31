@@ -44,7 +44,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun MungStarFeed(
     navController: NavController,
-    viewModel: MungStarViewModel = hiltViewModel()
+    viewModel: MungStarViewModel = hiltViewModel(),
+    notificationViewModel: com.example.pet_project_frontend.presentation.notification.NotificationViewModel = hiltViewModel()
 ) {
     var showBottomSheet by remember { mutableStateOf(false) }
     var showSuccessToast by remember { mutableStateOf(false) }
@@ -52,12 +53,14 @@ fun MungStarFeed(
     var showDeleteToast by remember { mutableStateOf(false) }
     var showUpdateToast by remember { mutableStateOf(false) }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val notificationUiState by notificationViewModel.uiState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
 
     // 화면이 다시 보일 때마다 피드 새로고침
     val currentBackStackEntry = navController.currentBackStackEntry
     LaunchedEffect(currentBackStackEntry) {
         viewModel.refresh()
+        notificationViewModel.loadUnreadCount() // 알림 개수도 새로고침
         
         // Free_Writing에서 돌아왔을 때 토스트 표시
         val postCreated = currentBackStackEntry?.savedStateHandle?.get<Boolean>("post_created")
@@ -143,13 +146,21 @@ fun MungStarFeed(
                     horizontalArrangement = Arrangement.spacedBy(24.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // notifications.png (22×22)
-                    Image(
-                        painter = painterResource(id = R.drawable.notifications),
-                        contentDescription = "Notifications",
-                        modifier = Modifier.size(22.dp),
-                        contentScale = ContentScale.Fit
-                    )
+                    // notifications.png (22×22) with badge
+                    Box(
+                        modifier = Modifier
+                            .size(22.dp)
+                            .clickable {
+                                navController.navigate("notification")
+                            }
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.notifications),
+                            contentDescription = "Notification",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Fit
+                        )
+                    }
 
                     // person.png (20×20) - 현재 사용자 프로필로 이동
                     Image(
@@ -586,12 +597,14 @@ fun PostItem(
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
+
                     Row(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+ 
                         Text(
                             text = post.pet?.name ?: post.author.displayName,
                             fontFamily = PretendardFont,
@@ -599,18 +612,18 @@ fun PostItem(
                             fontSize = 16.sp,
                             color = Color(0xFF6B7684)
                         )
+                        
                         if (post.pet?.isVerified == true) {
                             Spacer(modifier = Modifier.width(6.dp))
                             Image(
-                                painter = painterResource(id = R.drawable.badge_container),
-                                contentDescription = "신원 인증 완료",
-                                modifier = Modifier
-                                    .padding(1.dp)
-                                    .size(width = 24.dp, height = 25.dp)
+                                painter = painterResource(id = R.drawable.badge),
+                                contentDescription = "Verification badge",
+                                modifier = Modifier.size(18.dp)
+
                             )
                         }
                     }
-
+                    
                     Text(
                         text = com.example.pet_project_frontend.util.TimeUtil.getRelativeTimeString(post.createdAt),
                         fontFamily = PretendardFont,
@@ -631,7 +644,6 @@ fun PostItem(
                 }
             }
         }
-
         Spacer(modifier = Modifier.height(20.dp))
 
         // 게시글 텍스트 (사용자 정보 아래 20px, #333D4B, 17px, 클릭 시 상세 화면)
@@ -705,7 +717,8 @@ fun PostItem(
                     modifier = Modifier.size(if (post.isLiked) 24.dp else 22.dp)
                 )
                 
-                // 좋아요 수 (1개부터 표시, #EC4453, 15px)
+                // 좋아요 수 (1개부터 표시)
+                // 내가 좋아요 누른 경우: #EC4453 (빨강), 누르지 않은 경우: #B1B8C0 (회색)
                 if (post.likesCount > 0) {
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
@@ -713,7 +726,7 @@ fun PostItem(
                         fontFamily = PretendardFont,
                         fontWeight = FontWeight(500),
                         fontSize = 15.sp,
-                        color = Color(0xFFEC4453)
+                        color = if (post.isLiked) Color(0xFFEC4453) else Color(0xFFB1B8C0)
                     )
                 }
             }

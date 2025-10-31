@@ -1,5 +1,6 @@
 package com.example.pet_project_frontend.data.mapper
 
+import android.util.Log
 import com.example.pet_project_frontend.data.remote.dto.*
 import com.example.pet_project_frontend.domain.model.*
 
@@ -14,6 +15,9 @@ fun AuthorDto.toDomain(): Author {
 
 // PetInfo DTO → Domain
 fun PetInfoDto.toDomain(): PetInfo {
+    // 디버깅: DTO에서 받은 is_verified 값 로깅
+    Log.d("PostMapper", "PetInfo DTO: petId=$petId, name=$name, isVerified=$isVerified (raw)")
+    
     // birthdate (ISO 8601)를 age로 변환
     val age = try {
         val birth = java.time.LocalDate.parse(birthdate.substring(0, 10))
@@ -22,6 +26,9 @@ fun PetInfoDto.toDomain(): PetInfo {
     } catch (e: Exception) {
         null
     }
+    
+    val verifiedValue = isVerified ?: false
+    Log.d("PostMapper", "PetInfo Domain: petId=$petId, name=$name, isVerified=$verifiedValue (mapped)")
     
     return PetInfo(
         petId = petId,

@@ -12,7 +12,7 @@ import com.example.pet_project_frontend.data.local.database.entities.PlaceEntity
     entities = [
         PlaceEntity::class
     ],
-    version = 3, // Room 스키마 정리(Place만 유지)로 버전 상승
+    version = 4, // 전화번호 등 정보 없음 처리 추가로 버전 상승
     exportSchema = false
 )
 @TypeConverters(DateConverters::class, ListConverters::class)
