@@ -22,6 +22,9 @@ class PetCareHomeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
     
+    // petId 캐싱 - N+1 query 문제 해결
+    private var cachedPetId: String? = null
+    
     init {
         loadInitialData()
     }
@@ -31,18 +34,19 @@ class PetCareHomeViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(isLoading = true)
             
             try {
-                // 반려동물 정보 가져오기
+                // 반려동물 정보 가져오기 및 petId 캐싱 (최초 1회만)
                 when (val petResult = petRepository.getMyPetProfile()) {
                     is AppResult.Success -> {
                         val pet = petResult.data
+                        cachedPetId = pet.id // 캐싱!
+                        
                         _uiState.value = _uiState.value.copy(
                             petName = pet.name,
                             petImageUrl = pet.profileImageUrl // 마이페이지와 동일한 프로필 이미지 사용
                         )
                         
-                        // 반려동물 ID를 사용해서 케어 설정과 오늘 기록 로딩
-                        val petId = pet.id
-                        loadCareDataForDate(_uiState.value.selectedDate, petId)
+                        // 캐시된 ID 사용해서 케어 설정과 오늘 기록 로딩
+                        loadCareDataForDate(_uiState.value.selectedDate, cachedPetId!!)
                     }
                     else -> {
                         _uiState.value = _uiState.value.copy(
@@ -63,25 +67,13 @@ class PetCareHomeViewModel @Inject constructor(
     fun selectDate(date: LocalDate) {
         _uiState.value = _uiState.value.copy(selectedDate = date)
         
-        // 새로운 날짜의 케어 데이터 로딩
-        viewModelScope.launch {
-            try {
-                when (val petResult = petRepository.getMyPetProfile()) {
-                    is AppResult.Success -> {
-                        val petId = petResult.data.id
-                        loadCareDataForDate(date, petId)
-                    }
-                    else -> {
-                        _uiState.value = _uiState.value.copy(
-                            errorMessage = "반려동물 정보를 찾을 수 없습니다."
-                        )
-                    }
-                }
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    errorMessage = "선택된 날짜의 데이터를 불러올 수 없습니다."
-                )
-            }
+        // 캐시된 petId 사용 (API 호출 불필요)
+        cachedPetId?.let { petId ->
+            loadCareDataForDate(date, petId)
+        } ?: run {
+            _uiState.value = _uiState.value.copy(
+                errorMessage = "반려동물 정보가 없습니다. 새로고침해주세요."
+            )
         }
     }
 
@@ -170,24 +162,13 @@ class PetCareHomeViewModel @Inject constructor(
      * 현재 데이터를 다시 로드 (설정 변경 후 호출)
      */
     fun refresh() {
-        viewModelScope.launch {
-            try {
-                when (val petResult = petRepository.getMyPetProfile()) {
-                    is AppResult.Success -> {
-                        val petId = petResult.data.id
-                        loadCareDataForDate(_uiState.value.selectedDate, petId)
-                    }
-                    else -> {
-                        _uiState.value = _uiState.value.copy(
-                            errorMessage = "반려동물 정보를 찾을 수 없습니다."
-                        )
-                    }
-                }
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    errorMessage = "데이터 새로고침 중 오류가 발생했습니다."
-                )
-            }
+        // 캐시된 petId 사용 (API 호출 불필요)
+        cachedPetId?.let { petId ->
+            loadCareDataForDate(_uiState.value.selectedDate, petId)
+        } ?: run {
+            _uiState.value = _uiState.value.copy(
+                errorMessage = "반려동물 정보가 없습니다."
+            )
         }
     }
     /**
@@ -203,36 +184,34 @@ class PetCareHomeViewModel @Inject constructor(
     fun addFeedRecord() {
         viewModelScope.launch {
             try {
-                when (val petResult = petRepository.getMyPetProfile()) {
+                // 캐시된 petId 사용
+                val petId = cachedPetId ?: run {
+                    _uiState.value = _uiState.value.copy(
+                        errorMessage = "반려동물 정보를 찾을 수 없습니다."
+                    )
+                    return@launch
+                }
+                
+                val timestamp = System.currentTimeMillis()
+                
+                when (val result = petCareRepository.createCareRecord(
+                    petId = petId,
+                    recordType = "meal_count",
+                    timestamp = timestamp,
+                    data = 1,
+                    memo = null
+                )) {
                     is AppResult.Success -> {
-                        val petId = petResult.data.id
-                        val timestamp = System.currentTimeMillis()
-                        
-                        when (val result = petCareRepository.createCareRecord(
-                            petId = petId,
-                            recordType = "meal_count",
-                            timestamp = timestamp,
-                            data = 1,
-                            memo = null
-                        )) {
-                            is AppResult.Success -> {
-                                loadCareDataForDate(_uiState.value.selectedDate, petId)
-                            }
-                            is AppResult.Error -> {
-                                _uiState.value = _uiState.value.copy(
-                                    errorMessage = "사료 기록 추가에 실패했습니다: ${result.message}"
-                                )
-                            }
-                            is AppResult.Exception -> {
-                                _uiState.value = _uiState.value.copy(
-                                    errorMessage = "사료 기록 추가 중 오류가 발생했습니다."
-                                )
-                            }
-                        }
+                        loadCareDataForDate(_uiState.value.selectedDate, petId)
                     }
-                    else -> {
+                    is AppResult.Error -> {
                         _uiState.value = _uiState.value.copy(
-                            errorMessage = "반려동물 정보를 찾을 수 없습니다."
+                            errorMessage = "사료 기록 추가에 실패했습니다: ${result.message}"
+                        )
+                    }
+                    is AppResult.Exception -> {
+                        _uiState.value = _uiState.value.copy(
+                            errorMessage = "사료 기록 추가 중 오류가 발생했습니다."
                         )
                     }
                 }
@@ -250,40 +229,38 @@ class PetCareHomeViewModel @Inject constructor(
     fun removeFeedRecord() {
         viewModelScope.launch {
             try {
-                when (val petResult = petRepository.getMyPetProfile()) {
-                    is AppResult.Success -> {
-                        val petId = petResult.data.id
-                        val dateString = _uiState.value.selectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                // 캐시된 petId 사용
+                val petId = cachedPetId ?: run {
+                    _uiState.value = _uiState.value.copy(
+                        errorMessage = "반려동물 정보를 찾을 수 없습니다."
+                    )
+                    return@launch
+                }
+                
+                val dateString = _uiState.value.selectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
 
-                        when (val recordsResult = petCareRepository.getDailyRecords(petId, dateString)) {
-                            is AppResult.Success -> {
-                                val feedRecords = recordsResult.data.records.filter { it.recordType == "meal_count" }
-                                if (feedRecords.isNotEmpty()) {
-                                    val latestRecord = feedRecords.maxByOrNull { it.timestamp }
-                                    latestRecord?.let { record ->
-                                        when (petCareRepository.deleteCareRecord(petId, record.logId)) {
-                                            is AppResult.Success -> {
-                                                loadCareDataForDate(_uiState.value.selectedDate, petId)
-                                            }
-                                            else -> {
-                                                _uiState.value = _uiState.value.copy(
-                                                    errorMessage = "사료 기록 삭제에 실패했습니다."
-                                                )
-                                            }
-                                        }
+                when (val recordsResult = petCareRepository.getDailyRecords(petId, dateString)) {
+                    is AppResult.Success -> {
+                        val feedRecords = recordsResult.data.records.filter { it.recordType == "meal_count" }
+                        if (feedRecords.isNotEmpty()) {
+                            val latestRecord = feedRecords.maxByOrNull { it.timestamp }
+                            latestRecord?.let { record ->
+                                when (petCareRepository.deleteCareRecord(petId, record.logId)) {
+                                    is AppResult.Success -> {
+                                        loadCareDataForDate(_uiState.value.selectedDate, petId)
+                                    }
+                                    else -> {
+                                        _uiState.value = _uiState.value.copy(
+                                            errorMessage = "사료 기록 삭제에 실패했습니다."
+                                        )
                                     }
                                 }
-                            }
-                            else -> {
-                                _uiState.value = _uiState.value.copy(
-                                    errorMessage = "사료 기록을 찾을 수 없습니다."
-                                )
                             }
                         }
                     }
                     else -> {
                         _uiState.value = _uiState.value.copy(
-                            errorMessage = "반려동물 정보를 찾을 수 없습니다."
+                            errorMessage = "사료 기록을 찾을 수 없습니다."
                         )
                     }
                 }
@@ -304,42 +281,40 @@ class PetCareHomeViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(isLoading = true)
                 android.util.Log.d("PetCareViewModel", "Adding activity record: $minutes minutes")
                 
-                when (val petResult = petRepository.getMyPetProfile()) {
-                    is AppResult.Success -> {
-                        val petId = petResult.data.id
-                        val timestamp = System.currentTimeMillis()
+                // 캐시된 petId 사용
+                val petId = cachedPetId ?: run {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        errorMessage = "반려동물 정보를 찾을 수 없습니다."
+                    )
+                    return@launch
+                }
+                
+                val timestamp = System.currentTimeMillis()
 
-                        when (val result = petCareRepository.createCareRecord(
-                            petId = petId,
-                            recordType = "activity",
-                            timestamp = timestamp,
-                            data = minutes,
-                            memo = null
-                        )) {
-                            is AppResult.Success -> {
-                                android.util.Log.d("PetCareViewModel", "Activity record created successfully")
-                                loadCareDataForDate(_uiState.value.selectedDate, petId)
-                            }
-                            is AppResult.Error -> {
-                                android.util.Log.e("PetCareViewModel", "Failed to create activity record: ${result.message}")
-                                _uiState.value = _uiState.value.copy(
-                                    isLoading = false,
-                                    errorMessage = "활동 기록 추가에 실패했습니다: ${result.message}"
-                                )
-                            }
-                            is AppResult.Exception -> {
-                                android.util.Log.e("PetCareViewModel", "Exception creating activity record", result.throwable)
-                                _uiState.value = _uiState.value.copy(
-                                    isLoading = false,
-                                    errorMessage = "활동 기록 추가 중 오류가 발생했습니다."
-                                )
-                            }
-                        }
+                when (val result = petCareRepository.createCareRecord(
+                    petId = petId,
+                    recordType = "activity",
+                    timestamp = timestamp,
+                    data = minutes,
+                    memo = null
+                )) {
+                    is AppResult.Success -> {
+                        android.util.Log.d("PetCareViewModel", "Activity record created successfully")
+                        loadCareDataForDate(_uiState.value.selectedDate, petId)
                     }
-                    else -> {
+                    is AppResult.Error -> {
+                        android.util.Log.e("PetCareViewModel", "Failed to create activity record: ${result.message}")
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,
-                            errorMessage = "반려동물 정보를 찾을 수 없습니다."
+                            errorMessage = "활동 기록 추가에 실패했습니다: ${result.message}"
+                        )
+                    }
+                    is AppResult.Exception -> {
+                        android.util.Log.e("PetCareViewModel", "Exception creating activity record", result.throwable)
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            errorMessage = "활동 기록 추가 중 오류가 발생했습니다."
                         )
                     }
                 }
@@ -361,10 +336,16 @@ class PetCareHomeViewModel @Inject constructor(
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true)
 
-                when (val petResult = petRepository.getMyPetProfile()) {
-                    is AppResult.Success -> {
-                        val petId = petResult.data.id
-                        val dateString = _uiState.value.selectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                // 캐시된 petId 사용
+                val petId = cachedPetId ?: run {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        errorMessage = "반려동물 정보를 찾을 수 없습니다."
+                    )
+                    return@launch
+                }
+                
+                val dateString = _uiState.value.selectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
 
                         when (val recordsResult = petCareRepository.getDailyRecords(petId, dateString)) {
                             is AppResult.Success -> {
@@ -432,14 +413,6 @@ class PetCareHomeViewModel @Inject constructor(
                                 )
                             }
                         }
-                    }
-                    else -> {
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            errorMessage = "반려동물 정보를 찾을 수 없습니다."
-                        )
-                    }
-                }
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,

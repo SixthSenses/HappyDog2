@@ -88,18 +88,11 @@ class PetRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getMyPetProfile(): AppResult<Pet> {
-        Log.d(TAG, "Getting my pet profile (single-pet policy)")
+        Log.d(TAG, "Getting my pet profile (single-pet policy) - optimized single API call")
         return when (val viewRes = SafeApi.response { petApi.getMyPetProfile() }) {
             is AppResult.Success -> {
-                val petId = viewRes.data.petId
-                when (val profRes = SafeApi.response { petApi.getPetProfile(petId) }) {
-                    is AppResult.Success -> {
-                        Log.d(TAG, "My pet profile fetched successfully: ${profRes.data.petId}")
-                        AppResult.Success(PetMapper.mapToDomainModel(profRes.data))
-                    }
-                    is AppResult.Error -> profRes
-                    is AppResult.Exception -> profRes
-                }
+                Log.d(TAG, "My pet profile fetched successfully: ${viewRes.data.petId}")
+                AppResult.Success(PetMapper.mapFromViewBasedResponse(viewRes.data))
             }
             is AppResult.Error -> viewRes
             is AppResult.Exception -> viewRes

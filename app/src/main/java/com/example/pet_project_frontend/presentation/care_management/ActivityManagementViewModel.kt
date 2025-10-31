@@ -82,15 +82,21 @@ class ActivityManagementViewModel @Inject constructor(
 
     /**
      * 펫 ID를 동기적으로 로드 (suspend 함수)
+     * 캐시가 있으면 API 호출 없이 즉시 반환
      */
     private suspend fun ensurePetIdLoaded(): String? {
-        if (currentPetId != null) return currentPetId
+        // 이미 캐시되어 있으면 API 호출 없이 반환
+        if (currentPetId != null) {
+            android.util.Log.d("ActivityManagementVM", "✅ Using cached Pet ID: ${currentPetId}")
+            return currentPetId
+        }
         
+        // 캐시가 없는 경우에만 API 호출
         return try {
             when (val petResult = petRepository.getMyPetProfile()) {
                 is AppResult.Success -> {
                     currentPetId = petResult.data.id
-                    android.util.Log.d("ActivityManagementVM", "✅ Pet ID loaded: ${currentPetId}")
+                    android.util.Log.d("ActivityManagementVM", "✅ Pet ID loaded from API: ${currentPetId}")
                     currentPetId
                 }
                 is AppResult.Error -> {

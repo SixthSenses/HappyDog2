@@ -41,9 +41,42 @@ class VomitManagementViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
+    
+    // petId 캐싱 - N+1 query 문제 해결
+    private var cachedPetId: String? = null
 
     init {
         loadRecords()
+    }
+    
+    private suspend fun ensurePetIdLoaded(): String? {
+        // 이미 캐시되어 있으면 API 호출 없이 반환
+        if (cachedPetId != null) {
+            android.util.Log.d("VomitManagementVM", "✅ Using cached Pet ID: ${cachedPetId}")
+            return cachedPetId
+        }
+        
+        // 캐시가 없는 경우에만 API 호출
+        return try {
+            when (val petResult = petRepository.getMyPetProfile()) {
+                is AppResult.Success -> {
+                    cachedPetId = petResult.data.id
+                    android.util.Log.d("VomitManagementVM", "✅ Pet ID loaded from API: ${cachedPetId}")
+                    cachedPetId
+                }
+                is AppResult.Error -> {
+                    _uiState.value = _uiState.value.copy(error = "반려동물 정보를 찾을 수 없습니다.")
+                    null
+                }
+                is AppResult.Exception -> {
+                    _uiState.value = _uiState.value.copy(error = "반려동물 정보를 불러오는 중 오류가 발생했습니다.")
+                    null
+                }
+            }
+        } catch (e: Exception) {
+            _uiState.value = _uiState.value.copy(error = "반려동물 정보를 불러오는 중 오류가 발생했습니다.")
+            null
+        }
     }
 
     fun loadRecords(date: LocalDate = LocalDate.now()) {
@@ -51,10 +84,8 @@ class VomitManagementViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(isLoading = true, error = null, selectedDate = date)
             
             try {
-                val petProfile = petRepository.getMyPetProfile()
-                when (petProfile) {
-                    is AppResult.Success -> {
-                        val petId = petProfile.data.id
+                // 캐시된 petId 사용
+                val petId = ensurePetIdLoaded() ?: return@launch
                         
                         // 오늘 날짜의 기록만 가져오기
                         val dateString = date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
@@ -92,14 +123,6 @@ class VomitManagementViewModel @Inject constructor(
                             isLoading = false,
                             records = records
                         )
-                    }
-                    else -> {
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            error = "반려동물 정보를 찾을 수 없습니다."
-                        )
-                    }
-                }
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
@@ -112,10 +135,8 @@ class VomitManagementViewModel @Inject constructor(
     fun deleteRecord(logId: String) {
         viewModelScope.launch {
             try {
-                val petProfile = petRepository.getMyPetProfile()
-                when (petProfile) {
-                    is AppResult.Success -> {
-                        val petId = petProfile.data.id
+                // 캐시된 petId 사용
+                val petId = ensurePetIdLoaded() ?: return@launch
                         
                         when (petCareRepository.deleteCareRecord(petId, logId)) {
                             is AppResult.Success -> {
@@ -134,13 +155,6 @@ class VomitManagementViewModel @Inject constructor(
                                 )
                             }
                         }
-                    }
-                    else -> {
-                        _uiState.value = _uiState.value.copy(
-                            error = "반려동물 정보를 찾을 수 없습니다."
-                        )
-                    }
-                }
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     error = "기록 삭제 중 오류가 발생했습니다."

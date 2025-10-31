@@ -43,14 +43,11 @@ data class PetInfoDto(
     @SerializedName("birthdate")  // OpenAPI 스펙: birthdate (date-time)
     val birthdate: String,
     
-    @SerializedName("is_verified")
+    @SerializedName("is_verified")  // 신원 인증 여부 (비문 등록 완료)
     val isVerified: Boolean = false,
     
     @SerializedName("profile_image_url")
-    val profileImageUrl: String?,
-    
-    @SerializedName("is_verified")  // 신원 인증 여부 (비문 등록 완료)
-    val isVerified: Boolean? = false
+    val profileImageUrl: String?
 )
 
 // 게시글 응답 DTO
