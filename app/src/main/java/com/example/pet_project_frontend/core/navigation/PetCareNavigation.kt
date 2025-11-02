@@ -4,6 +4,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -11,6 +14,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import androidx.navigation.NavType
 import androidx.navigation.navDeepLink
+import com.example.pet_project_frontend.R
 import com.example.pet_project_frontend.core.navigation.DeepLinks
 import com.example.pet_project_frontend.core.navigation.Routes
 import com.example.pet_project_frontend.presentation.auth.LoginScreen
@@ -47,6 +51,11 @@ import com.example.pet_project_frontend.presentation.care_record.PoopRecordScree
 import com.example.pet_project_frontend.presentation.care_record.VomitRecordScreen
 import com.example.pet_project_frontend.presentation.mypage.settings.verification.VerificationMainScreen
 import com.example.pet_project_frontend.presentation.mypage.settings.verification.VerificationGuideScreen
+import com.example.pet_project_frontend.presentation.mypage.settings.verification.VerificationGuideError
+import com.example.pet_project_frontend.presentation.mypage.settings.verification.components.VerificationLoadingScreen
+import com.example.pet_project_frontend.presentation.mypage.settings.verification.components.VerificationResultScreen
+import com.example.pet_project_frontend.presentation.mypage.settings.verification.components.VerificationResult
+import com.example.pet_project_frontend.presentation.mypage.settings.verification.IdentityVerificationViewModel
 import com.example.pet_project_frontend.presentation.mypage.profile.name.NameEditRoute
 import com.example.pet_project_frontend.presentation.mypage.profile.birthdate.BirthEditRoute
 import com.example.pet_project_frontend.presentation.mypage.profile.gender.GenderSelectScreen
@@ -468,24 +477,58 @@ fun PetCareNavHost(
 		}
 
 		// 신원 인증 메인 화면 (소개 화면)
-		composable(Screen.VerificationIntro.route) {
+		composable(Screen.VerificationIntro.route) { backStackEntry ->
+			val parentEntry = remember(backStackEntry) {
+				navController.currentBackStackEntry ?: backStackEntry
+			}
+			val viewModel: IdentityVerificationViewModel = hiltViewModel(parentEntry)
+			val introUiState by viewModel.introUiState.collectAsState()
+			
+			// 화면 진입 시 펫의 인증 상태 확인
+			LaunchedEffect(Unit) {
+				viewModel.checkVerificationStatus()
+			}
+			
 			VerificationMainScreen(
 				onBack = { navController.popBackStack() },
 				onVerifyClick = {
-					navController.navigate(Screen.VerificationGuide.route)
-				}
+					// 이미 인증된 경우 이동하지 않음 (다이얼로그가 표시됨)
+					if (!introUiState.showAlreadyVerifiedDialog) {
+						navController.navigate(Screen.VerificationGuide.route)
+					}
+				},
+				showAlreadyVerifiedDialog = introUiState.showAlreadyVerifiedDialog,
+				onDismissAlreadyVerifiedDialog = { 
+					viewModel.dismissAlreadyVerifiedDialog()
+					navController.popBackStack()  // 다이얼로그 닫고 뒤로 가기
+				},
+				showUnknownErrorDialog = introUiState.showUnknownErrorDialog,
+				onDismissUnknownErrorDialog = { viewModel.dismissUnknownErrorDialog() }
 			)
 		}
 
 		// 신원 인증 가이드 화면 (카메라 촬영)
-		composable(Screen.VerificationGuide.route) {
+		// Navigation graph 레벨에서 ViewModel을 생성하여 Guide와 Loading 화면 간 공유
+		composable(Screen.VerificationGuide.route) { backStackEntry ->
+			val parentEntry = remember(backStackEntry) {
+				navController.getBackStackEntry(Screen.VerificationIntro.route)
+			}
+			val viewModel: IdentityVerificationViewModel = hiltViewModel(parentEntry)
+			val guideUiState by viewModel.guideUiState.collectAsState()
+			
 			VerificationGuideScreen(
 				onBack = { navController.popBackStack() },
 				onPickImage = { imageUri ->
-					// TODO: 이미지 업로드 및 검증 로직 구현
-					// 임시로 MyPage로 이동
-					navController.popBackStack(Screen.MyPage.route, false)
-				}
+					// 이미지 URI를 ViewModel에 저장
+					viewModel.setImageFromUri(imageUri)
+					
+					// 로딩 화면으로 이동 (petId는 로딩 화면에서 조회)
+					navController.navigate(Screen.VerificationLoading.createRoute("loading")) {
+						popUpTo(Screen.VerificationIntro.route) { inclusive = false }
+					}
+				},
+				errorDialog = guideUiState.errorDialog,
+				onDismissError = { viewModel.dismissGuideError() }
 			)
 		}
 
@@ -494,27 +537,71 @@ fun PetCareNavHost(
 			route = Screen.VerificationLoading.route,
 			arguments = listOf(navArgument("petId") { type = NavType.StringType })
 		) { backStackEntry ->
-			val petId = backStackEntry.arguments?.getString("petId") ?: ""
-			// TODO: VerificationLoadingScreen 구현 필요
-			// 현재는 임시로 success로 이동
+			// Guide 화면과 동일한 ViewModel 인스턴스 공유
+			val parentEntry = remember(backStackEntry) {
+				navController.getBackStackEntry(Screen.VerificationIntro.route)
+			}
+			val viewModel: IdentityVerificationViewModel = hiltViewModel(parentEntry)
+			
+			// petId를 ViewModel에서 동적으로 가져옴
+			var petId by remember { mutableStateOf<String?>(null) }
+			
 			LaunchedEffect(Unit) {
-				kotlinx.coroutines.delay(2000)
-				navController.navigate(Screen.VerificationSuccess.route) {
-					popUpTo(Screen.MyPage.route) { inclusive = false }
-				}
+				petId = viewModel.getPetId()
+			}
+			
+			// petId가 로드될 때까지 대기
+			petId?.let { id ->
+				VerificationLoadingScreen(
+					viewModel = viewModel,
+					petId = id,
+					onResult = { result ->
+						when (result) {
+							is VerificationResult.Success -> {
+								navController.navigate(Screen.VerificationSuccess.route) {
+									popUpTo(Screen.VerificationIntro.route) { inclusive = true }
+								}
+							}
+							is VerificationResult.Duplicate -> {
+								// 중복 비문 에러 다이얼로그 표시
+								viewModel.showGuideError(VerificationGuideError.Duplicate)
+								navController.popBackStack()
+							}
+							is VerificationResult.DetectionFailed,
+							is VerificationResult.InvalidImage -> {
+								// 비문 인식 실패 에러 다이얼로그 표시
+								viewModel.showGuideError(VerificationGuideError.DetectionFailed)
+								navController.popBackStack()
+							}
+							is VerificationResult.AlreadyVerified -> {
+								// 이미 인증됨 다이얼로그는 Intro 화면에 표시
+								viewModel.showAlreadyVerifiedDialog()
+								navController.popBackStack(Screen.VerificationIntro.route, inclusive = false)
+							}
+							is VerificationResult.Failed,
+							is VerificationResult.Unknown -> {
+								// 알 수 없는 오류 다이얼로그는 Intro 화면에 표시
+								viewModel.showUnknownErrorDialog()
+								navController.popBackStack(Screen.VerificationIntro.route, inclusive = false)
+							}
+						}
+					}
+				)
 			}
 		}
 
 		// 신원 인증 성공 화면
 		composable(Screen.VerificationSuccess.route) {
-			// TODO: VerificationSuccessScreen 구현 필요
-			// 현재는 임시로 마이페이지로 이동
-			LaunchedEffect(Unit) {
-				kotlinx.coroutines.delay(2000)
-				navController.navigate(Screen.MyPage.route) {
-					popUpTo(Screen.MyPage.route) { inclusive = true }
+			VerificationResultScreen(
+				title = "신원 인증 성공!",
+				subtitle = "멍스타그램에서\n인증 배지를 받았어요",
+				imageResId = R.drawable.dog,
+				onConfirm = {
+					navController.navigate(Screen.MyPage.route) {
+						popUpTo(Screen.MyPage.route) { inclusive = true }
+					}
 				}
-			}
+			)
 		}
 
 		// 마이페이지 - 이름 수정

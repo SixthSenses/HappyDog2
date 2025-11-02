@@ -1,4 +1,4 @@
-﻿package com.example.pet_project_frontend.presentation.mypage.settings.verification
+﻿ package com.example.pet_project_frontend.presentation.mypage.settings.verification
 
 import androidx.compose.runtime.Composable
 import com.example.pet_project_frontend.presentation.mypage.common.CommonAlertDialog

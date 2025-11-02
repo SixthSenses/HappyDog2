@@ -352,3 +352,37 @@ private fun takePhoto(
         }
     )
 }
+
+/**
+ * URI를 File 객체로 변환
+ * - content:// URI인 경우 임시 파일로 복사
+ * - file:// URI인 경우 직접 File 객체 생성
+ */
+private fun uriToFile(context: Context, uri: Uri): File? {
+    return try {
+        when (uri.scheme) {
+            "file" -> {
+                // file:// URI - 직접 파일 경로 사용
+                File(uri.path ?: return null)
+            }
+            "content" -> {
+                // content:// URI - 임시 파일로 복사
+                val inputStream = context.contentResolver.openInputStream(uri) ?: return null
+                val tempFile = File.createTempFile(
+                    "temp_nose_print_${System.currentTimeMillis()}",
+                    ".jpg",
+                    context.cacheDir
+                )
+                tempFile.outputStream().use { outputStream ->
+                    inputStream.copyTo(outputStream)
+                }
+                inputStream.close()
+                tempFile
+            }
+            else -> null
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    }
+}
