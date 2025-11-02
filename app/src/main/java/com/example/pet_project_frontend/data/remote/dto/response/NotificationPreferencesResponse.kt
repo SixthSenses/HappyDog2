@@ -29,7 +29,9 @@ data class NotificationPreferencesResponse(
      * 백엔드 기본값 (신규 사용자):
      * - 모든 타입이 true로 설정됨 (Opt-out 방식)
      * - 사용자가 명시적으로 false로 변경한 타입만 차단됨
+     * 
+     * 주의: 서버가 빈 객체 {}를 반환할 경우 null일 수 있음
      */
     @SerializedName("types")
-    val types: Map<String, Boolean>
+    val types: Map<String, Boolean>?
 )

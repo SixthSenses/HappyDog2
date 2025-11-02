@@ -33,11 +33,14 @@ object NotificationPreferencesMapper {
      * DTO → Domain Model 변환
      * 
      * 백엔드 응답을 UI에서 사용하는 형태로 변환
+     * 
+     * 주의: 서버에서 빈 객체 {}를 반환할 수 있음 (신규 사용자 또는 설정 미저장 상태)
      */
     fun toDomainModel(dto: NotificationPreferencesResponse): NotificationPreferences {
-        val types = dto.types
+        // types가 null이면 기본값 사용 (빈 Map)
+        val types = dto.types ?: emptyMap()
         
-        // UI에 매핑되는 타입들
+        // UI에 매핑되는 타입들 (서버에 없으면 기본값 true)
         val weeklyReport = types[NotificationType.PET_CARE_DAILY_SUMMARY] ?: true
         val likeEnabled = types[NotificationType.POST_LIKE] ?: true
         val commentEnabled = types[NotificationType.COMMENT] ?: true
