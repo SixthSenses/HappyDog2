@@ -1,6 +1,7 @@
 package com.example.pet_project_frontend.core.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -44,6 +45,14 @@ import com.example.pet_project_frontend.presentation.care_record.WeightRecordScr
 import com.example.pet_project_frontend.presentation.care_record.WeightLogScreen
 import com.example.pet_project_frontend.presentation.care_record.PoopRecordScreen
 import com.example.pet_project_frontend.presentation.care_record.VomitRecordScreen
+import com.example.pet_project_frontend.presentation.mypage.settings.verification.VerificationMainScreen
+import com.example.pet_project_frontend.presentation.mypage.settings.verification.VerificationGuideScreen
+import com.example.pet_project_frontend.presentation.mypage.profile.name.NameEditRoute
+import com.example.pet_project_frontend.presentation.mypage.profile.birthdate.BirthEditRoute
+import com.example.pet_project_frontend.presentation.mypage.profile.gender.GenderSelectScreen
+import com.example.pet_project_frontend.presentation.mypage.profile.breed.BreedSelectScreen
+import com.example.pet_project_frontend.presentation.mypage.settings.notification.NotificationSettingsScreen
+import com.example.pet_project_frontend.presentation.mypage.withdrawal.WithdrawalScreen
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.pet_project_frontend.presentation.petcare.home.PetCareHomeViewModel
 import java.time.format.DateTimeFormatter
@@ -237,7 +246,37 @@ fun PetCareNavHost(
 		composable(Screen.Translator.route) { TranslatorScreen(openNotice = openNotice) }
 
 		// 마이페이지 화면
-		composable(Screen.MyPage.route) { MyPageScreen() }
+		composable(Screen.MyPage.route) { 
+			MyPageScreen(
+				onNameClick = { initialName, petId ->
+					navController.navigate(Screen.EditPetName.createRoute(initialName ?: "", petId))
+				},
+				onBirthdateClick = { initialBirth ->
+					navController.navigate(Screen.EditBirthDate.createRoute(initialBirth))
+				},
+				onGenderClick = { initialGender ->
+					navController.navigate(Screen.SelectGender.createRoute(initialGender))
+				},
+				onBreedClick = { initialBreed ->
+					navController.navigate(Screen.SelectBreed.createRoute(initialBreed))
+				},
+				onNotificationClick = {
+					navController.navigate(Screen.NotificationSettings.route)
+				},
+				onVerificationClick = {
+					navController.navigate(Screen.VerificationIntro.route)
+				},
+				onTermsClick = {
+					// TODO: 이용약관 화면으로 이동
+				},
+				onPrivacyClick = {
+					// TODO: 개인정보처리방침 화면으로 이동
+				},
+				onWithdrawClick = {
+					navController.navigate(Screen.Withdraw.route)
+				}
+			)
+		}
 
 		// AI 안구 검사 화면
 		composable(Screen.EyeHealth.route) {
@@ -425,6 +464,147 @@ fun PetCareNavHost(
 			BreedGuidebookScreen(
 				breedName = breedName,
 				onBackClick = { navController.popBackStack() }
+			)
+		}
+
+		// 신원 인증 메인 화면 (소개 화면)
+		composable(Screen.VerificationIntro.route) {
+			VerificationMainScreen(
+				onBack = { navController.popBackStack() },
+				onVerifyClick = {
+					navController.navigate(Screen.VerificationGuide.route)
+				}
+			)
+		}
+
+		// 신원 인증 가이드 화면 (카메라 촬영)
+		composable(Screen.VerificationGuide.route) {
+			VerificationGuideScreen(
+				onBack = { navController.popBackStack() },
+				onPickImage = { imageUri ->
+					// TODO: 이미지 업로드 및 검증 로직 구현
+					// 임시로 MyPage로 이동
+					navController.popBackStack(Screen.MyPage.route, false)
+				}
+			)
+		}
+
+		// 신원 인증 로딩 화면
+		composable(
+			route = Screen.VerificationLoading.route,
+			arguments = listOf(navArgument("petId") { type = NavType.StringType })
+		) { backStackEntry ->
+			val petId = backStackEntry.arguments?.getString("petId") ?: ""
+			// TODO: VerificationLoadingScreen 구현 필요
+			// 현재는 임시로 success로 이동
+			LaunchedEffect(Unit) {
+				kotlinx.coroutines.delay(2000)
+				navController.navigate(Screen.VerificationSuccess.route) {
+					popUpTo(Screen.MyPage.route) { inclusive = false }
+				}
+			}
+		}
+
+		// 신원 인증 성공 화면
+		composable(Screen.VerificationSuccess.route) {
+			// TODO: VerificationSuccessScreen 구현 필요
+			// 현재는 임시로 마이페이지로 이동
+			LaunchedEffect(Unit) {
+				kotlinx.coroutines.delay(2000)
+				navController.navigate(Screen.MyPage.route) {
+					popUpTo(Screen.MyPage.route) { inclusive = true }
+				}
+			}
+		}
+
+		// 마이페이지 - 이름 수정
+		composable(
+			route = Screen.EditPetName.route,
+			arguments = listOf(
+				navArgument("initialName") { 
+					type = NavType.StringType
+					nullable = true
+					defaultValue = null
+				},
+				navArgument("petId") { 
+					type = NavType.StringType
+					nullable = true
+					defaultValue = null
+				}
+			)
+		) {
+			NameEditRoute(navController = navController)
+		}
+
+		// 마이페이지 - 생년월일 수정
+		composable(
+			route = Screen.EditBirthDate.route,
+			arguments = listOf(
+				navArgument("initialBirth") { 
+					type = NavType.StringType
+					nullable = true
+					defaultValue = null
+				}
+			)
+		) {
+			BirthEditRoute(navController = navController)
+		}
+
+		// 마이페이지 - 성별 선택
+		composable(
+			route = Screen.SelectGender.route,
+			arguments = listOf(
+				navArgument("initialGender") { 
+					type = NavType.StringType
+					nullable = true
+					defaultValue = null
+				}
+			)
+		) {
+			GenderSelectScreen(
+				onBack = { navController.popBackStack() },
+				onSaved = { gender, shouldReload ->
+					navController.popBackStack()
+				}
+			)
+		}
+
+		// 마이페이지 - 견종 선택
+		composable(
+			route = Screen.SelectBreed.route,
+			arguments = listOf(
+				navArgument("initialBreed") { 
+					type = NavType.StringType
+					nullable = true
+					defaultValue = null
+				}
+			)
+		) {
+			BreedSelectScreen(
+				onBack = { navController.popBackStack() },
+				onNext = { breed, shouldReload ->
+					navController.popBackStack()
+				}
+			)
+		}
+
+		// 마이페이지 - 알림 설정
+		composable(Screen.NotificationSettings.route) {
+			NotificationSettingsScreen(
+				onBack = { navController.popBackStack() }
+			)
+		}
+
+		// 마이페이지 - 회원 탈퇴
+		composable(Screen.Withdraw.route) {
+			WithdrawalScreen(
+				onBack = { navController.popBackStack() },
+				onFinished = {
+					// 로그인 화면으로 이동하고 백스택 모두 제거
+					navController.navigate(Screen.Login.route) {
+						popUpTo(0) { inclusive = true }
+					}
+				}
 			)
 		}
 	}
