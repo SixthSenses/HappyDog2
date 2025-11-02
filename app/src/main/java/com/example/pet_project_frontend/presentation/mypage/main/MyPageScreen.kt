@@ -332,10 +332,11 @@ private fun ProfileSummarySection(
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = 8.dp),
-        verticalAlignment = Alignment.Top
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
+                .padding(top = 5.dp)
                 .size(59.dp)
                 .clickable { onProfileImageClick() },
             contentAlignment = Alignment.Center

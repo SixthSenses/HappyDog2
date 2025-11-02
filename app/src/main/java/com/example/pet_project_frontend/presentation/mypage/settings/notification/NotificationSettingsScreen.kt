@@ -117,49 +117,6 @@ fun NotificationSettingsScreen(
                 Spacer(Modifier.height(15.dp))
 
                 Text(
-                    text = "펫케어",
-                    fontFamily = FontFamily(Font(R.font.pretendard_medium)),
-                    fontWeight = FontWeight(600),
-                    fontSize = 21.sp,
-                    lineHeight = 21.sp,
-                    color = Gray900
-                )
-                Spacer(Modifier.height(20.dp))
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "주간 리포트",
-                        fontFamily = FontFamily(Font(R.font.pretendard_regular)),
-                        fontWeight = FontWeight(600),
-                        fontSize = 18.sp,
-                        lineHeight = 18.sp,
-                        color = Gray700
-                    )
-                    Switch(
-                        checked = uiState.weeklyReport,
-                        onCheckedChange = { viewModel.onToggleWeekly(it) },
-                        enabled = detailSwitchEnabled,
-                        colors = noBorderSwitchColors()
-                    )
-                }
-
-                Spacer(Modifier.height(15.dp))
-
-                Divider(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = DividerColor,
-                    thickness = 1.dp
-                )
-
-                Spacer(Modifier.height(15.dp))
-
-                Text(
                     text = "멍스타그램",
                     fontFamily = FontFamily(Font(R.font.pretendard_medium)),
                     fontWeight = FontWeight(600),

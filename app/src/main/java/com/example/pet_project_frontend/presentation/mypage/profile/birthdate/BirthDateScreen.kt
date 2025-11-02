@@ -1,6 +1,9 @@
 // 변경의도: TextFieldValue를 사용해 자동 포맷 후에도 커서가 끝에 머물도록 생년월일 입력 UI를 보완한다.
 package com.example.pet_project_frontend.presentation.mypage.profile.birthdate
 
+import android.graphics.Rect
+import android.view.ViewTreeObserver
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -10,6 +13,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -21,6 +26,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,6 +36,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -38,6 +46,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import androidx.compose.ui.res.painterResource
+import com.example.pet_project_frontend.R
 import com.example.pet_project_frontend.core.components.TopBar
 import com.example.pet_project_frontend.core.navigation.Screen
 import com.example.pet_project_frontend.presentation.mypage.main.MyPageViewModel
@@ -79,18 +89,27 @@ private fun BirthEditScreen(
 ) {
     val scrollState = rememberScrollState()
     var focused by remember { mutableStateOf(false) }
+    val view = LocalView.current
+    var isKeyboardVisible by remember { mutableStateOf(false) }
 
-    Box(
+    DisposableEffect(view) {
+        val listener = ViewTreeObserver.OnGlobalLayoutListener {
+            val rect = Rect()
+            view.getWindowVisibleDisplayFrame(rect)
+            val screenHeight = view.rootView.height
+            val keypadHeight = screenHeight - rect.height()
+            isKeyboardVisible = keypadHeight > screenHeight * 0.15f
+        }
+        view.viewTreeObserver.addOnGlobalLayoutListener(listener)
+        onDispose { view.viewTreeObserver.removeOnGlobalLayoutListener(listener) }
+    }
+
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
+            .verticalScroll(scrollState)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState)
-                .padding(bottom = 80.dp)
-        ) {
         TopBar(title = {}, onNavigateBack = onBack)
 
         Spacer(modifier = Modifier.height(15.dp))
@@ -144,15 +163,26 @@ private fun BirthEditScreen(
                     )
                 }
 
-                if (uiState.textFieldValue.text.isNotBlank()) {
-                    Text(
-                        text = "지우기",
+                if (uiState.textFieldValue.text.isNotBlank() && focused) {
+                    Box(
                         modifier = Modifier
                             .align(Alignment.CenterEnd)
-                            .clickable { onClear() },
-                        color = Color(0xFFB1B8C0),
-                        fontSize = 16.sp
-                    )
+                            .size(19.dp)
+                            .clickable { onClear() }
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.ellipse1),
+                            contentDescription = "입력값 삭제 배경",
+                            contentScale = ContentScale.FillBounds,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        Image(
+                            painter = painterResource(id = R.drawable.close),
+                            contentDescription = "입력값 삭제",
+                            contentScale = ContentScale.FillBounds,
+                            modifier = Modifier.align(Alignment.Center).size(13.dp)
+                        )
+                    }
                 }
             }
 
@@ -180,16 +210,10 @@ private fun BirthEditScreen(
                 )
             }
         }
-    }
 
-        // 버튼을 항상 하단에 고정
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.BottomCenter)
-                .background(Color.White)
-                .padding(horizontal = 24.dp, vertical = 16.dp)
-        ) {
+        Spacer(modifier = Modifier.weight(1f, fill = true))
+
+        if (isKeyboardVisible) {
             Button(
                 onClick = onSave,
                 enabled = uiState.textFieldValue.text.isNotBlank() && uiState.error == null && !uiState.isSaving,
@@ -199,7 +223,8 @@ private fun BirthEditScreen(
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(54.dp)
+                    .height(54.dp),
+                shape = RoundedCornerShape(0.dp)
             ) {
                 Text(
                     text = if (uiState.isSaving) "저장 중..." else "다음",

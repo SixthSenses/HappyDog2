@@ -1,7 +1,6 @@
-// 변경의도: 성별 선택 저장 시 MyPage 상태가 즉시 반영되도록 콜백과 UI를 조정한다.
 package com.example.pet_project_frontend.presentation.mypage.profile.gender
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,14 +12,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -29,7 +24,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -40,6 +34,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.pet_project_frontend.R
 import com.example.pet_project_frontend.core.components.TopBar
 import com.example.pet_project_frontend.presentation.mypage.common.UiColors
+import androidx.compose.ui.res.painterResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -137,21 +132,27 @@ private fun GenderOptionRow(
             color = UiColors.BodyText,
         )
 
-        val background = if (selected) UiColors.PrimaryBlue else Color(0xFFD1D6DA)
         Box(
             modifier = Modifier
-                .size(32.dp)
-                .clip(CircleShape)
-                .background(background),
+                .size(32.dp),
             contentAlignment = Alignment.Center
         ) {
-            if (selected) {
-                Icon(
-                    imageVector = Icons.Filled.Check,
-                    contentDescription = "선택됨",
-                    tint = Color.White
-                )
+            val backgroundRes = if (selected) {
+                R.drawable.background_circleblue
+            } else {
+                R.drawable.background_circlegray
             }
+
+            Image(
+                painter = painterResource(id = backgroundRes),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize()
+            )
+
+            Image(
+                painter = painterResource(id = R.drawable.check_small),
+                contentDescription = null
+            )
         }
     }
 }
