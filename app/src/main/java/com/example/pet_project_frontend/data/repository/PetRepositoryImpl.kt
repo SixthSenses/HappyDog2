@@ -9,7 +9,7 @@ import com.example.pet_project_frontend.data.mapper.PetMapper
 import com.example.pet_project_frontend.data.remote.api.PetApi
 import com.example.pet_project_frontend.data.remote.dto.request.BiometricAnalysisRequest
 import com.example.pet_project_frontend.data.remote.dto.request.PetRegistrationRequest
-import com.example.pet_project_frontend.data.remote.dto.request.PetUpdateRequest
+import com.example.pet_project_frontend.data.remote.dto.request.UpdatePetRequest
 import com.example.pet_project_frontend.data.remote.dto.response.BiometricAnalysisResponse
 import com.example.pet_project_frontend.data.remote.dto.response.EyeAnalysisResponse
 import com.example.pet_project_frontend.data.remote.dto.response.PetViewBasedResponse
@@ -114,7 +114,7 @@ class PetRepositoryImpl @Inject constructor(
             }
     }
 
-    override suspend fun updatePetProfile(petId: String, request: PetUpdateRequest): AppResult<Pet> {
+    override suspend fun updatePetProfile(petId: String, request: UpdatePetRequest): AppResult<Pet> {
         Log.d(TAG, "Updating pet profile: $petId")
         return SafeApi.response { petApi.updatePetProfile(petId, request) }
             .let { res ->

@@ -1,11 +1,12 @@
 // 변경 의도: 네비게이션 인자로 전달된 펫 ID를 활용해 이름 편집 결과를 서버에 반영하고 검증 상태를 명확히 분리.
 package com.example.pet_project_frontend.presentation.mypage.profile.name
 
+import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pet_project_frontend.core.common.AppResult
-import com.example.pet_project_frontend.data.remote.dto.request.PetUpdateRequest
+import com.example.pet_project_frontend.data.remote.dto.request.UpdatePetRequest
 import com.example.pet_project_frontend.domain.repository.PetRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -39,6 +40,7 @@ class NameEditViewModel @Inject constructor(
             ?.takeUnless { it == "null" }
             ?.trim()
             .orEmpty()
+        Log.d(TAG, "NameEditViewModel initialized: petId=$petId, initialName=$initialName")
         _uiState.value = _uiState.value.copy(text = initialName)
     }
 
@@ -74,27 +76,53 @@ class NameEditViewModel @Inject constructor(
             return
         }
 
-        val targetPetId = petId
-        if (targetPetId.isNullOrBlank()) {
-            viewModelScope.launch {
-                _uiState.value = _uiState.value.copy(isSaving = true, error = null, isValidationError = false)
-                _uiState.value = _uiState.value.copy(isSaving = false)
-                onSaved(trimmed, false)
-            }
-            return
-        }
-
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isSaving = true, error = null, isValidationError = false)
-            val request = PetUpdateRequest(name = trimmed)
+            
+            // petId가 없으면 서버에서 가져오기
+            val targetPetId = petId ?: run {
+                Log.d(TAG, "petId not found in navigation args, fetching from server")
+                when (val result = petRepository.getMyPetProfile()) {
+                    is AppResult.Success -> {
+                        val fetchedId = result.data.id
+                        Log.d(TAG, "Successfully fetched petId from server: $fetchedId")
+                        fetchedId
+                    }
+                    is AppResult.Error -> {
+                        val message = result.message ?: GENERIC_SAVE_ERROR_MESSAGE
+                        Log.e(TAG, "Failed to fetch petId: code=${result.code}, message=$message")
+                        _uiState.value = _uiState.value.copy(
+                            isSaving = false,
+                            error = message,
+                            isValidationError = false
+                        )
+                        return@launch
+                    }
+                    is AppResult.Exception -> {
+                        val message = result.throwable.message ?: GENERIC_SAVE_ERROR_MESSAGE
+                        Log.e(TAG, "Exception fetching petId", result.throwable)
+                        _uiState.value = _uiState.value.copy(
+                            isSaving = false,
+                            error = message,
+                            isValidationError = false
+                        )
+                        return@launch
+                    }
+                }
+            }
+
+            Log.d(TAG, "Updating pet name: petId=$targetPetId, newName=$trimmed")
+            val request = UpdatePetRequest(name = trimmed)
             when (val result = petRepository.updatePetProfile(targetPetId, request)) {
                 is AppResult.Success -> {
                     val updatedName = result.data.name.takeUnless { it.isNullOrBlank() } ?: trimmed
+                    Log.d(TAG, "Successfully updated pet name to: $updatedName")
                     _uiState.value = _uiState.value.copy(isSaving = false)
                     onSaved(updatedName, true)
                 }
                 is AppResult.Error -> {
                     val message = result.message ?: GENERIC_SAVE_ERROR_MESSAGE
+                    Log.e(TAG, "Failed to update pet name: code=${result.code}, message=$message")
                     _uiState.value = _uiState.value.copy(
                         isSaving = false,
                         error = message,
@@ -103,6 +131,7 @@ class NameEditViewModel @Inject constructor(
                 }
                 is AppResult.Exception -> {
                     val message = result.throwable.message ?: GENERIC_SAVE_ERROR_MESSAGE
+                    Log.e(TAG, "Exception updating pet name", result.throwable)
                     _uiState.value = _uiState.value.copy(
                         isSaving = false,
                         error = message,
@@ -120,6 +149,7 @@ class NameEditViewModel @Inject constructor(
     }
 
     companion object {
+        private const val TAG = "NameEditViewModel"
         private const val MAX_NAME_LENGTH = 11
         private const val VALIDATION_ERROR_MESSAGE = "이름은 11자 이내로 입력해주세요."
         private const val GENERIC_SAVE_ERROR_MESSAGE = "이름 저장에 실패했습니다. 다시 시도해주세요."

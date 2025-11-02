@@ -1,5 +1,6 @@
 package com.example.pet_project_frontend.presentation.mypage.profile.birthdate
 
+import android.util.Log
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.SavedStateHandle
@@ -36,8 +37,15 @@ class BirthEditViewModel @Inject constructor(
         .get<String>("petId")
         ?.takeUnless { it.isNullOrBlank() || it == "null" }
 
+    // 화면 표시용: yyyy.MM.dd (예: 2024.01.15)
     private val displayFormatter = DateTimeFormatter.ofPattern("yyyy.MM.dd")
+    // 백엔드 요청용: yyyy-MM-dd (ISO_LOCAL_DATE는 정확히 이 형식)
     private val requestFormatter = DateTimeFormatter.ISO_LOCAL_DATE
+
+    companion object {
+        private const val TAG = "BirthEditViewModel"
+        private const val GENERIC_SAVE_ERROR_MESSAGE = "생년월일을 저장하는 중 문제가 발생했어요. 잠시 후 다시 시도해주세요."
+    }
 
     init {
         val initial = savedStateHandle.get<String>("initialBirth") ?: ""
@@ -75,6 +83,9 @@ class BirthEditViewModel @Inject constructor(
         val month = digits.substring(4, 6).toInt()
         val day = digits.substring(6, 8).toInt()
         val requestDate = LocalDate.of(year, month, day)
+        val formattedForRequest = requestDate.format(requestFormatter)
+        
+        Log.d(TAG, "Saving birthdate: display='$input', request='$formattedForRequest'")
 
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, error = null) }
@@ -100,22 +111,27 @@ class BirthEditViewModel @Inject constructor(
         }
 
         val request = UpdatePetRequest(
-            birthdate = requestDate.format(requestFormatter),
+            birthdate = formattedForRequest
         )
+        
+        Log.d(TAG, "Sending update request to petId='$targetPetId' with birthdate='$formattedForRequest'")
 
             when (val updateResult = petRepository.updatePetProfile(targetPetId, request)) {
                 is AppResult.Success -> {
                     val serverBirth = updateResult.data.birthDate.format(displayFormatter)
+                    Log.d(TAG, "Successfully updated birthdate. Server returned: ${updateResult.data.birthDate}")
                     setFormattedValue(serverBirth)
                     _uiState.update { it.copy(isSaving = false) }
                     onSuccess(serverBirth, true)
                 }
                 is AppResult.Error -> {
                     val message = updateResult.message ?: updateResult.validation?.generalMessage ?: GENERIC_SAVE_ERROR_MESSAGE
+                    Log.e(TAG, "Failed to update birthdate: code=${updateResult.code}, message=$message")
                     _uiState.update { it.copy(isSaving = false, error = message) }
                 }
                 is AppResult.Exception -> {
                     val message = updateResult.throwable.message ?: GENERIC_SAVE_ERROR_MESSAGE
+                    Log.e(TAG, "Exception updating birthdate", updateResult.throwable)
                     _uiState.update { it.copy(isSaving = false, error = message) }
                 }
             }
@@ -184,8 +200,4 @@ class BirthEditViewModel @Inject constructor(
         input.replace("-", ".")
             .replace("/", ".")
             .replace(" ", "")
-
-    companion object {
-        private const val GENERIC_SAVE_ERROR_MESSAGE = "생년월일을 저장하는 중 문제가 발생했어요. 잠시 후 다시 시도해주세요."
-    }
 }

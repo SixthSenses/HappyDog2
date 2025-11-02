@@ -441,7 +441,7 @@ private fun ProfileDetailSection(
             ProfileButtonField(
                 label = "이름",
                 value = uiState.petName.ifBlank { "미등록" },
-                onClick = { onNameClick(uiState.petId, uiState.petName) }
+                onClick = { onNameClick(uiState.petName, uiState.petId ?: "") }
             )
             ProfileButtonField(
                 label = "생년월일",
