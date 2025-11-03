@@ -1,5 +1,10 @@
 package com.example.pet_project_frontend.presentation.mungstar
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -12,6 +17,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -40,7 +51,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
 fun MungStarFeed(
     navController: NavController,
@@ -55,6 +66,19 @@ fun MungStarFeed(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val notificationUiState by notificationViewModel.uiState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
+    
+    // Pull-to-Refresh 상태
+    val pullRefreshState = rememberPullRefreshState(
+        refreshing = uiState.isRefreshing,
+        onRefresh = { viewModel.refresh() }
+    )
+    
+    // 새로고침 버튼 표시 여부 (스크롤 위치에 따라)
+    val showRefreshButton by remember {
+        derivedStateOf {
+            listState.firstVisibleItemIndex > 3 // 3개 이상 스크롤하면 버튼 표시
+        }
+    }
 
     // 화면이 다시 보일 때마다 피드 새로고침
     val currentBackStackEntry = navController.currentBackStackEntry
@@ -114,7 +138,9 @@ fun MungStarFeed(
     }
 
     Box(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier
+            .fillMaxSize()
+            .pullRefresh(pullRefreshState)
     ) {
         Column(
             modifier = Modifier.fillMaxSize()
@@ -262,6 +288,51 @@ fun MungStarFeed(
             }
         }
 
+        // Pull-to-Refresh 인디케이터
+        PullRefreshIndicator(
+            refreshing = uiState.isRefreshing,
+            state = pullRefreshState,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .offset(y = 73.dp),  // 앱바 아래에 위치
+            backgroundColor = Color.White,
+            contentColor = Color(0xFF333D4B)
+        )
+        
+        // 새로고침 버튼 (스크롤 시 나타남)
+        AnimatedVisibility(
+            visible = showRefreshButton,
+            enter = fadeIn() + slideInVertically(initialOffsetY = { -it }),
+            exit = fadeOut() + slideOutVertically(targetOffsetY = { -it }),
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .offset(y = 90.dp)
+        ) {
+            FloatingActionButton(
+                onClick = {
+                    viewModel.refresh()
+                    // 스크롤을 맨 위로
+                    kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                        listState.animateScrollToItem(0)
+                    }
+                },
+                modifier = Modifier.size(48.dp),
+                shape = CircleShape,
+                containerColor = Color(0xFF333D4B),
+                contentColor = Color.White,
+                elevation = FloatingActionButtonDefaults.elevation(
+                    defaultElevation = 6.dp,
+                    pressedElevation = 8.dp
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = "새로고침",
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
+        
         // 플로팅 액션 버튼
         FloatingActionButton(
             onClick = { showBottomSheet = true },

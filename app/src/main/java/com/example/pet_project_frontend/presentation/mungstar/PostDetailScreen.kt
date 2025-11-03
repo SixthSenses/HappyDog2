@@ -165,24 +165,6 @@ fun PostDetailScreen(
                                 onDeleteClick = { viewModel.deleteComment(comment.commentId) }
                             )
                         }
-                        
-                        // 더 보기
-                        if (uiState.hasMore) {
-                            item {
-                                TextButton(
-                                    onClick = { viewModel.loadMoreComments() },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp)
-                                ) {
-                                    Text(
-                                        text = "댓글 더보기",
-                                        fontFamily = PretendardFont,
-                                        fontWeight = FontWeight(400)
-                                    )
-                                }
-                            }
-                        }
                     }
                     
                     // 댓글 입력창
